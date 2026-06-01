@@ -284,7 +284,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           id: catId,
           restaurantId: rId,
           name,
-          active: true,
           order: 0
         });
         catMap[name] = catId;

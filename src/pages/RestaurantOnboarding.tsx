@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Copy, Download } from 'lucide-react';
@@ -35,6 +35,7 @@ export default function RestaurantOnboarding() {
     delivery: true, pickup: true, dineIn: false,
     deliveryFee: '', estimatedTime: '', minOrder: '', deliveryRadius: '', deliveryNotes: '',
   });
+  const [logoPreview, setLogoPreview] = useState('');
   const [categories, setCategories] = useState<string[]>(['Mais Vendidos', 'Bebidas']);
   const [newCat, setNewCat] = useState('');
   const [products, setProducts] = useState([{ name: '', price: '', category: '' }]);
@@ -87,26 +88,40 @@ export default function RestaurantOnboarding() {
         slug: restaurantId,
         pixKey: form.pixKey,
         logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=400&fit=crop',
-        cover: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
+        coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
         cuisineType: form.cuisineType,
         rating: 5.0,
-        deliveryTime: form.estimatedTime || '30-45',
-        minOrder: parsePrice(form.minOrder) || 10,
+        reviewCount: 0,
+        priceRange: 'medium',
         address: form.address,
         neighborhood: form.neighborhood,
         whatsapp: form.whatsapp,
         primaryColor: form.primaryColor,
-        isSocialImpactPartner: true,
         isOpen: true,
-        hours: form.hours,
         deliveryEnabled: form.delivery,
         pickupEnabled: form.pickup,
         dineInEnabled: form.dineIn,
         deliveryFee: form.deliveryFee ? parsePrice(form.deliveryFee) : 0,
         estimatedTime: parseInt(form.estimatedTime) || 45,
         minimumOrder: form.minOrder ? parsePrice(form.minOrder) : 10,
-        deliveryRadius: form.deliveryRadius ? parseInt(form.deliveryRadius) : 5,
-        deliveryNotes: form.deliveryNotes || '',
+        deliverySettings: {
+          fee: form.deliveryFee ? parsePrice(form.deliveryFee) : 0,
+          estimatedTime: form.estimatedTime || '30-45',
+          minOrder: form.minOrder ? parsePrice(form.minOrder) : 10,
+          feeByNeighborhood: [],
+        },
+        orderSettings: {
+          autoAccept: true,
+          soundAlert: true,
+          thermalPrinterEnabled: false,
+          whatsappNotificationsEnabled: true,
+        },
+        loyaltySettings: {
+          enabled: false,
+          pointsPerReal: 1,
+          accumulationType: 'amount',
+          redemptionRules: [],
+        },
       } as any;
 
       await registerRestaurant(restaurantData, categories, products);
@@ -137,6 +152,13 @@ export default function RestaurantOnboarding() {
     }
   };
   const prev = () => { if (step > 0) setStep(s => s - 1); };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) setLogoPreview(URL.createObjectURL(file));
+  };
 
   const addCategory = () => {
     const cat = newCat.trim();
@@ -240,14 +262,21 @@ export default function RestaurantOnboarding() {
                 </div>
               </div>
 
-              {/* Logo upload placeholder */}
+              {/* Logo upload */}
               <div>
                 <label className="text-sm font-medium text-gray-600 block mb-2">Logo do restaurante</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#FFC928] transition-colors cursor-pointer">
-                  <Upload size={24} className="text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Clique para fazer upload da logo</p>
-                  <p className="text-xs text-gray-400">PNG, JPG até 5MB</p>
+                <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center hover:border-[#FFC928] transition-colors cursor-pointer">
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="Logo preview" className="w-24 h-24 object-cover rounded-xl mx-auto" />
+                  ) : (
+                    <>
+                      <Upload size={24} className="text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Clique para fazer upload da logo</p>
+                      <p className="text-xs text-gray-400">PNG, JPG até 5MB</p>
+                    </>
+                  )}
                 </div>
+                <input ref={fileInputRef} type="file" accept="image/png,image/jpeg" onChange={handleLogoUpload} className="hidden" />
               </div>
 
               {/* Color picker */}
