@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@100..900&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-brand-egg: #FFC928;
+  --color-brand-orange: #FF7A00;
+  --color-brand-black: #111111;
+  --color-brand-white: #FFFFFF;
+  --color-brand-gray: #F5F5F5;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@utility perspective-1000 {
+  perspective: 1000px;
+}
+
+@utility rotate-y-* {
+  transform: rotateY(calc(var(--value) * 1deg));
+}
+
+@utility rotate-x-* {
+  transform: rotateX(calc(var(--value) * 1deg));
+}
+
+@layer base {
+  body {
+    @apply font-sans text-slate-900 antialiased bg-slate-50;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-200 rounded-full border-4 border-transparent bg-clip-content;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400;
+  }
+
+  /* Dark mode scrollbar */
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-slate-800;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-700;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 15px rgba(255, 201, 40, 0.5);
+  }
+
+  .shadow-brand {
+    box-shadow: 0 20px 40px -15px rgba(255, 201, 40, 0.3);
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.2) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+/* Administrative Premium Dark Theme Overrides */
+.admin-theme {
+  background-color: #0d0d0d !important;
+  color: #f8fafc !important;
+}
+
+.admin-theme .bg-white {
+  background-color: #121212 !important;
+}
+
+.admin-theme .bg-slate-50,
+.admin-theme .bg-gray-50,
+.admin-theme .bg-slate-100,
+.admin-theme .bg-gray-100 {
+  background-color: #1a1a1a !important;
+}
+
+.admin-theme .bg-slate-50\/50,
+.admin-theme .bg-slate-550\/50 {
+  background-color: #151515 !important;
+}
+
+.admin-theme .hover\:bg-slate-50:hover,
+.admin-theme .hover\:bg-gray-50:hover,
+.admin-theme .hover\:bg-slate-100:hover,
+.admin-theme .hover\:bg-gray-100:hover {
+  background-color: #1d1d1d !important;
+}
+
+/* Hard borders mapping */
+.admin-theme .border-slate-50,
+.admin-theme .border-slate-100,
+.admin-theme .border-slate-200,
+.admin-theme .border-gray-100,
+.admin-theme .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Text adjustments */
+.admin-theme .text-slate-900,
+.admin-theme .text-slate-800,
+.admin-theme .text-slate-700,
+.admin-theme .text-gray-950,
+.admin-theme .text-gray-900,
+.admin-theme .text-gray-800,
+.admin-theme .text-[#111],
+.admin-theme .text-brand-black {
+  color: #f8fafc !important;
+}
+
+.admin-theme .text-slate-500,
+.admin-theme .text-slate-600,
+.admin-theme .text-gray-500,
+.admin-theme .text-gray-600 {
+  color: #94a3b8 !important;
+}
+
+/* Input / Field fields */
+.admin-theme input,
+.admin-theme select,
+.admin-theme textarea {
+  background-color: #161616 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.admin-theme input::placeholder,
+.admin-theme textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Soft elements mapping */
+.admin-theme .shadow-sm,
+.admin-theme .shadow-md,
+.admin-theme .shadow-lg,
+.admin-theme .shadow-xl,
+.admin-theme .shadow-2xl {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+

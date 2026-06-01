@@ -1,0 +1,129 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    // Restaurant Helpers
+    function runsRestaurant(restaurantId) {
+      return isSignedIn() && get(/databases/$(database)/documents/restaurants/$(restaurantId)).data.ownerId == request.auth.uid;
+    }
+
+    // --- RESTAURANTS ---
+    match /restaurants/{restaurantId} {
+      allow read: if true; // Publicly readable for menu display
+      allow create: if isSignedIn() && isEmailVerified() 
+        && incoming().ownerId == request.auth.uid 
+        && incoming().name is string && incoming().name.size() <= 100
+        && incoming().slug.matches('^[a-z0-9-]+$')
+        && incoming().createdAt == request.time;
+        
+      allow update: if runsRestaurant(restaurantId)
+        && incoming().ownerId == existing().ownerId // Immutable owner
+        && incoming().createdAt == existing().createdAt;
+        
+      allow delete: if runsRestaurant(restaurantId);
+    }
+
+    // --- CATEGORIES ---
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if runsRestaurant(incoming().restaurantId)
+        && incoming().name is string && incoming().name.size() <= 50
+        && incoming().order is number
+        && incoming().isActive is bool;
+      allow update: if runsRestaurant(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if runsRestaurant(existing().restaurantId);
+    }
+
+    // --- PRODUCTS ---
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if runsRestaurant(incoming().restaurantId)
+        && incoming().name is string && incoming().name.size() <= 100
+        && incoming().price is number && incoming().price >= 0;
+      allow update: if runsRestaurant(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if runsRestaurant(existing().restaurantId);
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId
+        && incoming().diff(existing()).affectedKeys().hasOnly(['full_name', 'profile_image_url', 'role', 'updatedAt']);
+      allow delete: if false;
+    }
+
+    // --- TABLES ---
+    match /tables/{tableId} {
+      allow read: if true; // Public for seat selection/QR
+      allow create: if runsRestaurant(incoming().restaurantId);
+      allow update: if runsRestaurant(existing().restaurantId);
+      allow delete: if runsRestaurant(existing().restaurantId);
+    }
+
+    // --- ORDERS ---
+    match /orders/{orderId} {
+      // Anyone can read a specific order if they have the ID (for tracking)
+      allow get: if true;
+      
+      // List rules MUST check resource.data to prevent scanning
+      allow list: if runsRestaurant(resource.data.restaurantId)
+        || (isSignedIn() && resource.data.userId == request.auth.uid);
+      
+      allow create: if incoming().total is number && incoming().total >= 0
+        && incoming().status == 'received'
+        && (incoming().userId == request.auth.uid || !incoming().keys().contains('userId'))
+        && incoming().createdAt == request.time;
+        
+      allow update: if (
+        // Owner updating status
+        runsRestaurant(existing().restaurantId) &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+      ) || (
+        // User can cancel their own received orders
+        isSignedIn() && existing().userId == request.auth.uid && existing().status == 'received' &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        incoming().status == 'cancelled'
+      );
+    }
+
+    // --- COUPONS ---
+    match /coupons/{couponId} {
+      allow get: if true;
+      allow list: if isSignedIn() && (
+        runsRestaurant(resource.data.restaurantId) ||
+        resource.data.restaurantId == request.auth.uid // Just in case, but runsRestaurant is better
+      );
+      allow create: if runsRestaurant(incoming().restaurantId)
+        && incoming().code is string && incoming().code.size() <= 20
+        && incoming().value is number && incoming().value >= 0
+        && incoming().type in ['fixed', 'percent']
+        && incoming().createdAt == request.time;
+      allow update: if (
+        // Admin update
+        runsRestaurant(existing().restaurantId) && incoming().restaurantId == existing().restaurantId
+      ) || (
+        // Public update for usageCount increment
+        incoming().diff(existing()).affectedKeys().hasOnly(['usageCount']) && 
+        incoming().usageCount == existing().usageCount + 1
+      );
+      allow delete: if runsRestaurant(existing().restaurantId);
+    }
+  }
+}

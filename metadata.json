@@ -1,0 +1,10 @@
+{
+  "name": "Meu Ovo - Aqui é comida de verdade. Não foodzinho.",
+  "description": "Plataforma 100% gratuita de cardápio digital para restaurantes. Zero Taxa, sem comissões e com foco no pequeno empreendedor.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
