@@ -298,9 +298,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           restaurantId: rId,
           name: p.name,
           price: parseFloat(p.price),
-          category: catMap[p.category] || '',
-          active: true,
-          inStock: true
+          categoryId: catMap[p.category] || '',
+          isActive: true,
+          isAvailable: true
         });
       }
 

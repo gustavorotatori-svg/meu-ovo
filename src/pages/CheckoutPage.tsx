@@ -128,10 +128,13 @@ export default function CheckoutPage() {
     return () => clearTimeout(timer);
   }, [phone, restaurant.id]);
 
-  if (!restaurant || items.length === 0) {
-    navigate('/carrinho');
-    return null;
-  }
+  useEffect(() => {
+    if (!restaurant || items.length === 0) {
+      navigate('/carrinho');
+    }
+  }, [restaurant, items.length, navigate]);
+
+  if (!restaurant || items.length === 0) return null;
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
