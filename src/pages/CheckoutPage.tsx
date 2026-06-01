@@ -212,7 +212,7 @@ export default function CheckoutPage() {
     if (matched) return matched.fee;
     
     // Fallback to restaurant's default fee or context's deliverySettings
-    return restaurant.deliverySettings?.fee ?? deliverySettings.fixedFee;
+    return restaurant.deliverySettings?.fee ?? deliverySettings.fee;
   };
 
   const deliveryFee = getDeliveryFee();

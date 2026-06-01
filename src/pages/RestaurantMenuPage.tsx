@@ -5,7 +5,7 @@ import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
-import { Product, CartItem } from '../types';
+import { Product, CartItem, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -13,6 +13,9 @@ import ShareModal from '../components/ShareModal';
 import SEO from '../components/SEO';
 import { rankProducts } from '../lib/recommendations';
 import { cn } from '../lib/utils';
+import { db } from '../lib/firebase';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { mockProducts, mockCategories } from '../data/mockData';
 
 export default function RestaurantMenuPage() {
   const { t } = useTranslation();
@@ -30,19 +33,48 @@ export default function RestaurantMenuPage() {
   }, [tableNumber, setTableNumber]);
 
   const restaurant = restaurants.find(r => r.slug === slug);
-  
+  const isMockRestaurant = ['1', '2', '3'].includes(restaurant?.id || '');
+
+  // Load products and categories for this restaurant (works for any restaurant, not just currentRestaurant)
+  const [localProducts, setLocalProducts] = useState<Product[]>([]);
+  const [localCategories, setLocalCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    if (!restaurant?.id) return;
+
+    if (isMockRestaurant) {
+      setLocalProducts(mockProducts.filter(p => p.restaurantId === restaurant.id));
+      setLocalCategories(mockCategories.filter(c => c.restaurantId === restaurant.id));
+      return;
+    }
+
+    const unsubProducts = onSnapshot(
+      query(collection(db, 'products'), where('restaurantId', '==', restaurant.id)),
+      snap => setLocalProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product)))
+    );
+    const unsubCategories = onSnapshot(
+      query(collection(db, 'categories'), where('restaurantId', '==', restaurant.id)),
+      snap => setLocalCategories(snap.docs.map(d => ({ id: d.id, ...d.data() } as Category)))
+    );
+    return () => { unsubProducts(); unsubCategories(); };
+  }, [restaurant?.id]);
+
+  // Fall back to context products/categories if local is empty and it's not a mock restaurant
+  const effectiveProducts = localProducts.length > 0 ? localProducts : products;
+  const effectiveCategories = localCategories.length > 0 ? localCategories : categories;
+
   const restaurantProducts = useMemo(() => {
-    const unfiltered = products.filter(p => 
+    const unfiltered = effectiveProducts.filter(p => 
       p.restaurantId === restaurant?.id && (p.isActive !== false)
     ).sort((a, b) => (a.order || 0) - (b.order || 0));
     return unfiltered;
-  }, [products, restaurant?.id]);
+  }, [effectiveProducts, restaurant?.id]);
 
   const restaurantCategories = useMemo(() => {
-    return categories
+    return effectiveCategories
       .filter(c => c.restaurantId === restaurant?.id)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
-  }, [categories, restaurant?.id]);
+  }, [effectiveCategories, restaurant?.id]);
 
   const [activeCategory, setActiveCategory] = useState(restaurantCategories[0]?.id || '');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
