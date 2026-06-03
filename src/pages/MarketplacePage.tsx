@@ -310,7 +310,7 @@ export default function MarketplacePage() {
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 bg-white border border-gray-200 px-4 py-2 rounded-full text-sm font-medium hover:border-[#FFC928] transition-colors"
+            className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-full text-sm font-medium hover:border-[#FFC928] transition-colors"
           >
             <Filter size={16} />
             Filtros
@@ -319,19 +319,19 @@ export default function MarketplacePage() {
 
           <button
             onClick={() => setFilterOpenNow(!filterOpenNow)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterOpenNow ? 'bg-[#111] text-white border-[#111]' : 'bg-white border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterOpenNow ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Aberto agora
           </button>
           <button
             onClick={() => setFilterDelivery(!filterDelivery)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterDelivery ? 'bg-[#111] text-white border-[#111]' : 'bg-white border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterDelivery ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Com delivery
           </button>
           <button
             onClick={() => setFilterPickup(!filterPickup)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterPickup ? 'bg-[#111] text-white border-[#111]' : 'bg-white border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterPickup ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Com retirada
           </button>
@@ -339,7 +339,7 @@ export default function MarketplacePage() {
             <button
               key={p}
               onClick={() => setFilterPriceRange(filterPriceRange === p ? null : p)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterPriceRange === p ? 'bg-[#111] text-white border-[#111]' : 'bg-white border-gray-200 hover:border-[#FFC928]'}`}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterPriceRange === p ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
             >
               {priceLabels[p as keyof typeof priceLabels]}
             </button>
