@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode } from 'lucide-react';
+import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -7,11 +7,76 @@ import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { Logo } from '../components/Logo';
 import OptimizedImage from '../components/OptimizedImage';
+import { motion, AnimatePresence } from 'motion/react';
+import { useState, useEffect } from 'react';
 
 export default function LandingPage() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [direction, setDirection] = useState(0); // -1 for left, 1 for right
+
+  const testimonials = [
+    {
+      name: 'João da Silva',
+      restaurant: 'Pizzaria do João',
+      location: 'Vila Mariana, SP',
+      initial: 'J',
+      tag: 'Pizzaria • Economia Operacional',
+      text: 'Antes eu pagava quase 30% de comissão por cada pizza vendida para os grandes aplicativos. Agora o pedido vai direto pro meu WhatsApp e controlo tudo com as telas do Meu Ovo. Minha margem dobrou e comprei um forno de esteira novo!',
+      saving: 'R$ 4.200/mês economizados',
+      image: 'https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?w=150&h=150&fit=crop'
+    },
+    {
+      name: 'Dona Ana Rosa',
+      restaurant: 'Marmita da Dona Ana',
+      location: 'Sé, Centro Histórico',
+      initial: 'A',
+      tag: 'Cozinha Brasileira • Flexibilidade das Vendas',
+      text: 'Meus clientes adoraram o cardápio por QR Code nas mesas e no WhatsApp. Fica rolando compartilhamentos no condomínio aqui do lado e eu não preciso mais fazer listas complicadas de preço no Word. Minhas vendas cresceram 45%!',
+      saving: 'R$ 2.800/mês economizados',
+      image: 'https://images.pexels.com/photos/762020/pexels-photo-762020.jpeg?w=150&h=150&fit=crop'
+    },
+    {
+      name: 'Carlos Pinheiro',
+      restaurant: 'Burger da Praça',
+      location: 'Pinheiros, SP',
+      initial: 'C',
+      tag: 'Hamburgueria • Agilidade Interna',
+      text: 'Muito simples e prático de usar. A funcionalidade do QR Code nas mesas tirou o peso sobre a comissão das plataformas. Economizamos muito com a agilidade operacional nos dias de movimento. O cliente pede e o garçom foca na chapa!',
+      saving: 'R$ 3.500/mês economizados',
+      image: 'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?w=150&h=150&fit=crop'
+    },
+    {
+      name: 'Roberto Hayashi',
+      restaurant: 'Sushi Santo Amaro',
+      location: 'Santo Amaro, SP',
+      initial: 'R',
+      tag: 'Sushi • Logística Precisa',
+      text: 'Buscávamos uma solução sem segredos. A integração do painel de entregadores por bairro de São Paulo é espetacular. Nossos motoboys recebem as corridas certas e as queixas de atrasos despencaram. E o imposto sobre taxas virou zero!',
+      saving: 'R$ 5.100/mês economizados',
+      image: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?w=150&h=150&fit=crop'
+    }
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      handleNext();
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [currentTestimonial]);
+
+  const handleNext = () => {
+    setDirection(1);
+    setCurrentTestimonial(prev => (prev + 1) % testimonials.length);
+  };
+
+  const handlePrev = () => {
+    setDirection(-1);
+    setCurrentTestimonial(prev => (prev - 1 + testimonials.length) % testimonials.length);
+  };
 
   return (
     <div className={`min-h-screen transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
@@ -37,8 +102,8 @@ export default function LandingPage() {
               <span className="text-[#FFC928]">{t('landing.heroTitleHighlight')}</span><br />
               {t('landing.heroTitleSuffix')}
             </h1>
-            <p className={`max-w-xl text-lg lg:text-xl mb-10 font-medium leading-relaxed transition-colors ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
+            <p className={`max-w-xl text-lg lg:text-xl mb-10 font-display font-semibold leading-relaxed tracking-tight transition-colors ${
+              isDark ? 'text-gray-300' : 'text-gray-700'
             }`}>
               {t('landing.heroSubtitle')}
             </p>
@@ -174,7 +239,7 @@ export default function LandingPage() {
             Seu pedido. Seu restaurante.<br />
             <span className="text-[#FF7A00]">Zero Taxa.</span>
           </h2>
-          <p className={`text-xl max-w-2xl mx-auto font-medium transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p className={`text-lg lg:text-xl max-w-2xl mx-auto font-display font-semibold tracking-tight transition-colors ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             Tecnologia que não come sua margem. Tudo que você precisa para vender mais.
           </p>
 
@@ -249,11 +314,59 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Ovos de Ouro Competition Introduction Banner */}
+      <section className={`py-24 border-y transition-colors ${isDark ? 'bg-zinc-950/40 border-white/5' : 'bg-amber-50/40 border-amber-100'}`}>
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="bg-gradient-to-br from-[#111] via-[#1a1a1a] to-[#121212] border border-[#FFC928]/30 rounded-[3rem] p-8 md:p-16 relative overflow-hidden text-left shadow-2xl text-white">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#FFC928]/5 rounded-full blur-3xl -z-1" />
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-center relative z-10">
+              <div className="lg:col-span-2 space-y-4">
+                <div className="inline-flex items-center gap-2 bg-[#FFC928]/20 border border-[#FFC928]/35 px-3.5 py-1 rounded-full text-[10px] font-black text-[#FFC928] uppercase tracking-wider leading-none">
+                  🏆 Competição Anual Meu Ovo
+                </div>
+                <h2 className="text-3xl md:text-5xl font-display font-black leading-none uppercase italic tracking-tighter">
+                  Prêmio Ovos de Ouro
+                </h2>
+                <p className="text-gray-400 font-medium text-sm md:text-base max-w-xl leading-relaxed">
+                  Buscamos o melhor sabor de São Paulo com integridade total. No Meu OVO, as avaliações acumuladas do campeonato são sigilosas e privadas. Apenas os 3 melhores de cada ano são revelados de forma triunfal.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="flex items-center gap-2.5">
+                    <Shield className="text-[#FFC928]" size={18} />
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Sigilo absoluto das notas</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Trophy className="text-[#FFC928]" size={18} />
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Divulgação estrita (Top 3)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="lg:col-span-1 flex flex-col sm:flex-row lg:flex-col gap-4 justify-end">
+                <Link
+                  to="/ovos-de-ouro"
+                  className="bg-[#FFC928] text-[#111] hover:bg-[#e6b520] font-black text-xs uppercase tracking-widest px-8 py-5 rounded-[1.5rem] transition-all text-center flex items-center justify-center gap-2"
+                >
+                  <span>Conhecer Regras</span>
+                  <ArrowRight size={14} />
+                </Link>
+                <Link
+                  to="/cadastro-restaurante"
+                  className="bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs uppercase tracking-widest px-8 py-5 rounded-[1.5rem] transition-all text-center"
+                >
+                  Participar Gratuitamente
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How it Works Section */}
       <section className="py-32 bg-[#0a0a0a]">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-4xl md:text-6xl font-display font-black text-white mb-6">{t('landing.howItWorksTitle')}</h2>
-          <p className="text-gray-500 text-xl mb-20 font-medium">{t('landing.howItWorksSubtitle')}</p>
+          <p className="text-gray-400 text-lg lg:text-xl mb-20 font-display font-semibold tracking-tight">{t('landing.howItWorksSubtitle')}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 relative">
             {/* Step Lines (Desktop) */}
@@ -286,38 +399,127 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className={`py-32 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-20">
-            <h2 className={`text-4xl md:text-6xl font-black mb-6 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.testimonialsTitle')}</h2>
+      {/* Testimonials Carousel */}
+      <section className={`py-32 transition-colors overflow-hidden ${isDark ? 'bg-black' : 'bg-white'}`}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-16 space-y-3">
+            <span className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC928]">Quem usa, comprova</span>
+            <h2 className={`text-3xl md:text-5xl font-display font-black leading-none uppercase italic tracking-tighter transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
+              Histórias de Sucesso Parceiras
+            </h2>
+            <p className="text-xs sm:text-sm text-gray-400 font-semibold max-w-md mx-auto">Relatos reais de quem assumiu as rédeas do próprio delivery com taxa zero</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { name: 'João, Pizzaria do João', initial: 'J', text: '"Antes eu pagava quase 30% de comissão. Agora o pedido vai direto pro meu WhatsApp. Minha margem dobrou."' },
-              { name: 'Ana, Marmita da Dona Ana', initial: 'A', text: '"Meus clientes adoraram o cardápio. Fica compartilhando no grupo do condomínio e eu não preciso mais montar lista de preços no Word."' },
-              { name: 'Carlos, Burger da Praça', initial: 'C', text: '"Fácil de configurar, rápido de usar. O QR Code na mesa foi uma revolução. Menos garçom, mais pedido."' }
-            ].map((t, i) => (
-              <div key={i} className={`p-10 rounded-[3rem] flex flex-col justify-between border transition-all hover:shadow-2xl ${
-                isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#F9F9F9] border-gray-100'
-              }`}>
-                <div>
-                  <div className="flex gap-1 mb-6">
-                    {[1, 2, 3, 4, 5].map(s => <Star key={s} size={16} className="fill-[#FFC928] text-[#FFC928]" />)}
+          <div className="relative min-h-[440px] sm:min-h-[340px] md:min-h-[290px] flex flex-col justify-center">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={currentTestimonial}
+                custom={direction}
+                initial={{ opacity: 0, x: direction > 0 ? 80 : -80 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: direction < 0 ? 80 : -80 }}
+                transition={{ type: 'spring', stiffness: 220, damping: 24 }}
+                className={`p-8 md:p-12 rounded-[2.5rem] border shadow-xl flex flex-col md:flex-row gap-8 items-center justify-between text-left ${
+                  isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-gray-50/55 border-gray-100'
+                }`}
+              >
+                {/* Text Content */}
+                <div className="flex-1 space-y-6 relative">
+                  <div className="absolute -top-6 -left-6 opacity-5 text-[#FFC928]">
+                    <Quote size={80} />
                   </div>
-                  <p className={`text-lg font-medium italic mb-10 leading-relaxed transition-colors ${isDark ? 'text-gray-300' : 'text-[#222]'}`}>
-                    {t.text}
+                  
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} size={14} className="fill-[#FFC928] text-[#FFC928]" />
+                      ))}
+                    </div>
+                    <span className="text-[10px] bg-[#FFC928]/10 text-[#FFC928] font-black uppercase px-2.5 py-0.5 rounded ml-2">
+                      {testimonials[currentTestimonial].tag}
+                    </span>
+                  </div>
+
+                  <p className={`text-base sm:text-lg md:text-xl font-display font-semibold italic leading-relaxed tracking-tight transition-colors ${
+                    isDark ? 'text-gray-200' : 'text-[#222]'
+                  }`}>
+                    "{testimonials[currentTestimonial].text}"
                   </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-[#FFC928] rounded-full flex items-center justify-center font-black text-black">
-                    {t.initial}
+
+                  <div className="pt-2">
+                    <h4 className={`font-black text-sm uppercase transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                      {testimonials[currentTestimonial].name}
+                    </h4>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">
+                      {testimonials[currentTestimonial].restaurant} — <span className="text-[#FFC928]">{testimonials[currentTestimonial].location}</span>
+                    </p>
                   </div>
-                  <span className={`font-black underline decoration-[#FFC928] decoration-2 underline-offset-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t.name}</span>
                 </div>
-              </div>
-            ))}
+
+                {/* Right highlight Box with Photo & saving badge */}
+                <div className="flex flex-col items-center justify-center space-y-4 bg-amber-400/5 dark:bg-amber-400/[0.02] border border-amber-400/10 p-6 rounded-[2rem] w-full md:w-64 flex-shrink-0 text-center">
+                  <div className="relative">
+                    <OptimizedImage
+                      src={testimonials[currentTestimonial].image}
+                      alt={testimonials[currentTestimonial].restaurant}
+                      width={80}
+                      height={80}
+                      className="w-20 h-20 rounded-full object-cover border-2 border-[#FFC928] shadow-md"
+                    />
+                    <div className="absolute bottom-0 right-0 w-6 h-6 bg-[#FFC928] text-black text-xs font-black rounded-full flex items-center justify-center">
+                      🍳
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Resultado na conta</div>
+                    <div className="text-xs sm:text-sm font-black text-emerald-500 uppercase tracking-tight">
+                      {testimonials[currentTestimonial].saving}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Navigation Controls */}
+          <div className="flex items-center justify-between mt-8">
+            <div className="flex gap-1.5">
+              {testimonials.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setDirection(idx > currentTestimonial ? 1 : -1);
+                    setCurrentTestimonial(idx);
+                  }}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    idx === currentTestimonial ? 'w-8 bg-[#FFC928]' : 'w-2 bg-gray-300 dark:bg-zinc-800'
+                  }`}
+                  aria-label={`Ir para slide ${idx + 1}`}
+                />
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handlePrev}
+                className={`p-3 rounded-xl border border-gray-150 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors ${
+                  isDark ? 'text-white' : 'text-[#111]'
+                }`}
+                aria-label="Depoimento Anterior"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                onClick={handleNext}
+                className={`p-3 rounded-xl border border-gray-150 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-zinc-900 transition-colors ${
+                  isDark ? 'text-white' : 'text-[#111]'
+                }`}
+                aria-label="Próximo Depoimento"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -329,7 +531,7 @@ export default function LandingPage() {
             O cliente é seu.<br />
             <span className="text-[#FFC928]">O pedido também.</span>
           </h2>
-          <p className="text-gray-500 text-xl lg:text-2xl mb-12 font-medium">
+          <p className="text-gray-400 text-lg lg:text-xl mb-12 font-display font-semibold tracking-tight">
             Zero Taxa. Mais comida de verdade. Comece hoje mesmo.
           </p>
 

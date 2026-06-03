@@ -2,6 +2,7 @@ import { Order, Restaurant } from '../types';
 
 export const STATUS_MESSAGES: Record<Order['status'], string> = {
   received: 'recebido e está aguardando confirmação',
+  accepted: 'aguardando pagamento',
   preparing: 'sendo preparado com todo carinho',
   ready: 'prontinho! 🎉',
   'out-for-delivery': 'saiu para entrega! O motoboy já está a caminho 🛵',

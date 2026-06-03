@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Heart, 
   Search, 
@@ -27,6 +27,7 @@ import { useRestaurant } from '../context/RestaurantContext';
 import { rankRestaurants } from '../lib/recommendations';
 
 export default function Home() {
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -81,7 +82,7 @@ export default function Home() {
              {t('home.heroTitle')}<br />
              <span className="text-[#FFC928]">{t('home.heroTitleHighlight')}</span>
            </motion.h1>
-           <p className={`text-lg font-medium max-w-xl mx-auto leading-tight transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+           <p className={`text-lg md:text-xl font-display font-semibold max-w-xl mx-auto leading-relaxed tracking-tight transition-colors ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
              {t('home.heroSubtitle')}
            </p>
 
@@ -97,11 +98,23 @@ export default function Home() {
                      : 'bg-gray-100 border-gray-200 focus:border-[#FFC928] focus:bg-white text-black'
                  }`}
                  value={searchTerm}
+                 onKeyDown={(e: any) => {
+                   if (e.key === 'Enter') {
+                     if (searchTerm.trim()) {
+                       navigate(`/busca?search=${encodeURIComponent(searchTerm.trim())}`);
+                     } else {
+                       navigate('/busca');
+                     }
+                   }
+                 }}
                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
               <VoiceSearch 
-                onTranscript={(text) => setSearchTerm(text)} 
+                onTranscript={(text) => {
+                  setSearchTerm(text);
+                  navigate(`/busca?search=${encodeURIComponent(text)}`);
+                }} 
                 isDark={isDark}
                 className="h-20 w-20 rounded-[2rem] flex-shrink-0"
               />
@@ -109,8 +122,22 @@ export default function Home() {
 
            {/* Types */}
            <div className="flex gap-4 overflow-x-auto py-8 no-scrollbar justify-center">
-              {restaurantTypes.map((type, i) => (
-                <button key={i} className="flex flex-col items-center gap-3 min-w-[90px] group">
+              {restaurantTypes.map((type, i) => {
+                 const handleTypeClick = () => {
+                   if (type.label === 'Pizza') {
+                     navigate('/busca?cuisine=Pizza');
+                   } else if (type.label === 'Burger') {
+                     navigate('/busca?cuisine=Hamburguer');
+                   } else if (type.label === 'Lanches') {
+                     navigate('/busca?search=Lanches');
+                   } else if (type.label === 'Bebidas') {
+                     navigate('/busca?cuisine=Bebidas');
+                   } else {
+                     navigate('/busca');
+                   }
+                 };
+                 return (
+                <button key={i} onClick={handleTypeClick} className="flex flex-col items-center gap-3 min-w-[90px] group">
                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 transform group-hover:-translate-y-1 border ${
                      isDark 
                        ? 'bg-white/5 text-gray-500 group-hover:bg-[#FFC928] group-hover:text-black border-white/5' 
@@ -120,7 +147,8 @@ export default function Home() {
                    </div>
                    <span className={`text-[10px] font-black uppercase tracking-widest transition-colors ${isDark ? 'text-gray-500 group-hover:text-white' : 'text-gray-500 group-hover:text-black'}`}>{type.label}</span>
                 </button>
-              ))}
+              );
+            })}
            </div>
         </div>
       </section>
@@ -129,9 +157,9 @@ export default function Home() {
       <section className="py-20 px-6 max-w-7xl mx-auto">
          <div className="flex items-center justify-between mb-12">
             <h2 className={`text-3xl font-display font-black italic tracking-tighter uppercase transition-colors ${isDark ? 'text-white' : 'text-black'}`}>{t('home.featuredRestaurants')}</h2>
-            <div className="flex items-center gap-2 text-[#FFC928] font-black text-xs uppercase tracking-widest cursor-pointer hover:opacity-80">
+            <Link to="/busca" className="flex items-center gap-2 text-[#FFC928] font-black text-xs uppercase tracking-widest hover:opacity-80">
               Ver todos <ArrowRight size={16} />
-            </div>
+            </Link>
          </div>         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {rankedRestaurants.slice(0, 6).map((res, i) => (
               <Link to={`/r/${res.slug}`} key={res.id} className="group">
@@ -215,7 +243,7 @@ export default function Home() {
                <h2 className="text-5xl lg:text-7xl font-display font-black text-black tracking-tighter leading-[0.8] uppercase italic">
                  Comer bem <br/><span className="text-white">faz o bem.</span>
                </h2>
-               <p className="text-black/60 text-lg font-bold leading-tight max-w-lg mx-auto lg:mx-0">
+               <p className="text-black/60 text-lg lg:text-xl font-display font-semibold leading-relaxed tracking-tight max-w-lg mx-auto lg:mx-0">
                  Ao pedir pelo Meu Ovo, você pode arredondar sua conta e ajudar a combater a fome em São Paulo. 100% transparente.
                </p>
                <button className="bg-black text-white font-black px-10 py-5 rounded-3xl text-sm uppercase tracking-widest hover:scale-105 transition-all active:scale-95 shadow-2xl">

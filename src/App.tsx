@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ScrollToTop from './components/ScrollToTop';
 import { CartProvider } from './context/CartContext';
 import { RestaurantProvider } from './context/RestaurantContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -16,11 +17,9 @@ import ForRestaurantsPage from './pages/ForRestaurantsPage';
 import OrderHistoryPage from './pages/OrderHistoryPage';
 import CustomerProfilePage from './pages/CustomerProfilePage';
 import BlogPage from './pages/BlogPage';
+import OvosDeOuroInfoPage from './pages/OvosDeOuroInfoPage';
 import AboutPage from './pages/AboutPage';
-import TermsPage from './pages/TermsPage';
-import PrivacyPage from './pages/PrivacyPage';
 
-import AdminAuth from './pages/admin/Auth';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminCashier from './pages/admin/AdminCashier';
@@ -43,6 +42,7 @@ import PlatformIntelligence from './pages/platform/PlatformIntelligence';
 import PlatformMarketReports from './pages/platform/PlatformMarketReports';
 import PlatformPartners from './pages/platform/PlatformPartners';
 import PlatformDonations from './pages/platform/PlatformDonations';
+import PlatformOvosDeOuro from './pages/platform/PlatformOvosDeOuro';
 
 export default function App() {
   return (
@@ -51,6 +51,7 @@ export default function App() {
         <RestaurantProvider>
           <CartProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 {/* Public */}
                 <Route path="/" element={<LandingPage />} />
@@ -61,16 +62,14 @@ export default function App() {
                 <Route path="/cadastro-restaurante" element={<RestaurantOnboarding />} />
                 <Route path="/impacto-social" element={<SocialImpactPage />} />
                 <Route path="/para-restaurantes" element={<ForRestaurantsPage />} />
+                <Route path="/ovos-de-ouro" element={<OvosDeOuroInfoPage />} />
                 <Route path="/meus-pedidos" element={<OrderHistoryPage />} />
                 <Route path="/perfil" element={<CustomerProfilePage />} />
                 <Route path="/blog" element={<BlogPage />} />
-                <Route path="/sobre" element={<AboutPage />} />
-                <Route path="/termos" element={<TermsPage />} />
-                <Route path="/privacidade" element={<PrivacyPage />} />
                 <Route path="/pedido/:id" element={<OrderStatusPage />} />
+                <Route path="/sobre" element={<AboutPage />} />
 
                 {/* Restaurant admin */}
-                <Route path="/admin/entrar" element={<AdminAuth />} />
                 <Route path="/admin" element={<AdminDashboard />} />
                 <Route path="/admin/caixa" element={<AdminCashier />} />
                 <Route path="/admin/pedidos" element={<AdminOrders />} />
@@ -92,6 +91,7 @@ export default function App() {
                 <Route path="/plataforma/relatorios" element={<PlatformMarketReports />} />
                 <Route path="/plataforma/parceiros" element={<PlatformPartners />} />
                 <Route path="/plataforma/doacoes" element={<PlatformDonations />} />
+                <Route path="/plataforma/ovos-de-ouro" element={<PlatformOvosDeOuro />} />
               </Routes>
               <Toaster position="top-right" />
               <OvosDeOuroVotePopup />

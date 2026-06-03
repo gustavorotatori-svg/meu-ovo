@@ -50,6 +50,10 @@ export default function CouponManagement() {
     expiryDate: '',
     usageLimit: '',
     isActive: true,
+    targetAudience: 'all' as Coupon['targetAudience'],
+    targetMinRating: '',
+    targetMaxRating: '',
+    targetMinOrders: '',
   });
 
   const [codeError, setCodeError] = useState<string | null>(null);
@@ -182,6 +186,10 @@ export default function CouponManagement() {
         expiryDate: coupon.expiryDate.split('T')[0],
         usageLimit: coupon.usageLimit?.toString() || '',
         isActive: coupon.isActive,
+        targetAudience: coupon.targetAudience || 'all',
+        targetMinRating: coupon.targetMinRating?.toString() || '',
+        targetMaxRating: coupon.targetMaxRating?.toString() || '',
+        targetMinOrders: coupon.targetMinOrders?.toString() || '',
       });
     } else {
       setEditingCoupon(null);
@@ -193,6 +201,10 @@ export default function CouponManagement() {
         expiryDate: '',
         usageLimit: '',
         isActive: true,
+        targetAudience: 'all',
+        targetMinRating: '',
+        targetMaxRating: '',
+        targetMinOrders: '',
       });
     }
     setIsCouponModalOpen(true);
@@ -212,7 +224,7 @@ export default function CouponManagement() {
       return;
     }
 
-    const couponData = {
+    const couponData: Record<string, any> = {
       restaurantId: restaurant.id,
       code: formData.code.toUpperCase().trim(),
       type: formData.type,
@@ -221,8 +233,17 @@ export default function CouponManagement() {
       expiryDate: new Date(formData.expiryDate).toISOString(),
       usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : null,
       isActive: formData.isActive,
+      targetAudience: formData.targetAudience,
       updatedAt: serverTimestamp(),
     };
+
+    if (formData.targetAudience === 'by_rating') {
+      couponData.targetMinRating = formData.targetMinRating ? parseFloat(formData.targetMinRating) : null;
+      couponData.targetMaxRating = formData.targetMaxRating ? parseFloat(formData.targetMaxRating) : null;
+    }
+    if (formData.targetAudience === 'returning' || formData.targetAudience === 'by_orders') {
+      couponData.targetMinOrders = formData.targetMinOrders ? parseInt(formData.targetMinOrders) : null;
+    }
 
     try {
       if (editingCoupon) {
@@ -768,6 +789,83 @@ export default function CouponManagement() {
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Público-Alvo */}
+              <div className="border-t border-slate-100 pt-6 mt-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block mb-3">
+                  <User size={12} className="inline mr-1" />Público-Alvo
+                </label>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {([
+                    { value: 'all', label: 'Todos os clientes' },
+                    { value: 'new', label: 'Novos clientes' },
+                    { value: 'returning', label: 'Clientes recorrentes' },
+                    { value: 'by_rating', label: 'Por rating' },
+                    { value: 'by_orders', label: 'Por nº de pedidos' },
+                  ] as const).map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, targetAudience: opt.value })}
+                      className={cn(
+                        "py-2.5 px-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all",
+                        formData.targetAudience === opt.value
+                          ? "bg-orange-50 border-orange-200 text-orange-700"
+                          : "bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200"
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {formData.targetAudience === 'by_rating' && (
+                  <div className="grid grid-cols-2 gap-3 bg-slate-50 rounded-2xl p-4">
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rating mínimo</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.5"
+                        placeholder="4.0"
+                        className="w-full px-3 h-10 bg-white border border-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                        value={formData.targetMinRating}
+                        onChange={(e) => setFormData({ ...formData, targetMinRating: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Rating máximo</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="5"
+                        step="0.5"
+                        placeholder="5.0"
+                        className="w-full px-3 h-10 bg-white border border-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                        value={formData.targetMaxRating}
+                        onChange={(e) => setFormData({ ...formData, targetMaxRating: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {(formData.targetAudience === 'returning' || formData.targetAudience === 'by_orders') && (
+                  <div className="bg-slate-50 rounded-2xl p-4">
+                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">
+                      {formData.targetAudience === 'returning' ? 'Mínimo de pedidos anteriores' : 'Mínimo de pedidos'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="3"
+                      className="w-full px-3 h-10 bg-white border border-slate-100 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+                      value={formData.targetMinOrders}
+                      onChange={(e) => setFormData({ ...formData, targetMinOrders: e.target.value })}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">

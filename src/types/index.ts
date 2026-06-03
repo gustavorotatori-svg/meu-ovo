@@ -3,7 +3,6 @@ export interface Restaurant {
   ownerId: string;
   name: string;
   slug: string;
-  pixKey: string;
   whatsapp: string;
   email: string;
   address: string;
@@ -25,6 +24,13 @@ export interface Restaurant {
   reviewCount: number;
   description: string;
   createdAt: string;
+  pixKey?: string;
+  historyText?: string;
+  foundedYear?: number;
+  familyRun?: boolean;
+  isIndependent?: boolean;
+  founderName?: string;
+  founderImage?: string;
   deliverySettings?: {
     fee: number;
     estimatedTime: string;
@@ -37,6 +43,29 @@ export interface Restaurant {
     thermalPrinterEnabled: boolean;
     whatsappNotificationsEnabled?: boolean;
     whatsappWebhookUrl?: string;
+    blockProblematicCustomers?: boolean;
+    minAcceptableRating?: number;
+  };
+  paymentSettings?: {
+    acceptCreditCard: boolean;
+    creditCardLink: string;
+  };
+  fiscalSettings?: {
+    nfeEnabled: boolean;
+    nfeCnpj: string;
+    nfeInscricaoEstadual: string;
+    nfeCertificateName: string;
+    nfePassword?: string;
+    nfeEnvironment: 'homologacao' | 'producao';
+    nfeCscId: string;
+    nfeCscToken: string;
+    satEnabled: boolean;
+    satSerialNumber: string;
+    regimeTributario?: 'simples' | 'regime_normal' | 'mei';
+    nfeSerie?: string;
+    nfeNumber?: string;
+    satActivationCode?: string;
+    satAssinaturaAC?: string;
   };
   loyaltySettings?: {
     enabled: boolean;
@@ -95,6 +124,8 @@ export interface Product {
   optionGroups?: any[];
   estimatedPrepTime?: number;
   notes?: string;
+  stock?: number;
+  minStockAlert?: number;
 }
 
 export interface CartItem {
@@ -112,14 +143,20 @@ export interface Order {
   customerPhone: string;
   type: 'dine-in' | 'delivery' | 'pickup';
   tableNumber?: string;
+  tableId?: string;
   deliveryAddress?: string;
   paymentMethod: 'pix' | 'cash' | 'card-on-delivery' | 'on-site';
   changeFor?: number;
-  status: 'received' | 'preparing' | 'ready' | 'out-for-delivery' | 'finished' | 'cancelled';
+  status: 'received' | 'accepted' | 'preparing' | 'ready' | 'out-for-delivery' | 'finished' | 'cancelled';
+  paymentStatus?: 'pending' | 'paid' | 'failed';
+  acceptedAt?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
   items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
   donationAmount: number;
+  donationMethod?: 'checkout' | 'post-payment';
   rewardDiscount?: number;
   couponCode?: string;
   couponDiscount?: number;
@@ -153,6 +190,9 @@ export interface Table {
   qrCodeUrl: string;
   active: boolean;
   currentOrderId?: string;
+  status?: 'free' | 'occupied';
+  capacity?: number;
+  lastCustomerCount?: number;
 }
 
 export interface CashierSession {
@@ -222,6 +262,10 @@ export interface Coupon {
   usageCount: number;
   isActive: boolean;
   createdAt: string;
+  targetAudience: 'all' | 'new' | 'returning' | 'by_rating' | 'by_orders';
+  targetMinRating?: number;
+  targetMaxRating?: number;
+  targetMinOrders?: number;
 }
 
 export interface LoyaltyProfile {
@@ -237,4 +281,16 @@ export interface LoyaltyProfile {
     orderId?: string;
     createdAt: string;
   }[];
+}
+
+export interface CustomerRating {
+  id: string;
+  restaurantId: string;
+  orderId?: string;
+  customerPhone: string;
+  customerName: string;
+  rating: number; // 0 to 5
+  comment?: string;
+  tags?: string[];
+  createdAt: string;
 }

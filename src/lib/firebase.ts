@@ -1,21 +1,13 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { initializeFirestore, doc, getDocFromServer } from 'firebase/firestore';
-
-const firebaseConfig = {
-  projectId: "gen-lang-client-0267663159",
-  appId: "1:852515019719:web:9f85b4fbfa0a678e1b57e2",
-  apiKey: "AIzaSyB7WR68mAOWvF0qXC2hwwQ1FZUgRj8k79E",
-  authDomain: "gen-lang-client-0267663159.firebaseapp.com",
-  storageBucket: "gen-lang-client-0267663159.firebasestorage.app",
-  messagingSenderId: "852515019719",
-  measurementId: ""
-};
+import { toast } from 'react-hot-toast';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
-}, firebaseConfig.projectId);
+}, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
 export enum OperationType {
@@ -62,7 +54,7 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     path
   }
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  toast.error('Erro ao acessar dados. Tente novamente.');
 }
 
 async function testConnection() {

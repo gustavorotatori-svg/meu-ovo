@@ -39,7 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     if (!loading && !user) {
-      navigate('/admin/entrar');
+      navigate('/busca'); // Or a login page if available
     }
     // Also check if they are the owner of currentRestaurant if possible
     if (!loading && user && currentRestaurant && currentRestaurant.ownerId && currentRestaurant.ownerId !== user.id) {

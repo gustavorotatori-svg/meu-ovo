@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart } from 'lucide-react';
+import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -11,14 +11,40 @@ import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
 import { Link } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { getCustomerStats } from '../services/customerRatingService';
 
 export default function CustomerProfilePage() {
   const { t } = useTranslation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, signIn, signUp } = useAuth();
   const { favorites, toggleFavorite, restaurants } = useRestaurant();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [customerStats, setCustomerStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'orders' | 'favorites'>('orders');
+
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+    const phone = orders.find(o => o.customerPhone)?.customerPhone;
+    if (!phone) return;
+
+    async function loadStats() {
+      try {
+        const res = await getCustomerStats(phone);
+        setCustomerStats(res);
+      } catch (err) {
+        console.error("Error loading customer stats:", err);
+      }
+    }
+    loadStats();
+  }, [orders]);
+
+  // Form states for login / signup
+  const [isLogin, setIsLogin] = useState(true);
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authName, setAuthName] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
   const favoriteRestaurants = restaurants.filter(r => favorites.includes(r.id));
 
@@ -45,21 +71,121 @@ export default function CustomerProfilePage() {
     fetchOrders();
   }, [user]);
 
+  const handleAuthSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authEmail || !authPassword || (!isLogin && !authName)) {
+      toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+
+    setAuthLoading(true);
+    try {
+      if (isLogin) {
+        await signIn(authEmail, authPassword);
+        toast.success('Bem-vindo de volta!');
+      } else {
+        await signUp(authEmail, authPassword, authName, 'customer');
+        toast.success('Conta de cliente criada com sucesso!');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Ocorreu um erro ao processar a autenticação.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
-        <div className="text-center space-y-6">
-           <div className="w-20 h-20 bg-[#FFC928]/10 rounded-full flex items-center justify-center mx-auto">
-             <User size={40} className="text-[#FFC928]" />
-           </div>
-           <h1 className="font-display font-black text-3xl uppercase tracking-tighter italic">Faça login para continuar</h1>
-           <button 
-             onClick={() => {/* Trigger auth modal or redirect */}}
-             className="bg-[#FFC928] text-black font-black px-8 py-4 rounded-2xl uppercase tracking-widest text-xs"
-           >
-             Entrar ou Criar conta
-           </button>
+      <div className="min-h-screen flex flex-col justify-between bg-[#f8fafc]">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-6 py-20">
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden relative p-8 md:p-10">
+            <div className="text-center space-y-4 mb-8">
+              <div className="w-16 h-16 bg-[#FFC928]/10 rounded-2xl flex items-center justify-center mx-auto transition-transform hover:scale-110 duration-300">
+                <User size={32} className="text-[#FFC928]" />
+              </div>
+              <h1 className="font-display font-black text-3xl uppercase tracking-tighter italic leading-none">
+                {isLogin ? 'Fazer Login' : 'Criar Conta'}
+              </h1>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+                {isLogin ? 'Entre na sua conta para acompanhar seus pedidos' : 'Cadastre-se para favoritar restaurantes e salvar endereços'}
+              </p>
+            </div>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {!isLogin && (
+                <div className="space-y-1.5">
+                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Nome Completo</label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                    <input
+                      type="text"
+                      required
+                      value={authName}
+                      onChange={(e) => setAuthName(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                      placeholder="Ex: João da Silva"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">E-mail</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <input
+                    type="email"
+                    required
+                    value={authEmail}
+                    onChange={(e) => setAuthEmail(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                    placeholder="voce@exemplo.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Senha</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <input
+                    type="password"
+                    required
+                    value={authPassword}
+                    onChange={(e) => setAuthPassword(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-[#FFC928] text-black font-black py-4 rounded-2xl uppercase tracking-widest text-xs hover:bg-[#e6b520] hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-xl shadow-[#FFC928]/10"
+              >
+                {authLoading ? 'Processando...' : isLogin ? 'Entrar' : 'Cadastrar'}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center">
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setAuthEmail('');
+                  setAuthPassword('');
+                  setAuthName('');
+                }}
+                className="text-xs font-black text-slate-400 hover:text-black uppercase tracking-wider transition-colors"
+              >
+                {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça Login'}
+              </button>
+            </div>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -80,6 +206,68 @@ export default function CustomerProfilePage() {
                 </div>
                 <h2 className="font-display font-black text-3xl uppercase tracking-tighter italic leading-none">{user.displayName || 'Gourmet Explorer'}</h2>
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest mt-2">{user.email}</p>
+                
+                {/* Trust Score block */}
+                {customerStats ? (
+                  <div className="mt-5 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 text-left w-full">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield size={16} className={customerStats.isProblematic ? "text-red-500" : "text-[#FFC928]"} />
+                      <span className="text-[10px] font-black uppercase text-slate-700 tracking-wider">Seu Índice de Confiança</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-2xl font-black italic tracking-tighter ${customerStats.isProblematic ? 'text-red-500' : 'text-slate-800'}`}>
+                        ★ {customerStats.averageRating.toFixed(1)}
+                      </span>
+                      <div>
+                        <p className={`text-[9px] font-black uppercase tracking-wider ${customerStats.isProblematic ? 'text-red-500' : 'text-[#FFC928]'}`}>
+                          {customerStats.statusText === 'Sem avaliações' ? 'Excelente' : customerStats.statusText}
+                        </p>
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">Baseado em {customerStats.totalRatings} avaliações</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-5 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 text-left w-full">
+                    <div className="flex items-center gap-1.5 text-emerald-600 mb-1">
+                      <Shield size={14} className="text-emerald-500" />
+                      <span className="text-[9px] font-black uppercase tracking-wider">Índice de Confiança: Perfeito</span>
+                    </div>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase leading-normal">Seu score é excelente! Você é considerado um cliente confiável e de baixo risco na plataforma.</p>
+                  </div>
+                )}
+
+                {/* Supporter Badge Section */}
+                <div className="mt-5 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left w-full text-white select-none relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full bg-[#FFC928]/20 -z-0" />
+                  <div className="flex items-center gap-1.5 text-[#FFC928] mb-2 relative z-10 w-full">
+                    <Star size={14} fill="currentColor" />
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#FFC928]">Medalha de Apoiador</span>
+                  </div>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <span className="text-3xl">
+                      {orders.length === 0 ? "🌱" : orders.length <= 3 ? "🥉" : orders.length <= 7 ? "🥈" : "🥇"}
+                    </span>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wider text-white">
+                        {orders.length === 0 ? "Amigo do Bairro" : orders.length <= 3 ? "Apoiador Bronze" : orders.length <= 7 ? "Apoiador Prata" : "Parceiro de Ouro 👑"}
+                      </p>
+                      <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Soberania Comunitária</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 border-t border-white/5 mt-4 pt-3 text-center relative z-10 w-full">
+                    <div>
+                      <p className="text-lg font-display font-black text-[#FFC928] mt-0.5 leading-none">{orders.length}</p>
+                      <p className="text-[7px] font-black uppercase tracking-widest text-gray-400 mt-1 leading-none">Refeições Diretas</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-display font-black text-[#FFC928] mt-0.5 leading-none">
+                        R$ {orders.reduce((acc, o) => acc + (o.donationAmount || 0), 0).toFixed(2)}
+                      </p>
+                      <p className="text-[7px] font-black uppercase tracking-widest text-gray-400 mt-1 leading-none">Apoio em Doações</p>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="grid grid-cols-2 gap-4 w-full mt-8">
                   <button 
@@ -180,12 +368,12 @@ export default function CustomerProfilePage() {
                               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pedido #{order.id.slice(-6)}</span>
                               <div className={cn(
                                 "px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest",
-                                order.status === 'delivered' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'
+                                order.status === 'finished' ? 'bg-emerald-100 text-emerald-600' : order.status === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'
                               )}>
-                                {order.status}
+                                {order.status === 'received' ? 'Recebido' : order.status === 'accepted' ? 'Aguardando Pagamento' : order.status === 'preparing' ? 'Preparando' : order.status === 'ready' ? 'Pronto' : order.status === 'out-for-delivery' ? 'Saiu para entrega' : order.status === 'finished' ? 'Entregue' : order.status === 'cancelled' ? 'Cancelado' : order.status}
                               </div>
                             </div>
-                            <h4 className="text-lg font-black text-[#111] uppercase tracking-tight mb-2">Restaurante XYZ</h4>
+                            <h4 className="text-lg font-black text-[#111] uppercase tracking-tight mb-2">{restaurants.find(r => r.id === order.restaurantId)?.name || 'Restaurante'}</h4>
                             <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                               <span className="flex items-center gap-1"><Clock size={12} /> {new Date(order.createdAt).toLocaleDateString()}</span>
                               <span>{order.items.length} Itens</span>

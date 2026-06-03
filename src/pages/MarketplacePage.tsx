@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, MapPin, SlidersHorizontal, Star, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart } from 'lucide-react';
 import Navbar from '../components/Navbar';
@@ -18,7 +18,8 @@ const priceLabels = { low: 'R$', medium: 'R$ R$', high: 'R$ R$ R$' };
 
 export default function MarketplacePage() {
   const { restaurants, orders, products } = useRestaurant();
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || searchParams.get('q') || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedCity, setSelectedCity] = useState('São Paulo');
   const [isLoading, setIsLoading] = useState(true);
@@ -87,12 +88,34 @@ export default function MarketplacePage() {
     setSearch(suggestion);
     setShowSuggestions(false);
   };
-  const [selectedCuisine, setSelectedCuisine] = useState<string | null>(null);
+  const [selectedCuisine, setSelectedCuisine] = useState<string | null>(searchParams.get('cuisine'));
+
+  useEffect(() => {
+    const term = searchParams.get('search') || searchParams.get('q');
+    if (term !== null) {
+      setSearch(term);
+    }
+    const cuis = searchParams.get('cuisine');
+    if (cuis !== null) {
+      setSelectedCuisine(cuis);
+    }
+  }, [searchParams]);
+
   const [showFilters, setShowFilters] = useState(false);
   const [filterOpenNow, setFilterOpenNow] = useState(false);
   const [filterDelivery, setFilterDelivery] = useState(false);
   const [filterPickup, setFilterPickup] = useState(false);
   const [filterPriceRange, setFilterPriceRange] = useState<string | null>(null);
+  const [filterIndependent, setFilterIndependent] = useState(false);
+  const [filterFamilyRun, setFilterFamilyRun] = useState(false);
+  const [filterNeighbourhood, setFilterNeighbourhood] = useState<string | null>(null);
+
+  const neighborhoods = useMemo(() => {
+    const list = restaurants
+      .filter(r => !selectedCity || r.city === selectedCity)
+      .map(r => r.neighborhood);
+    return Array.from(new Set(list));
+  }, [restaurants, selectedCity]);
   const [shareData, setShareData] = useState<{ isOpen: boolean; url: string; title: string }>({
     isOpen: false,
     url: '',
@@ -143,9 +166,12 @@ export default function MarketplacePage() {
       if (filterDelivery && !r.deliveryEnabled) return false;
       if (filterPickup && !r.pickupEnabled) return false;
       if (filterPriceRange && r.priceRange !== filterPriceRange) return false;
+      if (filterIndependent && !r.isIndependent) return false;
+      if (filterFamilyRun && !r.familyRun) return false;
+      if (filterNeighbourhood && r.neighborhood !== filterNeighbourhood) return false;
       return true;
     });
-  }, [search, selectedCity, selectedCuisine, filterOpenNow, filterDelivery, filterPickup, filterPriceRange, rankedRestaurants, products]);
+  }, [search, selectedCity, selectedCuisine, filterOpenNow, filterDelivery, filterPickup, filterPriceRange, filterIndependent, filterFamilyRun, filterNeighbourhood, rankedRestaurants, products]);
 
   const clearFilters = () => {
     setSelectedCuisine(null);
@@ -153,10 +179,14 @@ export default function MarketplacePage() {
     setFilterDelivery(false);
     setFilterPickup(false);
     setFilterPriceRange(null);
+    setFilterIndependent(false);
+    setFilterFamilyRun(false);
+    setFilterNeighbourhood(null);
     setSearch('');
+    setSearchParams({});
   };
 
-  const hasFilters = selectedCuisine || filterOpenNow || filterDelivery || filterPickup || filterPriceRange || search;
+  const hasFilters = selectedCuisine || filterOpenNow || filterDelivery || filterPickup || filterPriceRange || filterIndependent || filterFamilyRun || filterNeighbourhood || search;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -321,6 +351,92 @@ export default function MarketplacePage() {
           )}
         </div>
 
+        {/* Advanced Filters Panel */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden mb-6"
+            >
+              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Filtrar por Bairro</h4>
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
+                    <button
+                      onClick={() => setFilterNeighbourhood(null)}
+                      className={`text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                        !filterNeighbourhood
+                          ? 'bg-[#111] text-white border-[#111]'
+                          : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
+                      }`}
+                    >
+                      Todos os Bairros
+                    </button>
+                    {neighborhoods.map(n => (
+                      <button
+                        key={n}
+                        onClick={() => setFilterNeighbourhood(filterNeighbourhood === n ? null : n)}
+                        className={`text-xs font-bold px-3 py-2 rounded-xl transition-colors border ${
+                          filterNeighbourhood === n
+                            ? 'bg-[#111] text-white border-[#111]'
+                            : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
+                        }`}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Estrutura e Gestão</h4>
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={() => setFilterIndependent(!filterIndependent)}
+                      className={`w-full text-left font-bold text-xs p-3 rounded-2xl flex items-center justify-between border transition-all ${
+                        filterIndependent
+                          ? 'bg-[#FFC928]/10 text-slate-800 border-[#FFC928]'
+                          : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
+                      }`}
+                    >
+                      <span>👤 Restaurante Independente</span>
+                      <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${filterIndependent ? 'bg-black text-[#FFC928] border-black' : 'border-gray-300'}`}>
+                        {filterIndependent && '✓'}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => setFilterFamilyRun(!filterFamilyRun)}
+                      className={`w-full text-left font-bold text-xs p-3 rounded-2xl flex items-center justify-between border transition-all ${
+                        filterFamilyRun
+                          ? 'bg-[#FFC928]/10 text-slate-800 border-[#FFC928]'
+                          : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
+                      }`}
+                    >
+                      <span>❤️ Familiar / Comercial Local</span>
+                      <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${filterFamilyRun ? 'bg-black text-[#FFC928] border-black' : 'border-gray-300'}`}>
+                        {filterFamilyRun && '✓'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Filosofia Meu Ovo</h4>
+                  <div className="bg-[#FF7A00]/5 border border-[#FF7A00]/10 p-4 rounded-2xl">
+                    <p className="text-[10px] font-bold text-[#FF7A00] leading-normal mb-1">🍳 100% Pedidos Diretos</p>
+                    <p className="text-[9px] font-semibold text-slate-500 leading-normal">
+                      Ao pedir pelo Meu Ovo, você compra diretamente do restaurante independente, sem intermediários corporativos e taxas abusivas de 30% dos marketplaces convencionais.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Results header */}
         <div className="flex items-center justify-between mb-8">
           <h2 className="font-display font-black text-[#111] text-2xl tracking-tight">
@@ -388,18 +504,61 @@ export default function MarketplacePage() {
           </div>
         )}
 
-        <div className="mt-16 mb-20">
-          <h2 className="font-display font-black text-[#111] text-3xl mb-8 tracking-tight">Mais pedidos da semana</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {isLoading ? (
-              [...Array(3)].map((_, i) => (
-                <RestaurantCardSkeleton key={`featured-${i}`} />
-              ))
-            ) : (
-              restaurants.slice(0, 3).map(r => (
-                <RestaurantCard key={r.id} restaurant={r} featured onShare={(e) => handleShare(e, r)} />
-              ))
-            )}
+        {/* Curated shelves for Local Discovery */}
+        <div className="mt-16 space-y-16 mb-20 border-t border-gray-100 pt-12">
+          {/* Section 1: Restaurantes Familiares do Bairro */}
+          <div>
+            <div className="flex flex-col gap-1 mb-8">
+              <span className="text-xs font-black uppercase text-[#FF7A00] tracking-widest">Liderados por Famílias ❤️</span>
+              <h2 className="font-display font-black text-[#111] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Restaurantes Familiares do Bairro</h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">A comida com tempero, afeto e receitas de gerações</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {isLoading ? (
+                [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`family-skeleton-${i}`} />)
+              ) : (
+                restaurants.filter(r => r.familyRun).map(r => (
+                  <RestaurantCard key={`family-${r.id}`} restaurant={r} onShare={(e) => handleShare(e, r)} />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Section 2: Proprietários Independentes */}
+          <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 blur-[100px] rounded-full bg-[#FFC928]/5 -z-10" />
+            <div className="flex flex-col gap-1 mb-8">
+              <span className="text-xs font-black uppercase text-[#FFC928] tracking-widest">Soberania Local 👤</span>
+              <h2 className="font-display font-black text-[#FFC928] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Apoie Empreendedores Independentes</h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Onde o valor do seu pedido apoia pessoas e não conglomerados corporativos</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {isLoading ? (
+                [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`independent-skeleton-${i}`} />)
+              ) : (
+                restaurants.filter(r => r.isIndependent).map(r => (
+                  <RestaurantCard key={`independent-${r.id}`} restaurant={r} onShare={(e) => handleShare(e, r)} />
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Section 3: Mais Pedidos Próximos de Você */}
+          <div>
+            <div className="flex flex-col gap-1 mb-8">
+              <span className="text-xs font-black uppercase text-amber-600 tracking-widest">Os favoritos do Bairro 🔥</span>
+              <h2 className="font-display font-black text-[#111] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Mais Pedidos Perto de Você</h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Os estabelecimentos mais requisitados da nossa comunidade local</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {isLoading ? (
+                [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`featured-skeleton-${i}`} />)
+              ) : (
+                restaurants.slice(0, 3).map(r => (
+                  <RestaurantCard key={`featured-${r.id}`} restaurant={r} featured onShare={(e) => handleShare(e, r)} />
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -425,35 +584,43 @@ const RestaurantCard: React.FC<{
   const isFav = favorites.includes(r.id);
 
   return (
-    <Link to={`/r/${r.slug}`} className="group">
-      <div className={`bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group-hover:-translate-y-1 ${featured ? 'border-2 border-[#FFC928]' : ''}`}>
-        <div className="relative h-44 overflow-hidden">
+    <Link to={`/r/${r.slug}`} className="group block">
+      <div className={`bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 group-hover:-translate-y-2 ${featured ? 'ring-2 ring-[#FFC928] ring-offset-2' : 'border border-gray-100'}`}>
+        {/* Cover Image */}
+        <div className="relative h-48 overflow-hidden">
           <OptimizedImage
             src={r.coverImage}
             alt={r.name}
             width={400}
-            height={176}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            height={192}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
-          <div className="absolute top-3 left-3 flex gap-2">
-            <span className="bg-[#FFC928] text-[#111] text-xs font-bold px-2 py-1 rounded-full">
-              Sem comissão
+          {/* Top Badges */}
+          <div className="absolute top-3 left-3 flex gap-1.5 z-10">
+            <span className="bg-[#FFC928] text-[#111] text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
+              🍳 Direto
             </span>
             {r.isOpen ? (
-              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">Aberto</span>
+              <span className="bg-green-500/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                Aberto
+              </span>
             ) : (
-              <span className="bg-gray-500 text-white text-xs font-bold px-2 py-1 rounded-full">Fechado</span>
+              <span className="bg-gray-500/80 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
+                Fechado
+              </span>
             )}
           </div>
 
-          <div className="absolute top-3 right-3 flex flex-col gap-2 scale-100 group-hover:scale-110 transition-transform">
+          {/* Top Right Actions */}
+          <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
             <button 
               onClick={onShare}
-              className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg"
+              className="p-2.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg hover:scale-110"
             >
-              <Share2 size={16} />
+              <Share2 size={14} />
             </button>
             <button 
               onClick={(e) => {
@@ -461,64 +628,110 @@ const RestaurantCard: React.FC<{
                 e.stopPropagation();
                 toggleFavorite(r.id);
               }}
-              className={`p-2 backdrop-blur-md rounded-full transition-all shadow-lg hover:scale-110 ${
+              className={`p-2.5 backdrop-blur-md rounded-full transition-all shadow-lg hover:scale-110 ${
                 isFav 
                   ? 'bg-red-500/90 text-white hover:bg-red-600' 
-                  : 'bg-black/20 text-white hover:bg-red-500 hover:text-white'
+                  : 'bg-white/20 text-white hover:bg-red-500 hover:text-white'
               }`}
               title={isFav ? "Remover dos favoritos" : "Favoritar"}
             >
-              <Heart size={16} className={isFav ? "fill-white" : ""} />
+              <Heart size={14} className={isFav ? "fill-white" : ""} />
             </button>
-            {featured && (
-              <span className="bg-[#FF7A00] text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-tighter text-center">
-                Em alta
-              </span>
-            )}
           </div>
 
-          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-            <div>
-              <h3 className="font-black text-white text-lg leading-tight">{r.name}</h3>
-              <p className="text-gray-300 text-xs">{r.cuisineType} • {r.neighborhood}</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-full p-2">
-              <OptimizedImage
-                src={r.logo}
-                alt={r.name}
-                width={32}
-                height={32}
-                className="w-8 h-8 rounded-full object-cover"
-              />
+          {/* Bottom Info Overlay */}
+          <div className="absolute bottom-3 left-3 right-3 z-10">
+            <div className="flex items-end justify-between">
+              <div>
+                <h3 className="font-black text-white text-xl leading-tight drop-shadow-lg">{r.name}</h3>
+                <p className="text-gray-200 text-xs font-semibold drop-shadow">{r.cuisineType} • {r.neighborhood}</p>
+              </div>
+              <div className="bg-white/20 backdrop-blur-md rounded-full p-1.5 shadow-lg ring-2 ring-white/30">
+                <OptimizedImage
+                  src={r.logo}
+                  alt={r.name}
+                  width={36}
+                  height={36}
+                  className="w-9 h-9 rounded-full object-cover"
+                />
+              </div>
             </div>
           </div>
+
+          {featured && (
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
+              <span className="bg-gradient-to-r from-[#FF7A00] to-[#FFC928] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase shadow-lg tracking-wider animate-pulse">
+                🔥 Em alta esta semana
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1">
-              <Star size={14} className="text-[#FFC928] fill-[#FFC928]" />
-              <span className="font-bold text-sm text-[#111]">{r.rating}</span>
-              <span className="text-gray-400 text-xs">({r.reviewCount})</span>
+        <div className="p-5">
+          {/* Rating + Time Row */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-0.5">
+                <Star size={14} className="text-[#FFC928] fill-[#FFC928]" />
+                <span className="font-bold text-sm text-[#111]">{r.rating}</span>
+              </div>
+              <span className="text-gray-200">|</span>
+              <span className="text-gray-400 text-xs font-medium">{r.reviewCount} avaliações</span>
             </div>
-            <div className="flex items-center gap-1 text-gray-500 text-xs">
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs bg-gray-50 px-2.5 py-1 rounded-full">
               <Clock size={12} />
-              {r.estimatedTime} min
+              <span className="font-semibold">{r.estimatedTime} min</span>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <Truck size={12} />
+          {/* Strategic Humanizer Stamps */}
+          <div className="flex flex-wrap gap-1.5 mb-4 py-2.5 border-y border-gray-100">
+            {r.foundedYear && (
+              <span className="text-[9px] font-extrabold uppercase tracking-tight bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-lg">
+                ⏳ {2026 - r.foundedYear} anos no bairro
+              </span>
+            )}
+            {r.isIndependent && (
+              <span className="text-[9px] font-extrabold uppercase tracking-tight bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-lg">
+                👤 Independente
+              </span>
+            )}
+            {r.familyRun && (
+              <span className="text-[9px] font-extrabold uppercase tracking-tight bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-lg">
+                ❤️ Familiar
+              </span>
+            )}
+            <span className="text-[9px] font-extrabold uppercase tracking-tight bg-[#FFC928]/10 text-[#B8860B] border border-[#FFC928]/30 px-2 py-0.5 rounded-lg">
+              🍳 Pedido Direto
+            </span>
+          </div>
+
+          {/* Delivery + Price Row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs">
+              <div className="p-1 bg-gray-50 rounded-md">
+                <Truck size={12} className="text-gray-500" />
+              </div>
               {r.deliveryEnabled ? (
-                r.deliveryFee === 0 ? <span className="text-green-600 font-bold">Entrega grátis</span> : `Entrega R$ ${r.deliveryFee.toFixed(2)}`
-              ) : 'Sem delivery'}
+                r.deliveryFee === 0 ? (
+                  <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded-md text-[11px]">Grátis</span>
+                ) : (
+                  <span className="text-gray-500">R$ {r.deliveryFee.toFixed(2)}</span>
+                )
+              ) : (
+                <span className="text-gray-400">Sem delivery</span>
+              )}
             </div>
-            <span className="font-bold text-[#111]">{priceLabels[r.priceRange]}</span>
+            <span className="font-extrabold text-sm bg-gradient-to-r from-[#FF7A00] to-[#FFC928] bg-clip-text text-transparent">
+              {priceLabels[r.priceRange]}
+            </span>
           </div>
 
           {r.minimumOrder > 0 && (
-            <p className="text-xs text-gray-400 mt-2">Pedido mínimo: R$ {r.minimumOrder.toFixed(2)}</p>
+            <p className="text-[11px] text-gray-400 mt-3 flex items-center gap-1.5">
+              <span className="inline-block w-1 h-1 rounded-full bg-gray-300" />
+              Pedido mínimo: R$ {r.minimumOrder.toFixed(2)}
+            </p>
           )}
         </div>
 

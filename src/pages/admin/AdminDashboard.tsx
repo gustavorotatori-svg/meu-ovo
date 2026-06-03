@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Truck, ChefHat, Eye, Clock, Sparkles, Ticket, Gift, MessageCircle, Bike, Package, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Truck, ChefHat, Eye, Clock, Sparkles, Ticket, Gift, MessageCircle, Bike, Package, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { db } from '../../lib/firebase';
@@ -62,7 +62,103 @@ export default function AdminDashboard() {
     return Object.entries(types).map(([name, value]) => ({ name, value }));
   }, [orders]);
 
+  const orderStatusData = React.useMemo(() => {
+    const statusCount: Record<string, number> = { 'Recebidos': 0, 'Em Preparo': 0, 'Finalizados': 0 };
+    orders.forEach(o => {
+      if (['received', 'pending'].includes(o.status)) {
+        statusCount['Recebidos']++;
+      } else if (['preparing', 'ready', 'out-for-delivery', 'out_for_delivery'].includes(o.status)) {
+        statusCount['Em Preparo']++;
+      } else if (['finished', 'completed'].includes(o.status)) {
+        statusCount['Finalizados']++;
+      }
+    });
+    return Object.entries(statusCount).map(([name, value]) => ({ name, value }));
+  }, [orders]);
+
+  const stockAlerts = React.useMemo(() => {
+    const salesMap: Record<string, number> = {};
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    orders.forEach(order => {
+      const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
+      if (orderDate >= sevenDaysAgo) {
+        order.items.forEach(item => {
+          salesMap[item.productId] = (salesMap[item.productId] || 0) + item.quantity;
+        });
+      }
+    });
+
+    const alerts: {
+      product: Product;
+      stock: number;
+      minAlert: number;
+      recentSales: number;
+      severity: 'critical' | 'warning';
+      message: string;
+    }[] = [];
+
+    products.forEach(product => {
+      const recentSales = salesMap[product.id] || 0;
+      const stock = product.stock;
+      const minAlert = product.minStockAlert !== undefined ? product.minStockAlert : 5;
+
+      if (product.isActive && product.isAvailable) {
+        if (stock !== undefined) {
+          const isBelowThreshold = stock <= minAlert;
+          const isHighVelocityRisk = stock <= recentSales && recentSales > 0;
+
+          if (stock === 0) {
+            alerts.push({
+              product,
+              stock,
+              minAlert,
+              recentSales,
+              severity: 'critical',
+              message: `Produto esgotado! Teve ${recentSales} vendas nos últimos 7 dias. Previsão de perda financeira se não reabastecido.`,
+            });
+          } else if (isBelowThreshold) {
+            alerts.push({
+              product,
+              stock,
+              minAlert,
+              recentSales,
+              severity: 'critical',
+              message: `Estoque crítico (${stock} un.). Limite de alerta é ${minAlert}. Teve ${recentSales} vendas nos últimos 7 dias.`,
+            });
+          } else if (isHighVelocityRisk) {
+            alerts.push({
+              product,
+              stock,
+              minAlert,
+              recentSales,
+              severity: 'warning',
+              message: `Risco de ruptura! Estoque atual (${stock} un.) está abaixo do volume de vendas recente (${recentSales} vendas na semana).`,
+            });
+          }
+        } else if (recentSales >= 10) {
+          alerts.push({
+            product,
+            stock: 999,
+            minAlert: 0,
+            recentSales,
+            severity: 'warning',
+            message: `Alta procura (${recentSales} vendas)! Não há controle de estoque configurado para este item. Recomendamos ativar o limite.`,
+          });
+        }
+      }
+    });
+
+    return alerts.sort((a, b) => {
+      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
+      if (a.severity !== 'critical' && b.severity === 'critical') return 1;
+      return b.recentSales - a.recentSales;
+    });
+  }, [orders, products]);
+
   const COLORS = ['#FFC928', '#111111', '#FF7A00'];
+  const STATUS_COLORS = ['#3B82F6', '#F59E0B', '#10B981']; // azul, amarelo-laranja, verde
 
   useEffect(() => {
     if (!currentRestaurant) return;
@@ -146,6 +242,132 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Alertas de Estoque baseados em Vendas */}
+      {stockAlerts.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[2rem] p-6 border-2 border-orange-100 shadow-md mb-8"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="p-1.5 bg-orange-100 rounded-lg text-orange-600 shadow-sm animate-pulse font-sans">
+              <AlertTriangle size={16} />
+            </div>
+            <div>
+              <h3 className="font-black text-[#111] text-xs uppercase tracking-widest leading-none">Alertas de Estoque</h3>
+              <p className="text-gray-400 text-[10px] font-bold mt-1">Produtos com nível crítico de disponibilidade baseado nas vendas recentes</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2">
+            {stockAlerts.map(({ product, stock, minAlert, recentSales, severity, message }, idx) => (
+              <div 
+                key={product.id}
+                className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
+                  severity === 'critical' 
+                    ? 'bg-red-50/50 border-red-100/80 hover:bg-red-50' 
+                    : 'bg-yellow-50/50 border-yellow-105/80 hover:bg-yellow-50'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <span className="font-black text-xs text-[#111] uppercase tracking-wide truncate">{product.name}</span>
+                    <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
+                      severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-101 text-yellow-800 bg-yellow-100'
+                    }`}>
+                      {severity === 'critical' ? 'Estoque Crítico' : 'Alerta de Procura'}
+                    </span>
+                  </div>
+                  <p className="text-slate-600 text-xs font-semibold leading-relaxed mb-3">{message}</p>
+                </div>
+                <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 mt-2 gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="text-[10px] text-slate-400 font-bold">
+                      Estoque: <span className="font-mono text-slate-700 font-black">{stock === 999 ? 'N/A' : stock}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-bold">
+                      Vendas (7d): <span className="font-mono text-slate-700 font-black">{recentSales}</span>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => navigate('/admin/cardapio?add_product=true')}
+                    className={`text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all ${
+                      severity === 'critical'
+                        ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-600/10'
+                        : 'bg-yellow-500 text-neutral-900 hover:bg-yellow-600 shadow-sm shadow-yellow-500/10'
+                    }`}
+                  >
+                    Reabastecer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Vitórias do Movimento Meu Ovo */}
+      {(() => {
+        const completedOrders = orders.filter(o => o.status !== 'cancelled');
+        const totalRevenueAllTime = completedOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+        const totalCommissionsSaved = totalRevenueAllTime * 0.25;
+
+        const phoneCounts: Record<string, number> = {};
+        completedOrders.forEach(o => {
+          const cleanPhone = o.phone ? o.phone.replace(/\D/g, '') : null;
+          if (cleanPhone) {
+            phoneCounts[cleanPhone] = (phoneCounts[cleanPhone] || 0) + 1;
+          }
+        });
+        const totalSupportersCount = Object.keys(phoneCounts).length;
+        const recurringCustomersCount = Object.values(phoneCounts).filter(count => count > 1).length;
+        const recurrenceRate = totalSupportersCount > 0 ? (recurringCustomersCount / totalSupportersCount) * 100 : 0;
+
+        return (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-emerald-500/5 p-6 rounded-[2.5rem] border border-emerald-500/10 mb-8 select-none"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <div>
+                <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest leading-none">Vitórias do Movimento Meu Ovo</span>
+                <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 mt-1 flex items-center gap-2">🛡️ Resgate de Soberania Financeira</h3>
+              </div>
+              <div className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider self-start sm:self-center">
+                Comissão 0%
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1">Comissões Poupadas</span>
+                <p className="font-display font-black italic text-3xl text-emerald-600 leading-none">R$ {totalCommissionsSaved.toFixed(2)}</p>
+                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
+                  Dinheiro vivo economizado que ficaria retido nos intermediários corporativos de grandes apps.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1">Clientes Apoiadores</span>
+                <p className="font-display font-black italic text-3xl text-slate-800 leading-none">{totalSupportersCount}</p>
+                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
+                  Moradores locais em sua lista direta de contatos. Sem taxas nem filtros de visibilidade.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1 font-sans">Recorrência do Bairro</span>
+                <p className="font-display font-black italic text-3xl text-slate-800 bg-[#FFC928]/10 px-2.5 py-0.5 rounded-xl inline-block leading-none">{recurrenceRate.toFixed(0)}%</p>
+                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
+                  {recurringCustomersCount} clientes pediram mais de uma vez direto da sua chapa nesta semana!
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        );
+      })()}
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
@@ -200,7 +422,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -302,6 +524,58 @@ export default function AdminDashboard() {
                   <span className="text-sm font-bold text-gray-500">{type.value} pedidos</span>
                 </div>
               ))}
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50 flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="font-black text-[#111] text-lg leading-tight uppercase tracking-widest">Status dos Pedidos</h3>
+                <p className="text-gray-400 text-xs font-bold mt-1">Divisão por etapa operacional</p>
+              </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center gap-6">
+              <div className="h-[220px] w-full md:w-1/2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={orderStatusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={8}
+                      dataKey="value"
+                    >
+                      {orderStatusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full md:w-1/2 space-y-4">
+                {orderStatusData.map((statusItem, i) => (
+                  <div key={statusItem.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: STATUS_COLORS[i % STATUS_COLORS.length] }} />
+                      <span className="text-xs font-black text-[#111] uppercase tracking-widest">{statusItem.name}</span>
+                    </div>
+                    <span className="text-sm font-bold text-gray-500">{statusItem.value} pedidos</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>

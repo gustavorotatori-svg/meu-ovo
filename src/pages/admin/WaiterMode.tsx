@@ -23,7 +23,7 @@ import QRCode from 'react-qr-code';
 type TabType = 'tables' | 'new-order' | 'qr-codes';
 
 export default function WaiterMode() {
-  const { currentRestaurant: restaurant, tables } = useRestaurant();
+  const { currentRestaurant: restaurant, tables, updateTable, updateOrderStatus } = useRestaurant();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
@@ -31,6 +31,7 @@ export default function WaiterMode() {
   
   const [activeTab, setActiveTab] = useState<TabType>('tables');
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [customerCount, setCustomerCount] = useState<number>(2);
   const [viewingTableOrders, setViewingTableOrders] = useState<string | null>(null);
   const [cart, setCart] = useState<{product: Product, quantity: number}[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('all');
@@ -94,6 +95,44 @@ export default function WaiterMode() {
     });
   };
 
+  const getTableOrders = (tableInput: Table | string | null) => {
+    if (!tableInput) return [];
+    const num = typeof tableInput === 'string' ? tableInput : tableInput.number;
+    const id = typeof tableInput === 'string' ? '' : tableInput.id;
+    return activeOrders.filter(o => o.tableNumber === num || (id && o.tableId === id));
+  };
+
+  const handleOccupyTable = async (table: Table) => {
+    try {
+      await updateTable({
+        ...table,
+        active: false,
+        status: 'occupied'
+      });
+      toast.success(`Mesa ${table.number} marcada como ocupada! 🔴`);
+    } catch (e) {
+      toast.error('Erro ao marcar mesa como ocupada');
+    }
+  };
+
+  const handleFreeTable = async (table: Table) => {
+    try {
+      const liveOrders = getTableOrders(table);
+      for (const order of liveOrders) {
+        await updateOrderStatus(order.id, 'finished');
+      }
+      await updateTable({
+        ...table,
+        active: true,
+        status: 'free',
+        currentOrderId: ''
+      });
+      toast.success(`Mesa ${table.number} liberada com sucesso! 🟢`);
+    } catch (e) {
+      toast.error('Erro ao liberar mesa');
+    }
+  };
+
   const handleSendOrder = async () => {
     if (!selectedTable) {
       toast.error('Selecione uma mesa');
@@ -106,29 +145,47 @@ export default function WaiterMode() {
 
     try {
       const subtotal = cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0);
-      
-      await addDoc(collection(db, 'orders'), {
+      const matchedTable = tables.find(t => t.number === selectedTable);
+
+      const orderData = {
         restaurantId: restaurant?.id,
         customerName: `Garçom (Mesa ${selectedTable})`,
         customerPhone: 'N/A',
         type: 'table',
         tableNumber: selectedTable,
+        tableId: matchedTable?.id || '',
         items: cart.map(item => ({
-          id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+          additionals: [],
+          observations: ''
         })),
         total: subtotal,
         status: 'received',
         paymentMethod: 'on-site',
         createdAt: new Date().toISOString()
-      });
+      };
 
-      toast.success('Pedido enviado para a cozinha!');
+      const docRef = await addDoc(collection(db, 'orders'), orderData);
+      
+      if (matchedTable) {
+        await updateTable({
+          ...matchedTable,
+          active: false,
+          status: 'occupied',
+          currentOrderId: docRef.id,
+          lastCustomerCount: customerCount
+        });
+      }
+
+      toast.success('Pedido enviado para a cozinha! 🍳');
       setCart([]);
+      setCustomerCount(2); // Reset customer count to default
       setActiveTab('tables');
     } catch (e) {
+      console.error(e);
       toast.error('Erro ao enviar pedido');
     }
   };
@@ -138,10 +195,6 @@ export default function WaiterMode() {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesCat && matchesSearch;
   });
-
-  const getTableOrders = (tableNumber: string) => {
-    return activeOrders.filter(o => o.tableNumber === tableNumber);
-  };
 
   if (loading) {
     return (
@@ -196,97 +249,214 @@ export default function WaiterMode() {
 
         {/* Tab Content: Tables View */}
         {activeTab === 'tables' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tables.map(table => {
-              const tableOrders = getTableOrders(table.number);
-              const isActive = tableOrders.length > 0;
-              const totalItems = tableOrders.reduce((acc, o) => acc + o.items.reduce((iAcc, i) => iAcc + i.quantity, 0), 0);
-              const totalValue = tableOrders.reduce((acc, o) => acc + o.total, 0);
-
-              return (
-                <motion.div
-                  key={table.id}
-                  whileHover={{ scale: 1.02 }}
-                  className={cn(
-                    "relative p-6 rounded-3xl border-2 transition-all text-left flex flex-col items-start gap-4 h-auto min-h-[180px] overflow-hidden",
-                    isActive ? "border-[#FFC928] bg-yellow-50/30" : "border-slate-50 bg-white"
-                  )}
-                >
-                  <div className="flex justify-between items-center w-full">
-                    <div className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl transition-colors",
-                      isActive ? "bg-[#FFC928] text-white" : "bg-slate-100 text-slate-400"
-                    )}>
-                      {table.number}
-                    </div>
-                    {isActive && (
-                      <button 
-                        onClick={() => setViewingTableOrders(table.number)}
-                        className="p-2 bg-white rounded-xl text-slate-400 hover:text-[#111] shadow-sm transition-all"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="mt-4 w-full">
-                    {isActive ? (
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mesa Ocupada</p>
-                        <p className="text-sm font-black text-[#111]">{totalItems} itens lançados</p>
-                        <p className="text-xs font-bold text-brand-orange">{formatCurrency(totalValue)}</p>
-                        <button 
-                          onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
-                          className="w-full mt-3 bg-white border border-slate-100 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#111] hover:bg-slate-50"
-                        >
-                          + Adicionar Itens
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mesa Livre</p>
-                        <p className="text-sm font-black text-slate-300">Nenhum pedido</p>
-                        <button 
-                          onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
-                          className="w-full mt-3 bg-slate-50 border border-transparent py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-100"
-                        >
-                          Abrir Mesa
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {isActive && (
-                    <motion.div 
-                      layoutId={`active-table-dot-${table.id}`}
-                      className="absolute top-4 right-4 w-2 h-2 bg-[#FFC928] rounded-full animate-pulse"
+          <div className="space-y-6">
+            {/* Real-time Table Stat Bar */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-start justify-center">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Total de Mesas</span>
+                <span className="text-2xl font-black text-[#111]">{tables.length}</span>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border border-red-100 bg-red-50/10 shadow-sm flex flex-col items-start justify-center">
+                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-2">Mesas Ocupadas</span>
+                <span className="text-2xl font-black text-[#111]">
+                  {tables.filter(t => t.status === 'occupied' || getTableOrders(t).length > 0).length}
+                </span>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border border-green-100 bg-green-50/10 shadow-sm flex flex-col items-start justify-center">
+                <span className="text-[10px] font-black text-green-600 uppercase tracking-widest leading-none mb-2">Mesas Livres</span>
+                <span className="text-2xl font-black text-[#111]">
+                  {tables.filter(t => t.status !== 'occupied' && getTableOrders(t).length === 0).length}
+                </span>
+              </div>
+              <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-start justify-center w-full">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Taxa de Ocupação</span>
+                <div className="flex items-center gap-2 w-full mt-1">
+                  <span className="text-xl font-black text-[#111]">
+                    {Math.round((tables.filter(t => t.status === 'occupied' || getTableOrders(t).length > 0).length / (tables.length || 1)) * 100)}%
+                  </span>
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-[#FFC928] transition-all duration-500"
+                      style={{ width: `${(tables.filter(t => t.status === 'occupied' || getTableOrders(t).length > 0).length / (tables.length || 1)) * 100}%` }}
                     />
-                  )}
-                </motion.div>
-              );
-            })}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tables Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {tables.map(table => {
+                const tableOrders = getTableOrders(table);
+                const isOccupied = table.status === 'occupied' || tableOrders.length > 0;
+                const totalItems = tableOrders.reduce((acc, o) => acc + o.items.reduce((iAcc, i) => iAcc + i.quantity, 0), 0);
+                const totalValue = tableOrders.reduce((acc, o) => acc + o.total, 0);
+
+                return (
+                  <motion.div
+                    key={table.id}
+                    whileHover={{ scale: 1.02 }}
+                    className={cn(
+                      "relative p-6 rounded-3xl border-2 transition-all text-left flex flex-col items-start justify-between gap-4 h-auto min-h-[220px] overflow-hidden",
+                      isOccupied ? "border-[#FFC928] bg-yellow-50/30" : "border-slate-50 bg-white"
+                    )}
+                  >
+                    <div className="flex justify-between items-center w-full">
+                      <div className={cn(
+                        "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-xl transition-colors",
+                        isOccupied ? "bg-[#FFC928] text-white" : "bg-slate-100 text-slate-400"
+                      )}>
+                        {table.number}
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {isOccupied && tableOrders.length > 0 && (
+                          <button 
+                            onClick={() => setViewingTableOrders(table.number)}
+                            className="p-2 bg-white rounded-xl text-slate-400 hover:text-[#111] shadow-sm transition-all"
+                            title="Ver pedidos desta mesa"
+                          >
+                            <Eye size={16} />
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            if (isOccupied) {
+                              handleFreeTable(table);
+                            } else {
+                              handleOccupyTable(table);
+                            }
+                          }}
+                          className={cn(
+                            "text-xs px-2.5 py-1 rounded-lg font-black uppercase tracking-wider shadow-sm transition-all",
+                            isOccupied ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"
+                          )}
+                          title={isOccupied ? "Liberar mesa e concluir pedidos" : "Marcar mesa como ocupada"}
+                        >
+                          {isOccupied ? "Liberar" : "Ocupar"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-2 w-full flex-grow">
+                      {isOccupied ? (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                            Mesa Ocupada
+                          </p>
+                          {table.lastCustomerCount && (
+                            <p className="text-[10px] font-bold text-gray-400">Pessoas: {table.lastCustomerCount}</p>
+                          )}
+                          {tableOrders.length > 0 ? (
+                            <>
+                              <p className="text-sm font-black text-[#111]">{totalItems} itens lançados ({tableOrders.length} ped.)</p>
+                              <p className="text-xs font-bold text-brand-orange">{formatCurrency(totalValue)}</p>
+                            </>
+                          ) : (
+                            <p className="text-xs font-bold text-slate-400 italic">Sem itens lançados ainda</p>
+                          )}
+                          <button 
+                            onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
+                            className="w-full mt-3 bg-white border border-slate-100 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#111] hover:bg-slate-50 transition-all"
+                          >
+                            + Adicionar Itens
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                            Mesa Livre
+                          </p>
+                          <p className="text-sm font-black text-slate-300">Nenhum pedido</p>
+                          
+                          <div className="grid grid-cols-2 gap-2 mt-3">
+                            <button 
+                              onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
+                              className="bg-brand-black text-white py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all text-center"
+                            >
+                              Abrir / Pedido
+                            </button>
+                            <button 
+                              onClick={() => handleOccupyTable(table)}
+                              className="bg-slate-50 border border-slate-200/60 text-slate-500 py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all text-center"
+                            >
+                              Reservar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {isOccupied && (
+                      <motion.div 
+                        layoutId={`active-table-dot-${table.id}`}
+                        className="absolute bottom-4 right-4 w-2 h-2 bg-red-500 rounded-full animate-pulse"
+                      />
+                    )}
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {/* Tab Content: New Order View */}
         {activeTab === 'new-order' && (
           <div className="space-y-6">
-            {/* Table Selector (mini) */}
-            <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mesa Selecionada</p>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-                {tables.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTable(t.number)}
-                    className={cn(
-                      "w-12 h-12 rounded-xl flex-shrink-0 font-black text-sm transition-all",
-                      selectedTable === t.number ? "bg-brand-black text-white scale-110 shadow-lg" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                    )}
+            {/* Table Selector (mini) with real-time customer count tracking */}
+            <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex-1">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mesa Selecionada</p>
+                <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                  {tables.map(t => {
+                    const activeOrdersForTable = getTableOrders(t);
+                    const isOccupied = t.status === 'occupied' || activeOrdersForTable.length > 0;
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => setSelectedTable(t.number)}
+                        className={cn(
+                          "w-12 h-12 rounded-xl flex-shrink-0 font-black text-sm transition-all relative",
+                          selectedTable === t.number 
+                            ? "bg-brand-black text-white scale-110 shadow-lg" 
+                            : "bg-slate-50 text-slate-400 hover:bg-slate-150",
+                          isOccupied ? "border border-[#FFC928]" : ""
+                        )}
+                      >
+                        {t.number}
+                        {isOccupied && (
+                          <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#FFC928] rounded-full border border-white" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="w-full md:w-56 shrink-0">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Número de Clientes (Mesa)</label>
+                <div className="flex items-center bg-slate-50 rounded-2xl p-1 border border-slate-100">
+                  <button 
+                    type="button"
+                    onClick={() => setCustomerCount(prev => Math.max(1, prev - 1))}
+                    className="w-10 h-10 bg-white hover:bg-slate-100 text-[#111] font-black rounded-xl transition-all shadow-sm border border-slate-100"
                   >
-                    {t.number}
+                    -
                   </button>
-                ))}
+                  <span className="flex-grow text-center font-black text-sm text-[#111]">
+                    {customerCount} {customerCount === 1 ? 'cliente' : 'clientes'}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={() => setCustomerCount(prev => Math.min(20, prev + 1))}
+                    className="w-10 h-10 bg-white hover:bg-slate-100 text-[#111] font-black rounded-xl transition-all shadow-sm border border-slate-100"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </div>
 

@@ -59,6 +59,8 @@ export default function MenuManagement() {
     ingredients: '',
     allergens: '',
     optionGroups: [] as any[],
+    stock: '',
+    minStockAlert: '',
   });
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -242,6 +244,8 @@ export default function MenuManagement() {
 
     const priceNum = parseFloat(newProd.price);
     const prepTimeNum = newProd.estimatedPrepTime ? parseInt(newProd.estimatedPrepTime) : null;
+    const stockNum = newProd.stock !== '' ? parseInt(newProd.stock) : undefined;
+    const minStockNum = newProd.minStockAlert !== '' ? parseInt(newProd.minStockAlert) : undefined;
 
     try {
       const productData = {
@@ -259,6 +263,8 @@ export default function MenuManagement() {
         isAvailable: newProd.isAvailable,
         isFeatured: false,
         optionGroups: newProd.optionGroups,
+        stock: stockNum,
+        minStockAlert: minStockNum,
       };
 
       if (editingProduct) {
@@ -269,7 +275,7 @@ export default function MenuManagement() {
         toast.success(t('menu.productCreated'));
       }
       
-      setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
+      setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [], stock: '', minStockAlert: '' });
       setEditingProduct(null);
       setIsProductModalOpen(false);
     } catch (e) {
@@ -292,6 +298,8 @@ export default function MenuManagement() {
       ingredients: product.ingredients || '',
       allergens: product.allergens || '',
       optionGroups: product.optionGroups || [],
+      stock: product.stock !== undefined ? product.stock.toString() : '',
+      minStockAlert: product.minStockAlert !== undefined ? product.minStockAlert.toString() : '',
     });
     setIsProductModalOpen(true);
   };
@@ -1143,6 +1151,31 @@ export default function MenuManagement() {
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                  </select>
                  {errors.categoryId && <p className="text-red-500 text-[9px] font-black uppercase tracking-widest">{errors.categoryId}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5 font-sans">
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Estoque Atual</label>
+                   <input 
+                     type="number" 
+                     min="0"
+                     className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                     placeholder="Ex: 50 (Vazio = Ilimitado)"
+                     value={newProd.stock}
+                     onChange={(e) => setNewProd({...newProd, stock: e.target.value})}
+                   />
+                </div>
+                <div className="space-y-1.5 font-sans">
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Limite de Alerta</label>
+                   <input 
+                     type="number" 
+                     min="0"
+                     className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                     placeholder="Ex: 5"
+                     value={newProd.minStockAlert}
+                     onChange={(e) => setNewProd({...newProd, minStockAlert: e.target.value})}
+                   />
+                </div>
               </div>
 
               <div className="space-y-1.5">

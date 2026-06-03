@@ -12,7 +12,8 @@ import {
   Gift,
   Flame,
   Users,
-  ShieldAlert
+  ShieldAlert,
+  Shield
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -30,6 +31,7 @@ import StoreSettings from './StoreSettings';
 import KitchenMode from './KitchenMode';
 import WaiterMode from './WaiterMode';
 import PlatformAdmin from './PlatformAdmin';
+import FiscalAudit from './FiscalAudit';
 
 export default function AdminDashboard() {
   const { currentRestaurant: restaurant } = useRestaurant();
@@ -43,6 +45,7 @@ export default function AdminDashboard() {
     { label: 'Cozinha', path: '/admin/dashboard/kitchen', icon: <Flame size={20} /> },
     { label: 'Garçom', path: '/admin/dashboard/waiter', icon: <Users size={20} /> },
     { label: 'Cardápio', path: '/admin/dashboard/menu', icon: <UtensilsCrossed size={20} /> },
+    { label: 'Auditoria Fiscal', path: '/admin/dashboard/fiscal', icon: <Shield size={20} /> },
     { label: 'Central Meu Ovo', path: '/admin/dashboard/platform', icon: <ShieldAlert size={20} /> },
     { label: 'Configurações', path: '/admin/dashboard/settings', icon: <Settings size={20} /> },
   ];
@@ -167,6 +170,7 @@ export default function AdminDashboard() {
             <Route path="/kitchen" element={<KitchenMode />} />
             <Route path="/waiter" element={<WaiterMode />} />
             <Route path="/platform" element={<PlatformAdmin />} />
+            <Route path="/fiscal" element={<FiscalAudit />} />
             <Route path="/settings" element={<StoreSettings />} />
           </Routes>
         </div>

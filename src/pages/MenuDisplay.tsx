@@ -224,8 +224,9 @@ export default function MenuDisplay() {
       return;
     }
 
+    const baseProdPrice = product.onPromotion && product.promotionPrice ? product.promotionPrice : product.price;
     const optionsPrice = options.reduce((acc, opt) => acc + opt.price, 0);
-    const itemTotalPrice = product.price + optionsPrice;
+    const itemTotalPrice = baseProdPrice + optionsPrice;
     
     // For products with options, every unique combination is a different line item
     const optionsKey = options.sort((a, b) => a.optionId.localeCompare(b.optionId)).map(o => o.optionId).join('-');
@@ -256,7 +257,7 @@ export default function MenuDisplay() {
         productId: product.id, 
         name: product.name, 
         price: itemTotalPrice, 
-        basePrice: product.price,
+        basePrice: baseProdPrice,
         quantity: 1,
         selectedOptions: options.length > 0 ? options : undefined
       }];
@@ -572,7 +573,7 @@ export default function MenuDisplay() {
         )}
 
         {/* Category Navigation */}
-        <div className="bg-white rounded-xl shadow-xl shadow-slate-200/50 p-2 border border-slate-100 flex gap-2 overflow-x-auto no-scrollbar sticky top-4">
+        <div className="bg-white/90 backdrop-blur-md rounded-2xl shadow-lg shadow-slate-100/50 p-2.5 border border-slate-100 flex gap-2 overflow-x-auto no-scrollbar sticky top-2 z-40 transition-all">
            {categories.map((cat) => (
              <button
                key={cat.id}
@@ -614,7 +615,15 @@ export default function MenuDisplay() {
                       className="bg-white rounded-xl p-3 border border-slate-100 flex gap-4 hover:border-slate-200 transition-all group hover:shadow-md cursor-pointer text-left"
                     >
                       <div className="flex-1 space-y-1">
-                        <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">{product.name}</h3>
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">{product.name}</h3>
+                          {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice && (
+                            <span className="bg-red-50 text-red-600 border border-red-100 px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider shrink-0 shadow-sm flex items-center gap-1">
+                              <span className="w-1 h-1 bg-red-500 rounded-full animate-pulse" />
+                              {Math.round(((product.price - product.promotionPrice) / product.price) * 100)}% OFF
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-slate-400 font-medium leading-relaxed line-clamp-2">{product.description}</p>
                         {product.notes && (
                           <div className="flex items-start gap-1.5 mt-1">
@@ -647,7 +656,22 @@ export default function MenuDisplay() {
                           </div>
                         )}
                         <div className="pt-2 flex items-center justify-between">
-                           <span className="font-black text-orange-600 text-sm tracking-tight">{formatCurrency(product.price)}</span>
+                           <div className="flex items-center gap-2">
+                             {product.onPromotion && product.promotionPrice ? (
+                               <>
+                                 <span className="font-black text-orange-600 text-sm tracking-tight">
+                                   {formatCurrency(product.promotionPrice)}
+                                 </span>
+                                 <span className="text-slate-400 text-[10px] line-through font-normal">
+                                   {formatCurrency(product.price)}
+                                 </span>
+                               </>
+                             ) : (
+                               <span className="font-black text-orange-600 text-sm tracking-tight">
+                                 {formatCurrency(product.price)}
+                               </span>
+                             )}
+                           </div>
                            <button 
                              onClick={(e) => {
                                e.stopPropagation();
@@ -660,7 +684,12 @@ export default function MenuDisplay() {
                         </div>
                       </div>
                       {product.imageUrl && (
-                        <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border border-slate-50">
+                        <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border border-slate-50 relative">
+                           {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice && (
+                             <div className="absolute top-1 left-1 bg-red-500 text-white text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-wider z-10 shadow-sm">
+                               -{Math.round(((product.price - product.promotionPrice) / product.price) * 100)}%
+                             </div>
+                           )}
                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
@@ -1178,7 +1207,14 @@ export default function MenuDisplay() {
               <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                 <div>
                   <h3 className="text-xl font-black">{customizingProduct.name}</h3>
-                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{formatCurrency(customizingProduct.price)}</p>
+                  {customizingProduct.onPromotion && customizingProduct.promotionPrice ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-orange-600 font-extrabold">{formatCurrency(customizingProduct.promotionPrice)}</span>
+                      <span className="text-[10px] text-slate-400 font-bold line-through">{formatCurrency(customizingProduct.price)}</span>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{formatCurrency(customizingProduct.price)}</p>
+                  )}
                 </div>
                 <button onClick={() => setCustomizingProduct(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100">
                   <X size={20} />
@@ -1315,7 +1351,7 @@ export default function MenuDisplay() {
                   }
                   onClick={() => addToCart(customizingProduct, selectedOptions)}
                 >
-                  Adicionar • {formatCurrency(customizingProduct.price + selectedOptions.reduce((acc, o) => acc + o.price, 0))}
+                  Adicionar • {formatCurrency((customizingProduct.onPromotion && customizingProduct.promotionPrice ? customizingProduct.promotionPrice : customizingProduct.price) + selectedOptions.reduce((acc, o) => acc + o.price, 0))}
                 </Button>
               </div>
             </motion.div>

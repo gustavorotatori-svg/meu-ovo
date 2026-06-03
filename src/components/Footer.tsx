@@ -45,11 +45,13 @@ export default function Footer() {
     company: [
       { label: t('nav.social_impact'), to: '/impacto-social' },
       { label: 'Blog', to: '/blog' },
+      { label: 'Ovos de Ouro 🏆', to: '/ovos-de-ouro' },
       { label: 'Sobre nós', to: '/sobre' },
     ],
     restaurants: [
       { label: t('nav.register_restaurant'), to: '/cadastro-restaurante' },
       { label: 'Portal do Parceiro', to: '/admin' },
+      { label: 'Prêmio Ovos de Ouro', to: '/ovos-de-ouro' },
       { label: 'Marketplace', to: '/busca' },
     ],
     legal: [
@@ -64,9 +66,48 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-12 lg:gap-8 mb-20">
           <div className="lg:col-span-2">
             <Logo size="lg" variant={isDark ? 'dark-colored' : 'colored'} className="mb-8" />
-            <p className={`text-sm leading-relaxed mb-8 max-w-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('footer.description')}
-            </p>
+            
+            {(() => {
+              const desc = t('footer.description') || '';
+              let firstPart = '';
+              let secondPart = '';
+              
+              const match = desc.match(/(.*?foodzinho\.)\s*(.*)/i);
+              if (match) {
+                firstPart = match[1];
+                secondPart = match[2];
+              } else {
+                const dotIndex = desc.indexOf('. ');
+                if (dotIndex !== -1) {
+                  const secondDotIndex = desc.indexOf('. ', dotIndex + 2);
+                  if (secondDotIndex !== -1) {
+                    firstPart = desc.substring(0, secondDotIndex + 1);
+                    secondPart = desc.substring(secondDotIndex + 1).trim();
+                  } else {
+                    firstPart = desc.substring(0, dotIndex + 1);
+                    secondPart = desc.substring(dotIndex + 1).trim();
+                  }
+                } else {
+                  firstPart = desc;
+                }
+              }
+
+              return (
+                <div className="space-y-3 mb-8">
+                  {firstPart && (
+                    <p className={`font-display font-black text-lg tracking-tight uppercase italic leading-tight ${isDark ? 'text-[#FFC928]' : 'text-orange-500'}`}>
+                      {firstPart}
+                    </p>
+                  )}
+                  {secondPart && (
+                    <p className={`text-[11px] font-bold tracking-wider leading-relaxed uppercase ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                      {secondPart}
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="flex gap-4">
               {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
                 <a key={i} href="#" className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-black'}`}>
@@ -77,11 +118,22 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-black uppercase tracking-widest text-[10px] mb-6 opacity-40">Plataforma</h4>
+            <div className="relative mb-6">
+              <h4 className={`font-display font-black uppercase tracking-widest text-xs ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                Plataforma
+              </h4>
+              <div className="h-0.5 w-8 bg-[#FFC928] mt-2 rounded" />
+            </div>
             <ul className="space-y-4">
               {FOOTER_LINKS.company.map(link => (
                 <li key={link.label}>
-                  <Link to={link.to} className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
+                  <Link 
+                    to={link.to} 
+                    className={`group flex items-center gap-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-1 ${
+                      isDark ? 'text-zinc-400 hover:text-[#FFC928]' : 'text-zinc-600 hover:text-orange-500'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200" />
                     {link.label}
                   </Link>
                 </li>
@@ -90,11 +142,22 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-display font-black uppercase tracking-widest text-[10px] mb-6 opacity-40">Restaurantes</h4>
+            <div className="relative mb-6">
+              <h4 className={`font-display font-black uppercase tracking-widest text-xs ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                Restaurantes
+              </h4>
+              <div className="h-0.5 w-8 bg-[#FFC928] mt-2 rounded" />
+            </div>
             <ul className="space-y-4">
               {FOOTER_LINKS.restaurants.map(link => (
                 <li key={link.label}>
-                  <Link to={link.to} className={`text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
+                  <Link 
+                    to={link.to} 
+                    className={`group flex items-center gap-1.5 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-1 ${
+                      isDark ? 'text-zinc-400 hover:text-[#FFC928]' : 'text-zinc-600 hover:text-orange-500'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500 scale-0 group-hover:scale-100 transition-transform duration-200" />
                     {link.label}
                   </Link>
                 </li>
@@ -104,29 +167,57 @@ export default function Footer() {
 
           <div className="lg:col-span-2 flex flex-col justify-between">
             <div>
-              <h4 className="font-display font-black uppercase tracking-widest text-[10px] mb-6 opacity-40">Fale Conosco</h4>
+              <div className="relative mb-6">
+                <h4 className={`font-display font-black uppercase tracking-widest text-xs ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+                  Fale Conosco
+                </h4>
+                <div className="h-0.5 w-8 bg-[#FFC928] mt-2 rounded" />
+              </div>
               <div className="space-y-4">
-                <a href="mailto:contato@meuovo.com" className={`flex items-center gap-3 text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
-                  <Mail size={16} className="text-[#FFC928]" />
+                <a 
+                  href="mailto:contato@meuovo.com" 
+                  className={`group flex items-center gap-3 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-1 ${
+                    isDark ? 'text-zinc-300 hover:text-[#FFC928]' : 'text-zinc-700 hover:text-orange-500'
+                  }`}
+                >
+                  <Mail size={14} className="text-[#FFC928] shrink-0" />
                   contato@meuovo.com
                 </a>
-                <a href="tel:+5511999999999" className={`flex items-center gap-3 text-sm font-medium transition-colors ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
-                  <Phone size={16} className="text-[#FFC928]" />
+                <a 
+                  href="tel:+5511999999999" 
+                  className={`group flex items-center gap-3 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-1 ${
+                    isDark ? 'text-zinc-300 hover:text-[#FFC928]' : 'text-zinc-700 hover:text-orange-500'
+                  }`}
+                >
+                  <Phone size={14} className="text-[#FFC928] shrink-0" />
                   (11) 99999-9999
                 </a>
-                <div className={`flex items-center gap-3 text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  <MapPin size={16} className="text-[#FFC928]" />
+                <div 
+                  className={`flex items-center gap-3 text-xs font-black uppercase tracking-wider ${
+                    isDark ? 'text-zinc-400' : 'text-zinc-500'
+                  }`}
+                >
+                  <MapPin size={14} className="text-[#FFC928] shrink-0" />
                   São Paulo, SP - Brasil
                 </div>
               </div>
             </div>
             
-            <form onSubmit={handleSubscribe} className={`mt-10 p-6 rounded-2xl ${isDark ? 'bg-white/5 border border-white/5' : 'bg-gray-50 border border-gray-100'}`}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-2 opacity-60">Newsletter para Parceiros</p>
+            <form 
+              onSubmit={handleSubscribe} 
+              className={`mt-10 p-6 rounded-3xl transition-all duration-300 border-2 ${
+                isDark 
+                  ? 'bg-zinc-900/50 border-zinc-800/80 shadow-md shadow-black/20' 
+                  : 'bg-slate-50 border-slate-100 shadow-sm'
+              }`}
+            >
+              <p className={`text-[11px] font-black uppercase tracking-[0.15em] mb-3 ${isDark ? 'text-orange-400' : 'text-orange-500'} font-sans`}>
+                Newsletter para Parceiro
+              </p>
               {subscribed ? (
                 <div className="flex items-center gap-3 py-2 text-green-500 animate-in fade-in zoom-in duration-500">
                   <CheckCircle2 size={18} />
-                  <span className="text-xs font-bold uppercase tracking-tight">Inscrição confirmada!</span>
+                  <span className="text-xs font-black uppercase tracking-tight">Inscrição confirmada!</span>
                 </div>
               ) : (
                 <div className="flex gap-2">
@@ -136,18 +227,28 @@ export default function Footer() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="Seu e-mail profissional" 
-                    className={`flex-1 bg-transparent border-b outline-none text-sm py-2 ${isDark ? 'border-white/10' : 'border-gray-200 focus:border-[#FFC928]'}`}
+                    className={`flex-1 bg-transparent border-b-2 outline-none text-xs font-bold uppercase tracking-wider py-2 transition-colors ${
+                      isDark 
+                        ? 'border-zinc-800 focus:border-[#FFC928] text-white' 
+                        : 'border-slate-200 focus:border-[#FF7A00] text-neutral-900'
+                    }`}
                   />
                   <button 
                     type="submit"
                     disabled={loading}
-                    className="text-[#FFC928] hover:scale-110 transition-transform disabled:opacity-50"
+                    className={`p-2 rounded-xl transition-all ${
+                      loading
+                        ? 'opacity-50'
+                        : isDark
+                          ? 'text-[#FFC928] hover:bg-[#FFC928]/10 hover:scale-110'
+                          : 'text-orange-500 hover:bg-orange-50 hover:scale-110'
+                    }`}
                   >
-                    {loading ? <Loader2 size={20} className="animate-spin" /> : <ArrowRight size={20} />}
+                    {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                   </button>
                 </div>
               )}
-              <p className="text-[8px] mt-3 opacity-40 leading-tight uppercase font-black">
+              <p className="text-[8px] mt-4 opacity-50 leading-normal uppercase font-black tracking-wider">
                 Receba as notícias semanais do Blog Meu Ovo direto no seu e-mail.
               </p>
             </form>

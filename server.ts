@@ -28,6 +28,77 @@ async function startServer() {
   });
 
   /**
+   * AI Menu Document Parser
+   * Uses Gemini 3.5 Flash to extract categories and products from an uploaded image or PDF
+   */
+  app.post("/api/ai/parse-menu", async (req, res) => {
+    const { fileData, mimeType } = req.body;
+    if (!fileData || !mimeType) {
+      return res.status(400).json({ error: "fileData and mimeType are required" });
+    }
+
+    try {
+      // Structure the attachment part as inlineData
+      const filePart = {
+        inlineData: {
+          mimeType: mimeType,
+          data: fileData,
+        }
+      };
+
+      const promptPart = {
+        text: "Analyze the attached menu document (image or PDF document). Extract all main categories and the list of individual products under each category. For each product, extract the name, price containing decimal numeric value (without currency symbol, e.g. 15.90), and categorize it with the corresponding category name. Create category names that are clear and concise. Return the categories and products lists matching the requested schema."
+      };
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: { parts: [filePart, promptPart] },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              categories: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Array of distinct menu categories found"
+              },
+              products: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING, description: "Name of the item" },
+                    price: { type: Type.NUMBER, description: "Floating point price of the item" },
+                    category: { type: Type.STRING, description: "Category name this product belongs to" }
+                  },
+                  required: ["name", "price", "category"]
+                },
+                description: "List of products extracted"
+              }
+            },
+            required: ["categories", "products"]
+          }
+        }
+      });
+
+      const resultText = response.text || "{}";
+      const parsedData = JSON.parse(resultText);
+
+      res.json({
+        success: true,
+        data: parsedData
+      });
+    } catch (error: any) {
+      console.error("AI Menu parsing error:", error);
+      res.status(500).json({ 
+        error: "Failed to parse menu using AI", 
+        details: error?.message || String(error)
+      });
+    }
+  });
+
+  /**
    * Blog News Aggregation API
    * Fetches news from provided URLs and summarizes them using Gemini
    */
@@ -99,62 +170,6 @@ async function startServer() {
     } catch (error) {
       console.error("Newsletter error:", error);
       res.status(500).json({ error: "Subscription failed" });
-    }
-  });
-
-  /**
-   * Generate Mercado Pago PIX for donations
-   * Donations go to the platform's Mercado Pago account
-   */
-  app.post("/api/donations/pix", async (req, res) => {
-    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-    if (!accessToken) {
-      return res.status(400).json({ 
-        error: "Mercado Pago não configurado. Entre em contato com o suporte." 
-      });
-    }
-
-    const { amount, customerName, customerEmail, orderId } = req.body;
-    if (!amount || amount <= 0) {
-      return res.status(400).json({ error: "Valor da doação inválido" });
-    }
-
-    try {
-      const response = await fetch('https://api.mercadopago.com/v1/payments', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'X-Idempotency-Key': `donation-${orderId}-${Date.now()}`,
-        },
-        body: JSON.stringify({
-          transaction_amount: amount,
-          description: `Doação Meu OVO - Pedido #${orderId}`,
-          payment_method_id: 'pix',
-          payer: {
-            email: customerEmail || 'doador@meuovo.com.br',
-            first_name: customerName || 'Doador',
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('Mercado Pago error:', error);
-        return res.status(500).json({ error: 'Erro ao gerar PIX de doação' });
-      }
-
-      const payment = await response.json();
-      res.json({
-        id: payment.id,
-        status: payment.status,
-        qrCode: payment.point_of_interaction?.transaction_data?.qr_code || '',
-        qrCodeBase64: payment.point_of_interaction?.transaction_data?.qr_code_base64 || '',
-        ticketUrl: payment.point_of_interaction?.transaction_data?.ticket_url || '',
-      });
-    } catch (error) {
-      console.error('Mercado Pago API error:', error);
-      res.status(500).json({ error: 'Erro ao processar doação' });
     }
   });
 

@@ -10,10 +10,9 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, increment, ar
 import { Order, Coupon } from '../types';
 import { toast } from 'react-hot-toast';
 import { formatCurrency, cn } from '../lib/utils';
-import { generatePixPayload } from '../lib/pix';
-import { createDonationPix } from '../lib/donationService';
-import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
+import { generatePixPayload } from '../lib/pix';
+import { getCustomerStats, checkCouponTargeting } from '../services/customerRatingService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site';
@@ -82,11 +81,9 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix');
   const [changeFor, setChangeFor] = useState('');
   const [observations, setObservations] = useState('');
-  const [donationAmount, setDonationAmount] = useState(1);
-  const [donating, setDonating] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState('');
-  const [donationPix, setDonationPix] = useState<{ qrCode: string; ticketUrl: string } | null>(null);
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -97,6 +94,32 @@ export default function CheckoutPage() {
   const [loyaltyProfile, setLoyaltyProfile] = useState<any | null>(null);
   const [selectedReward, setSelectedReward] = useState<any | null>(null);
   const [isCheckingLoyalty, setIsCheckingLoyalty] = useState(false);
+
+  // Customer Reputation Stats state
+  const [customerStats, setCustomerStats] = useState<any | null>(null);
+  const [isCheckingReputation, setIsCheckingReputation] = useState(false);
+
+  useEffect(() => {
+    const checkCustomerReputation = async () => {
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (!cleanPhone || cleanPhone.length < 10) {
+        setCustomerStats(null);
+        return;
+      }
+      setIsCheckingReputation(true);
+      try {
+        const stats = await getCustomerStats(phone);
+        setCustomerStats(stats);
+      } catch (err) {
+        console.error('Error fetching customer rating details:', err);
+      } finally {
+        setIsCheckingReputation(false);
+      }
+    };
+
+    const timer = setTimeout(checkCustomerReputation, 1100);
+    return () => clearTimeout(timer);
+  }, [phone]);
 
   useEffect(() => {
     const checkLoyalty = async () => {
@@ -126,15 +149,13 @@ export default function CheckoutPage() {
 
     const timer = setTimeout(checkLoyalty, 1000);
     return () => clearTimeout(timer);
-  }, [phone, restaurant.id]);
+  }, [phone, restaurant?.id]);
 
   useEffect(() => {
     if (!restaurant || items.length === 0) {
       navigate('/carrinho');
     }
   }, [restaurant, items.length, navigate]);
-
-  if (!restaurant || items.length === 0) return null;
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -163,16 +184,27 @@ export default function CheckoutPage() {
       const now = new Date();
       if (new Date(coupon.expiryDate) < now) {
         toast.error('Este cupom já expirou');
+        setAppliedCoupon(null);
         return;
       }
 
       if (coupon.usageLimit && (coupon.usageCount || 0) >= coupon.usageLimit) {
         toast.error('Este cupom atingiu o limite de usos');
+        setAppliedCoupon(null);
         return;
       }
 
       if (subtotal < coupon.minOrderValue) {
         toast.error(`Pedido mínimo para este cupom: R$ ${coupon.minOrderValue.toFixed(2)}`);
+        setAppliedCoupon(null);
+        return;
+      }
+
+      // Check customer targeting
+      const targeting = await checkCouponTargeting(coupon, phone, restaurant.id);
+      if (!targeting.valid) {
+        toast.error(targeting.reason || 'Este cupom não é válido para o seu perfil');
+        setAppliedCoupon(null);
         return;
       }
 
@@ -212,13 +244,14 @@ export default function CheckoutPage() {
     if (matched) return matched.fee;
     
     // Fallback to restaurant's default fee or context's deliverySettings
-    return restaurant.deliverySettings?.fee ?? deliverySettings.fee;
+    return restaurant.deliverySettings?.fee ?? deliverySettings.fee ?? 0;
   };
 
   const deliveryFee = getDeliveryFee();
-  const total = subtotal + deliveryFee - discountValue;
+  const total = Math.max(0, subtotal + deliveryFee - discountValue);
 
   const handleSubmit = async () => {
+    if (submitting) return;
     if (!name || !phone) {
       toast.error('Preencha nome e telefone');
       return;
@@ -228,6 +261,28 @@ export default function CheckoutPage() {
       setPhoneError('Por favor, insira um telefone válido com DDD');
       toast.error('Telefone inválido');
       return;
+    }
+
+    // Check stock availability
+    for (const item of items) {
+      if (!item.product.isAvailable) {
+        toast.error(`"${item.product.name}" não está mais disponível`);
+        return;
+      }
+    }
+
+    // Block problematic customers if configured
+    if (restaurant.orderSettings?.blockProblematicCustomers) {
+      const minRating = restaurant.orderSettings?.minAcceptableRating ?? 3.0;
+      try {
+        const stats = await getCustomerStats(phone);
+        if (stats.totalRatings > 0 && stats.averageRating < minRating) {
+          toast.error(`Pedido Negado: Devido ao seu histórico de incidentes em entregas anteriores (Nota: ${stats.averageRating.toFixed(1)}★), este estabelecimento não está aceitando seus pedidos automáticos.`);
+          return;
+        }
+      } catch (err) {
+        console.error("Error validating customer reputation inside checkout order placement:", err);
+      }
     }
 
     if (orderType === 'delivery' && (!deliveryAddress || (restaurant.deliverySettings?.feeByNeighborhood?.length ? !selectedNeighborhood : false))) {
@@ -240,7 +295,8 @@ export default function CheckoutPage() {
       return;
     }
 
-    const id = `ORD${Date.now().toString().slice(-6)}`;
+    setSubmitting(true);
+    const id = `ORD${Date.now().toString().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
     
     // If free product reward was selected, we need to mark it in the order items
     const orderItems = items.map(item => {
@@ -276,7 +332,7 @@ export default function CheckoutPage() {
       items: orderItems,
       subtotal,
       deliveryFee,
-      donationAmount: donating ? donationAmount : 0,
+      donationAmount: 0,
       couponCode: appliedCoupon?.code,
       couponDiscount: appliedCoupon ? discountValue : undefined,
       total: total,
@@ -285,21 +341,8 @@ export default function CheckoutPage() {
       origin: 'marketplace',
     };
 
-    addOrder(order);
+    await addOrder(order);
     setOrderId(id);
-
-    // Generate Mercado Pago PIX for donation (separate from order)
-    if (donating && donationAmount > 0) {
-      createDonationPix({
-        amount: donationAmount,
-        customerName: name,
-        customerEmail: '',
-        orderId: id,
-      }).then(setDonationPix).catch((err) => {
-        console.error('Donation PIX error:', err);
-        toast.error('Erro ao gerar PIX de doação. Sua doação não foi processada.');
-      });
-    }
 
     // Update loyalty profile if reward was used
     if (selectedReward && loyaltyProfile) {
@@ -321,7 +364,7 @@ export default function CheckoutPage() {
     // Increment coupon usage if applied
     if (appliedCoupon) {
       try {
-        updateDoc(doc(db, 'coupons', appliedCoupon.id), {
+        await updateDoc(doc(db, 'coupons', appliedCoupon.id), {
           usageCount: increment(1)
         });
       } catch (err) {
@@ -345,15 +388,19 @@ export default function CheckoutPage() {
       : orderType === 'delivery' 
         ? `Endereço: ${deliveryAddress}${selectedNeighborhood ? ` - Bairro: ${selectedNeighborhood === 'other' ? 'Outro' : selectedNeighborhood}` : ''}` 
         : 'Retirada no balcão';
-    const donationText = donating ? `\nDoação social (via Mercado Pago): R$ ${donationAmount.toFixed(2)}` : '';
     const couponText = appliedCoupon ? `\nCupom: ${appliedCoupon.code} (- R$ ${discountValue.toFixed(2)})` : '';
     const changeText = paymentMethod === 'cash' && changeFor ? `\nTroco para: R$ ${changeFor}` : '';
     const obsText = observations ? `\nObservações gerais: ${observations}` : '';
+
+    const ratingText = customerStats && customerStats.totalRatings > 0
+      ? `★ ${customerStats.averageRating.toFixed(1)} (${customerStats.totalRatings} avaliações) • ${customerStats.statusText}`
+      : 'Cliente Novo (Sem avaliações)';
 
     const msg = `*MEU OVO 🥚 - NOVO PEDIDO*\n` +
                 `----------------------------------\n` +
                 `*ID:* #${id}\n` +
                 `*Cliente:* ${name}\n` +
+                `*Avaliação do Cliente:* ${ratingText}\n` +
                 `*Telefone:* ${phone}\n` +
                 `*Tipo:* ${typePt[orderType]}\n` +
                 `*${locationText}*\n` +
@@ -363,19 +410,23 @@ export default function CheckoutPage() {
                 `${observations ? `*OBSERVAÇÕES:*\n${observations}\n\n` : ''}` +
                 `*RESUMO FINANCEIRO:*\n` +
                 `Subtotal: R$ ${subtotal.toFixed(2)}\n` +
-                `Entrega: R$ ${deliveryFee.toFixed(2)}` +
-                `${donationText}${couponText}\n` +
+                `Entrega: R$ ${deliveryFee.toFixed(2)}${couponText}\n` +
                 `*TOTAL: R$ ${total.toFixed(2)}*\n\n` +
                 `*Acompanhe seu pedido:* ${window.location.origin}/pedido/${id}\n\n` +
                 `✅ Enviado via *MEU OVO*`;
 
-    const cleanRestaurantPhone = restaurant.whatsapp.replace(/\D/g, '');
-    const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(whatsappUrl, '_blank');
+    const cleanRestaurantPhone = (restaurant.whatsapp || '').replace(/\D/g, '');
+    if (cleanRestaurantPhone) {
+      const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
+      window.open(whatsappUrl, '_blank');
+    } else {
+      toast.error('Restaurante não possui WhatsApp configurado');
+    }
 
     localStorage.setItem('customerPhone', phone);
     clearCart();
     setSubmitted(true);
+    setSubmitting(false);
   };
 
   if (submitted) {
@@ -432,39 +483,42 @@ export default function CheckoutPage() {
               >
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative group">
-                    {restaurant.pixKey ? (
-                      <QRCode
-                        value={generatePixPayload({
-                          key: restaurant.pixKey,
-                          name: restaurant.name,
-                          amount: total,
-                          txid: orderId,
-                        })}
-                        size={160}
-                        style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
-                      />
-                    ) : (
-                      <p className="text-xs text-gray-400 text-center px-4">
-                        Restaurante ainda não configurou chave PIX
-                      </p>
-                    )}
+                    {/* Simulated QR Code */}
+                    <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
+                      {[
+                        [1,1,1,1,1,1],[1,0,0,0,1,1],[1,0,1,0,0,1],[1,1,0,0,0,1],[1,0,0,1,0,1],[1,1,1,1,1,1]
+                      ].flat().map((v, i) => (
+                        <div key={i} className={v ? 'bg-slate-800' : 'bg-transparent'} />
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-800">QR Code</p>
+                    </div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
+                      <Smartphone size={20} className="text-[#FFC928]" />
+                    </div>
                   </div>
 
-                  <div className="w-full space-y-3">
-                    {restaurant.pixKey && (() => {
-                      const payload = generatePixPayload({
-                        key: restaurant.pixKey,
-                        name: restaurant.name,
-                        amount: total,
-                        txid: orderId,
-                      });
-                      return (
+                  {(() => {
+                    const dynamicPixCode = restaurant?.pixKey 
+                      ? generatePixPayload({
+                          key: restaurant.pixKey,
+                          name: restaurant.name || 'MEU OVO',
+                          amount: total,
+                          txid: orderId ? orderId.replace(/[^a-zA-Z0-9]/g, 'X').slice(-25).toUpperCase() : '***'
+                        })
+                      : `00020126580014br.gov.bcb.pix0136${restaurant?.id}-order-${orderId}520400005303986540${total.toFixed(2)}5802BR5913MEU OVO6009SAO PAULO62070503***6304`;
+
+                    return (
+                      <div className="w-full space-y-3">
                         <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative group overflow-hidden">
-                          <div className="truncate pr-8">{payload}</div>
+                          <div className="truncate pr-8">
+                            {dynamicPixCode}
+                          </div>
                           <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={() => {
-                              navigator.clipboard.writeText(payload);
+                              navigator.clipboard.writeText(dynamicPixCode).catch(() => {});
                               toast.success(t('checkout.pixSuccess') || 'PIX copiado!');
                             }}
                             title={t('checkout.pixCopy') || 'Copiar'}
@@ -473,53 +527,14 @@ export default function CheckoutPage() {
                             <Ticket size={14} />
                           </motion.button>
                         </div>
-                      );
-                    })()}
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('checkout.pixInstructions')}</p>
-                  </div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('checkout.pixInstructions')}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </motion.div>
             )}
 
-            {donating && donationPix && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                className="bg-red-50 rounded-2xl p-4 mb-8 border border-red-100 overflow-hidden"
-              >
-                <Heart size={24} className="text-red-500 mx-auto mb-2" />
-                <p className="text-red-600 text-sm font-black uppercase tracking-tight text-center mb-4">
-                  {t('checkout.thanksDonation')}<br />
-                  <span className="text-xs opacity-80">{t('checkout.differenceDonation')}</span>
-                </p>
-                <div className="bg-white rounded-xl p-4 flex flex-col items-center gap-3">
-                  {donationPix.qrCode && (
-                    <QRCode value={donationPix.qrCode} size={140} style={{ height: 'auto', maxWidth: '100%', width: '100%' }} />
-                  )}
-                  {donationPix.qrCode && (
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(donationPix.qrCode);
-                        toast.success('Código PIX da doação copiado!');
-                      }}
-                      className="text-xs font-bold text-red-600 underline"
-                    >
-                      Copiar código PIX da doação
-                    </button>
-                  )}
-                  {donationPix.ticketUrl && (
-                    <a
-                      href={donationPix.ticketUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-red-600 text-white font-bold py-3 rounded-xl text-sm text-center hover:bg-red-700 transition-colors"
-                    >
-                      Pagar doação via Mercado Pago
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            )}
           </AnimatePresence>
 
           <div className="space-y-3">
@@ -605,6 +620,33 @@ export default function CheckoutPage() {
               {phoneError && <p className="text-red-500 text-[10px] font-black uppercase tracking-widest ml-1">{phoneError}</p>}
             </div>
           </div>
+
+          {isCheckingReputation && (
+            <div className="text-[10px] font-black text-slate-400 tracking-widest mt-3 flex items-center gap-1.5 animate-pulse uppercase">
+              <div className="w-2.5 h-2.5 rounded-full border-2 border-t-transparent border-red-500 animate-spin" /> Buscando cadastro do cliente...
+            </div>
+          )}
+
+          {customerStats && customerStats.totalRatings > 0 && (
+            <div className={cn(
+              "mt-4 p-4 rounded-xl border-2 transition-all duration-300",
+              customerStats.isProblematic
+                ? "bg-red-50 border-red-200 text-red-700"
+                : customerStats.averageRating >= 4.0
+                  ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                  : "bg-amber-50 border-amber-200 text-amber-800"
+            )}>
+              <div className="flex items-center gap-2 mb-1.5 font-sans font-black uppercase text-[10px] tracking-widest">
+                <span className="text-xs">★</span>
+                <span>REPUTAÇÃO DO CLIENTE: {customerStats.averageRating.toFixed(1)} / 5.0 ({customerStats.totalRatings} avaliações)</span>
+              </div>
+              <p className="font-sans font-semibold text-xs leading-relaxed">
+                {customerStats.isProblematic 
+                  ? `Aviso importante: Este número está sinalizado com histórico de incidentes em entregas anteriores (Média: ${customerStats.averageRating.toFixed(1)}★). ${restaurant.orderSettings?.blockProblematicCustomers ? "O estabelecimento possui o bloqueio ativo e não poderá aceitar este pedido." : "Seu pedido ficará sujeito a análise de segurança extra antes do envio."}`
+                  : `Seu perfil está classificado como "${customerStats.statusText}". Obrigado por ser um excelente cliente parceiro!`}
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {/* Order type */}
@@ -800,69 +842,6 @@ export default function CheckoutPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Donation */}
-        <motion.div 
-          variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
-          className="bg-white rounded-2xl p-6 border-2 border-dashed border-red-200 shadow-sm relative overflow-hidden"
-        >
-          {donating && (
-            <motion.div 
-              layoutId="donation-pulse"
-              className="absolute inset-0 bg-red-50/50 -z-10" 
-            />
-          )}
-          <div className="flex items-start gap-3 mb-5">
-            <div className="p-3 bg-red-50 rounded-2xl text-red-500">
-              <Heart size={24} fill={donating ? "currentColor" : "none"} className={donating ? "animate-pulse" : ""} />
-            </div>
-            <div>
-              <h2 className="font-display font-black text-[#111] text-lg uppercase tracking-tight">{t('checkout.donationTitle')}</h2>
-              <p className="text-gray-500 text-xs mt-1 leading-relaxed">
-                {t('checkout.donationSubtitle')}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mb-4">
-            {[1, 2, 3].map(v => (
-              <motion.button
-                key={v}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => { setDonating(true); setDonationAmount(v); }}
-                className={cn(
-                  "flex-1 py-3 rounded-2xl border-2 text-sm font-black transition-all",
-                  donating && donationAmount === v 
-                    ? 'border-red-500 bg-red-500 text-white shadow-lg shadow-red-200' 
-                    : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-red-200 hover:text-red-500'
-                )}
-              >
-                R$ {v}
-              </motion.button>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setDonating(true)}
-              className={cn(
-                "flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all",
-                donating ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-400'
-              )}
-            >
-              {donating ? `${t('checkout.donate')} (R$ ${donationAmount})` : t('checkout.donate')}
-            </button>
-            {!donating && (
-              <button
-                onClick={() => setDonating(false)}
-                className="flex-1 py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-white border-2 border-slate-50 text-slate-300 hover:border-slate-200"
-              >
-                {t('checkout.notThisTime')}
-              </button>
-            )}
-          </div>
-        </motion.div>
-
         {/* Summary */}
         <motion.div 
           variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
@@ -870,6 +849,19 @@ export default function CheckoutPage() {
         >
           <div className="absolute top-0 left-0 w-full h-2 bg-[#FFC928]" />
           <h2 className="font-black text-[#111] text-lg uppercase tracking-tight mb-6">{t('checkout.summary')}</h2>
+          
+          <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 mb-6 select-none">
+            <p className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 text-emerald-700">
+              🌱 SEM INTERMEDIÁRIOS GULOSOS
+            </p>
+            <p className="text-xs font-bold text-slate-700 mt-1.5 leading-relaxed">
+              Você economizou <span className="bg-emerald-500/15 px-1 py-0.5 rounded text-emerald-800 font-black text-xs">R$ {(subtotal * 0.25).toFixed(2)}</span> em comissões que o restaurante teria pago em outros apps no modelo tradicional!
+            </p>
+            <p className="text-[9px] font-semibold text-gray-500 mt-2 leading-relaxed">
+              Esta compra é 100% direta entre você e o restaurante, livre de intermediários corporativos.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
@@ -907,18 +899,7 @@ export default function CheckoutPage() {
               <span className="font-black text-[#111]">{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2)}`}</span>
             </div>
 
-            <AnimatePresence>
-              {donating && (
-                <motion.div 
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  className="flex justify-between text-sm text-red-500 font-black"
-                >
-                  <span className="uppercase tracking-widest text-[10px]">Doação Social (Mercado Pago)</span>
-                  <span>R$ {donationAmount.toFixed(2)}</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
+
           </div>
 
           <div className="border-t border-gray-100 mt-6 pt-6 flex justify-between items-end">
@@ -932,12 +913,24 @@ export default function CheckoutPage() {
           </div>
         </motion.div>
 
+        {/* Gratitude block */}
+        <motion.div
+          variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+          className="bg-amber-500/5 border border-amber-500/10 rounded-3xl p-5 text-center select-none"
+        >
+          <span className="text-4xl mb-2 block">🍳❤️</span>
+          <h4 className="font-display font-black text-slate-800 uppercase italic text-xs tracking-tight">Muito obrigado por fortalecer o comércio do nosso bairro!</h4>
+          <p className="text-[10px] font-semibold text-slate-500 mt-1 lines-relaxed leading-relaxed max-w-sm mx-auto">
+            Ao escolher o pedido direto, seu ato ajuda a manter empregos locais e apoia as finanças saudáveis de famílias que amam a culinária da nossa comunidade.
+          </p>
+        </motion.div>
+
         <motion.button
           variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}
-          disabled={!name || !phone || (orderType === 'delivery' && (!deliveryAddress || (restaurant.deliverySettings?.feeByNeighborhood?.length ? !selectedNeighborhood : false))) || (orderType === 'dine-in' && !tableNumber) || !!nameError || !!phoneError}
+          disabled={submitting || !name || !phone || (orderType === 'delivery' && (!deliveryAddress || (restaurant.deliverySettings?.feeByNeighborhood?.length ? !selectedNeighborhood : false))) || (orderType === 'dine-in' && !tableNumber) || !!nameError || !!phoneError}
           className="w-full bg-[#111111] text-white font-black py-6 rounded-3xl text-lg hover:bg-[#000] transition-all shadow-2xl shadow-black/20 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
         >
           <Smartphone size={24} className="group-hover:rotate-12 transition-transform" />

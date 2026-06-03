@@ -44,6 +44,7 @@ export default function AdminWaiter() {
         restaurantId: currentRestaurant!.id,
         number: tableForm.number,
         active: tableForm.active,
+        status: tableForm.active ? 'free' : 'occupied',
         qrCodeUrl: `https://meuovo.com.br/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
       });
       setIsAdding(false);
@@ -52,6 +53,7 @@ export default function AdminWaiter() {
         ...isEditing,
         number: tableForm.number,
         active: tableForm.active,
+        status: tableForm.active ? 'free' : 'occupied',
         qrCodeUrl: `https://meuovo.com.br/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
       });
       setIsEditing(null);
@@ -101,7 +103,7 @@ export default function AdminWaiter() {
                 </div>
                 <div className="flex items-center gap-1">
                   <button 
-                    onClick={() => updateTable({ ...table, active: !table.active })}
+                    onClick={() => updateTable({ ...table, active: !table.active, status: !table.active ? 'free' : 'occupied' })}
                     className={`p-2 transition-colors ${table.active ? 'text-green-500' : 'text-gray-400'}`}
                     title={table.active ? 'Marcar como Ocupada' : 'Marcar como Livre'}
                   >

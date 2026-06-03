@@ -30,9 +30,10 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-10">
+        <div className="hidden lg:flex items-center gap-3 xl:gap-6 2xl:gap-8 mr-4">
           {[
-            { label: t('nav.order_food'), path: currentRestaurant ? `/r/${currentRestaurant.slug}` : '/busca' }, 
+            { label: "Por que existimos? 🍳", path: '/sobre' },
+            { label: t('nav.order_food'), path: '/busca' }, 
             { label: t('nav.my_orders'), path: '/meus-pedidos' },
             { label: t('nav.social_impact'), path: '/impacto-social' }, 
             { label: t('nav.for_restaurants'), path: '/para-restaurantes' }
@@ -42,10 +43,11 @@ export default function Navbar() {
                 key={item.label}
                 whileHover={{ y: -2 }}
                 whileTap={{ y: 0 }}
+                className="flex-shrink-0"
               >
                 <Link 
                   to={item.path} 
-                  className={`text-[11px] font-display font-black uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}
+                  className={`text-[10px] xl:text-[11px] font-display font-black uppercase tracking-[0.12em] xl:tracking-[0.2em] whitespace-nowrap transition-all hover:scale-105 active:scale-95 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}
                 >
                   {item.label}
                 </Link>
@@ -54,8 +56,8 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="flex items-center gap-3 lg:gap-6">
-          <div className="flex items-center gap-2 lg:gap-4">
+        <div className="flex items-center gap-1.5 md:gap-3 lg:gap-6 flex-shrink-0">
+          <div className="flex items-center gap-1 md:gap-2 lg:gap-4">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
@@ -88,7 +90,21 @@ export default function Navbar() {
 
             <LanguageSwitcher />
 
-            {user && (
+            {!user ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/perfil')}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 transition-all ${
+                  isDark 
+                    ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' 
+                    : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'
+                }`}
+              >
+                <User size={12} />
+                Entrar
+              </motion.button>
+            ) : (
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -108,14 +124,14 @@ export default function Navbar() {
           >
             <Link
               to="/cadastro-restaurante"
-              className="hidden lg:flex bg-[#FFC928] text-[#111] font-display font-black px-6 py-4 rounded-2xl text-[11px] uppercase tracking-[0.15em] hover:bg-[#e6b520] transition-all shadow-xl shadow-[#FFC928]/10"
+              className="hidden xl:flex bg-[#FFC928] text-[#111] font-display font-black px-6 py-4 rounded-2xl text-[11px] uppercase tracking-[0.15em] hover:bg-[#e6b520] transition-all shadow-xl shadow-[#FFC928]/10"
             >
               {t('nav.register_restaurant')}
             </Link>
           </motion.div>
 
           <button
-            className={`md:hidden p-2 rounded-xl transition-colors ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`}
+            className={`lg:hidden p-2 rounded-xl transition-colors ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -131,7 +147,7 @@ export default function Navbar() {
             animate={{ opacity: 1, y: 0, height: 'auto' }}
             exit={{ opacity: 0, y: -10, height: 0 }}
             transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className={`md:hidden absolute top-24 left-0 right-0 border-b z-50 overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-gray-100'}`}
+            className={`lg:hidden absolute top-24 left-0 right-0 border-b z-50 overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-white border-gray-100'}`}
           >
             <motion.div 
               initial="hidden"
@@ -149,7 +165,8 @@ export default function Navbar() {
               className="p-8 flex flex-col gap-6"
             >
               {[
-                { label: t('nav.order_food'), path: currentRestaurant ? `/r/${currentRestaurant.slug}` : '/busca' },
+                { label: "Por que existimos? 🍳", path: '/sobre' },
+                { label: t('nav.order_food'), path: '/busca' },
                 { label: t('nav.my_orders'), path: '/meus-pedidos' },
                 { label: t('nav.social_impact'), path: '/impacto-social' },
                 { label: t('nav.for_restaurants'), path: '/para-restaurantes' }
@@ -177,7 +194,7 @@ export default function Navbar() {
                 </motion.div>
               ))}
 
-              {user && (
+              {!user ? (
                 <motion.div
                   variants={{
                     hidden: { opacity: 0, x: -20 },
@@ -189,7 +206,22 @@ export default function Navbar() {
                     to="/perfil" 
                     className={`text-lg font-black uppercase tracking-wider flex items-center gap-3 ${isDark ? 'text-white' : 'text-[#111]'}`}
                   >
-                    <User size={20} className="text-[#FFC928]" /> Perfil
+                    <User size={20} className="text-[#FFC928]" /> Entrar / Cadastrar
+                  </Link>
+                </motion.div>
+              ) : (
+                <motion.div
+                  variants={{
+                    hidden: { opacity: 0, x: -20 },
+                    show: { opacity: 1, x: 0 }
+                  }}
+                >
+                  <Link 
+                    onClick={() => setMenuOpen(false)} 
+                    to="/perfil" 
+                    className={`text-lg font-black uppercase tracking-wider flex items-center gap-3 ${isDark ? 'text-white' : 'text-[#111]'}`}
+                  >
+                    <User size={20} className="text-[#FFC928]" /> Meu Perfil
                   </Link>
                 </motion.div>
               )}

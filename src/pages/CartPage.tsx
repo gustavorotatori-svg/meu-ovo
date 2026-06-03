@@ -7,11 +7,12 @@ import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import OptimizedImage from '../components/OptimizedImage';
+import { toast } from 'react-hot-toast';
 
 export default function CartPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, removeItem, updateQuantity, subtotal, itemCount, total } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, itemCount } = useCart();
   const { restaurants } = useRestaurant();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -24,9 +25,10 @@ export default function CartPage() {
   const restaurant = restaurants.find(r => r.id === restaurantId);
 
   const handleRemove = (index: number, name: string) => {
-    if (window.confirm(t('cart.removeConfirm', { name }))) {
-      removeItem(index);
-    }
+    removeItem(index);
+    toast.success(`${name} ${t('cart.removedSuccess') || 'removido do carrinho!'}`, {
+      icon: '🗑️',
+    });
   };
 
   if (items.length === 0) {
@@ -202,8 +204,9 @@ export default function CartPage() {
           </div>
           <div className={cn("border-t mt-6 pt-6 flex justify-between items-end", isDark ? 'border-[#2a2a2a]' : 'border-gray-50')}>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('cart.totalValue')}</span>
-              <span className="font-display font-black text-3xl leading-none text-[#FFC928]">R$ {total.toFixed(2)}</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('cart.subtotal')}</span>
+              <span className="font-display font-black text-3xl leading-none text-[#FFC928]">R$ {subtotal.toFixed(2)}</span>
+              <span className="text-[10px] text-gray-400 mt-1">+ frete calculado no checkout</span>
             </div>
             {restaurant && (
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic text-right px-2 py-1 bg-slate-50 dark:bg-white/5 rounded-lg">
@@ -227,7 +230,7 @@ export default function CartPage() {
               <ShoppingBag size={24} className="text-[#FFC928] group-hover:-rotate-12 transition-transform" />
               <span>{t('cart.checkout')}</span>
             </div>
-            <span className="text-[#FFC928]">R$ {total.toFixed(2)}</span>
+            <span className="text-[#FFC928]">R$ {subtotal.toFixed(2)}</span>
           </motion.button>
 
           <motion.button
@@ -242,7 +245,7 @@ export default function CartPage() {
               const msg = `*MEU OVO 🥚 - NOVO PEDIDO (INICIAL)*\n\n` +
                           `Olá! Gostaria de fazer um pedido:\n\n` +
                           `*ITENS:*\n${itemsText}\n\n` +
-                          `*TOTAL: R$ ${total.toFixed(2)}*\n\n` +
+                          `*SUBTOTAL: R$ ${subtotal.toFixed(2)}*\n\n` +
                           `Gostaria de combinar a entrega/retirada por aqui!`;
               const url = `https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
               window.open(url, '_blank');

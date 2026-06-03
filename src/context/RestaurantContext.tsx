@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession } from '../types';
-import { mockRestaurants, mockDeliverySettings } from '../data/mockData';
+import { mockRestaurants, mockDeliverySettings, mockProducts, mockCategories } from '../data/mockData';
 import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import { toast } from 'react-hot-toast';
@@ -14,7 +14,6 @@ import {
   doc, 
   deleteDoc,
   setDoc,
-  getDoc,
   orderBy
 } from 'firebase/firestore';
 
@@ -53,7 +52,7 @@ const RestaurantContext = createContext<RestaurantContextType | null>(null);
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>(mockRestaurants);
+  const [restaurants] = useState<Restaurant[]>(mockRestaurants);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -62,7 +61,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(mockRestaurants[0]);
   const [cashierSessions, setCashierSessions] = useState<CashierSession[]>([]);
   const [activeSession, setActiveSession] = useState<CashierSession | null>(null);
-  const hasFirestoreData = useRef(false);
 
   // Favorites state and persistence
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -78,47 +76,6 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('meuovo_favorites', JSON.stringify(favorites));
   }, [favorites]);
-
-  // Sync all restaurants from Firestore (for marketplace)
-  useEffect(() => {
-    const q = query(collection(db, 'restaurants'));
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) return;
-      const firestoreRestaurants = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Restaurant));
-      setRestaurants(firestoreRestaurants);
-      hasFirestoreData.current = true;
-    }, (error) => {
-      console.error('Error syncing restaurants from Firestore:', error);
-    });
-    return unsub;
-  }, []);
-
-  // Sync currentRestaurant based on logged user
-  useEffect(() => {
-    if (!user) return;
-
-    const q = query(collection(db, 'restaurants'), where('ownerId', '==', user.id));
-    const unsub = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const docData = snapshot.docs[0];
-        setCurrentRestaurant({ id: docData.id, ...docData.data() } as Restaurant);
-      } else {
-        // Fallback: doc ID = user.uid (Auth.tsx signup pattern)
-        getDoc(doc(db, 'restaurants', user.id)).then((docSnap) => {
-          if (docSnap.exists()) {
-            setCurrentRestaurant({ id: docSnap.id, ...docSnap.data() } as Restaurant);
-          } else if (!hasFirestoreData.current) {
-            setCurrentRestaurant(mockRestaurants[0]);
-          }
-        });
-      }
-    });
-
-    return () => unsub();
-  }, [user]);
 
   const toggleFavorite = (restaurantId: string) => {
     setFavorites(prev => {
@@ -140,13 +97,21 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     // Listen to Products
     const qProducts = query(collection(db, 'products'), where('restaurantId', '==', currentRestaurant.id));
     const unsubProducts = onSnapshot(qProducts, (snapshot) => {
-      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+      if (snapshot.empty && currentRestaurant.id === '1') {
+        setProducts(mockProducts);
+      } else {
+        setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     // Listen to Categories
     const qCats = query(collection(db, 'categories'), where('restaurantId', '==', currentRestaurant.id));
     const unsubCats = onSnapshot(qCats, (snapshot) => {
-      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+      if (snapshot.empty && currentRestaurant.id === '1') {
+        setCategories(mockCategories);
+      } else {
+        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+      }
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
 
     // Listen to Orders
@@ -267,11 +232,15 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
 
   const registerRestaurant = async (restaurant: Restaurant, categoryNames: string[], productData: any[]) => {
     try {
+      if (!auth.currentUser?.uid) {
+        toast.error('Você precisa estar logado para cadastrar um restaurante');
+        return;
+      }
       // 1. Create Restaurant
       const { id: rId, ...rData } = restaurant;
       const finalRData = {
         ...rData,
-        ownerId: auth.currentUser?.uid || 'anonymous',
+        ownerId: auth.currentUser.uid,
         createdAt: new Date().toISOString()
       };
       await setDoc(doc(db, 'restaurants', rId), finalRData);
@@ -292,12 +261,15 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       // 3. Create Products
       for (const p of productData) {
         const prodId = Math.random().toString(36).substr(2, 9);
+        const productPrice = parseFloat(p.price);
         await setDoc(doc(db, 'products', prodId), {
           id: prodId,
           restaurantId: rId,
           name: p.name,
-          price: parseFloat(p.price),
+          price: isNaN(productPrice) ? 0 : productPrice,
           categoryId: catMap[p.category] || '',
+          image: p.image || undefined,
+          description: p.description || undefined,
           isActive: true,
           isAvailable: true
         });
@@ -312,7 +284,10 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const addTable = async (t: Table) => {
     try {
       const { id, ...data } = t;
-      await setDoc(doc(db, 'tables', id), data);
+      await setDoc(doc(db, 'tables', id), {
+        ...data,
+        status: data.status || 'free'
+      });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `tables/${t.id}`);
     }
@@ -383,6 +358,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       favorites, toggleFavorite,
       addProduct, updateProduct, deleteProduct,
       addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
+      registerRestaurant,
       addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
     }}>
       {children}

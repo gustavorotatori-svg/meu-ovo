@@ -94,6 +94,7 @@ export default function OrderHistoryPage() {
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
       case 'received': return 'bg-blue-100 text-blue-600';
+      case 'accepted': return 'bg-violet-100 text-violet-600';
       case 'preparing': return 'bg-orange-100 text-orange-600';
       case 'ready': return 'bg-yellow-100 text-yellow-600';
       case 'out-for-delivery': return 'bg-purple-100 text-purple-600';
@@ -106,6 +107,7 @@ export default function OrderHistoryPage() {
   const getStatusLabel = (status: Order['status']) => {
     switch (status) {
       case 'received': return 'Recebido';
+      case 'accepted': return 'Aguardando Pagamento';
       case 'preparing': return 'Em preparo';
       case 'ready': return 'Pronto';
       case 'out-for-delivery': return 'Saiu para entrega';
@@ -388,7 +390,7 @@ export default function OrderHistoryPage() {
 
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
                               <button 
-                                onClick={() => navigate(`/pedido/${order.id}`)}
+                                onClick={() => navigate(`/r/${restaurant?.slug}/status/${order.id}`)}
                                 className="flex-1 h-12 bg-[#111] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-black/10 active:scale-95"
                               >
                                 <Clock size={16} /> Acompanhar Pedido

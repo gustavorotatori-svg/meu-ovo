@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Logo } from '../../components/Logo';
-import { ChefHat, Mail, Lock, User, Store } from 'lucide-react';
+import { ChefHat, Mail, Lock, User, Store, Trophy, Shield } from 'lucide-react';
 import { Button } from '../../components/Button';
 import { auth, db } from '../../lib/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 export default function AdminAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [wantToParticipate, setWantToParticipate] = useState(true);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -30,7 +31,14 @@ export default function AdminAuth() {
 
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        const { user } = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+        try {
+          await setDoc(doc(db, 'restaurants', user.uid), {
+            ovosDeOuroParticipant: wantToParticipate
+          }, { merge: true });
+        } catch (dbErr) {
+          console.warn("Could not save restaurant participant preference on login:", dbErr);
+        }
         toast.success('Bem-vindo de volta!');
       } else {
         const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
@@ -39,38 +47,27 @@ export default function AdminAuth() {
         // Create restaurant document
         const slug = formData.restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const restaurantData = {
-          id: user.uid,
           name: formData.restaurantName,
           slug,
           ownerId: user.uid,
-          pixKey: '',
-          whatsapp: '',
-          email: formData.email,
-          address: '',
-          city: '',
-          neighborhood: '',
-          logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=400&fit=crop',
-          coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
-          primaryColor: '#FFC928',
-          isOpen: true,
-          cuisineType: '',
-          priceRange: 'medium',
-          deliveryEnabled: true,
-          pickupEnabled: true,
-          dineInEnabled: false,
-          estimatedTime: 45,
-          deliveryFee: 0,
-          minimumOrder: 0,
-          rating: 5.0,
-          reviewCount: 0,
           description: '',
+          address: '',
+          phone: '',
+          isDeliveryOpen: true,
+          isTableOpen: true,
+          deliverySettings: {
+            fee: 0,
+            estimatedTime: '30-45 min',
+            minOrder: 0,
+          },
+          ovosDeOuroParticipant: wantToParticipate,
           createdAt: new Date().toISOString(),
         };
         
         await setDoc(doc(db, 'restaurants', user.uid), restaurantData);
         toast.success('Conta criada com sucesso!');
       }
-      navigate('/admin');
+      navigate('/admin/dashboard');
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -99,14 +96,14 @@ export default function AdminAuth() {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Seu Nome</label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 h-4 w-4" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
                     name="name"
                     required
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
                     placeholder="João"
                   />
                 </div>
@@ -114,14 +111,14 @@ export default function AdminAuth() {
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Restaurante</label>
                 <div className="relative">
-                  <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 h-4 w-4" />
+                  <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
                     type="text"
                     name="restaurantName"
                     required
                     value={formData.restaurantName}
                     onChange={handleChange}
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
                     placeholder="Nome"
                   />
                 </div>
@@ -132,14 +129,14 @@ export default function AdminAuth() {
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">E-mail Corporativo</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 h-4 w-4" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="email"
                 name="email"
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
                 placeholder="exemplo@email.com"
               />
             </div>
@@ -148,17 +145,43 @@ export default function AdminAuth() {
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Senha de Acesso</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 h-4 w-4" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
                 type="password"
                 name="password"
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
                 placeholder="••••••••"
               />
             </div>
+          </div>
+
+          {/* Golden Ovos de Ouro Preference Box */}
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 space-y-2.5 text-left">
+            <div className="flex items-start gap-2.5">
+              <input
+                id="participate-ovos-de-ouro"
+                type="checkbox"
+                checked={wantToParticipate}
+                onChange={(e) => setWantToParticipate(e.target.checked)}
+                className="mt-1 h-4.5 w-4.5 text-amber-500 border-amber-300 rounded focus:ring-amber-500 focus:ring-offset-0 cursor-pointer accent-amber-550"
+              />
+              <label htmlFor="participate-ovos-de-ouro" className="flex flex-col cursor-pointer select-none">
+                <span className="text-[11px] font-black text-amber-950 uppercase tracking-tight flex items-center gap-1 leading-none">
+                  <Trophy size={13} className="text-amber-600 fill-amber-300" />
+                  Prêmio Ovos de Ouro {new Date().getFullYear()}
+                </span>
+                <span className="text-[9px] text-amber-800 font-extrabold mt-0.5">
+                  Quero concorrer no campeonato anual oficial!
+                </span>
+              </label>
+            </div>
+            
+            <p className="text-[9px] text-amber-700 leading-relaxed font-semibold">
+              Garantia de Confidencialidade: Suas avaliações individuais acumuladas serão invisíveis para clientes e concorrentes, visíveis somente para o próprio estabelecimento e para a equipe Meu Ovo. Publicaremos apenas os 3 primeiros colocados generais em 15 de Dezembro. Austeridade e imparcialidade total.
+            </p>
           </div>
 
           <Button type="submit" className="w-full h-11 text-xs font-black uppercase tracking-[0.2em]" isLoading={loading}>
