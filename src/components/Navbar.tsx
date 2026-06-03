@@ -24,13 +24,13 @@ export default function Navbar() {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors ${isDark ? 'bg-black/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'} border-b ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-24">
-        <Link to="/" className="h-full flex items-center justify-center transition-all">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20 lg:h-24">
+        <Link to="/" className="h-full flex items-center justify-center transition-all shrink-0 pr-4 lg:pr-10">
           <Logo size="md" variant={isDark ? 'dark-colored' : 'colored'} />
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden lg:flex items-center gap-3 xl:gap-6 2xl:gap-8 mr-4">
+        <div className="hidden lg:flex items-center gap-4 xl:gap-8 mr-0">
           {[
             { label: "Por que existimos? 🍳", path: '/sobre' },
             { label: t('nav.order_food'), path: '/busca' }, 

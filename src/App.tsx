@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
+
+const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : '/';
 import { CartProvider } from './context/CartContext';
 import { RestaurantProvider } from './context/RestaurantContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -50,7 +52,7 @@ export default function App() {
       <AuthProvider>
         <RestaurantProvider>
           <CartProvider>
-            <BrowserRouter>
+            <BrowserRouter basename={basename}>
               <ScrollToTop />
               <Routes>
                 {/* Public */}
