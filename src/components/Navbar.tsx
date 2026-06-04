@@ -24,8 +24,8 @@ export default function Navbar() {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors ${isDark ? 'bg-black/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'} border-b ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20 lg:h-24">
-        <Link to="/" className="h-full flex items-center justify-center transition-all shrink-0 pr-4 lg:pr-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-20 lg:h-24">
+        <Link to="/" className="h-full flex items-center justify-center transition-all shrink-0 pr-2 lg:pr-8">
           <Logo size="md" variant={isDark ? 'dark-colored' : 'colored'} />
         </Link>
 
@@ -83,26 +83,26 @@ export default function Navbar() {
               whileHover={{ rotate: 15 }}
               whileTap={{ rotate: -15 }}
               onClick={toggleTheme}
-              className={`p-2.5 rounded-xl transition-colors ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`hidden sm:flex p-2.5 rounded-xl transition-colors ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
             >
               {isDark ? <Sun size={22} /> : <Moon size={22} />}
             </motion.button>
 
-            <LanguageSwitcher />
+            <div className="hidden sm:block"><LanguageSwitcher /></div>
 
             {!user ? (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate('/perfil')}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 transition-all ${
+                className={`flex items-center gap-1.5 px-2 sm:px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 transition-all ${
                   isDark 
                     ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' 
                     : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'
                 }`}
               >
-                <User size={12} />
-                Entrar
+                <User size={14} />
+                <span className="hidden sm:inline">Entrar</span>
               </motion.button>
             ) : (
               <motion.button
