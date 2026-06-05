@@ -508,21 +508,20 @@ export default function MenuManagement() {
     );
   }
 
-  return (    <div className="space-y-6">
-      {/* Image Helper */}
-      <script dangerouslySetInnerHTML={{ __html: `
-        window.handleImageUpload = (event) => {
-          const file = event.target.files[0];
-          if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-              const base64String = reader.result;
-              window.dispatchEvent(new CustomEvent('imageProcessed', { detail: base64String }));
-            };
-            reader.readAsDataURL(file);
-          }
+  useEffect(() => {
+    (window as any).handleImageUpload = (event: any) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          window.dispatchEvent(new CustomEvent('imageProcessed', { detail: reader.result }));
         };
-      ` }} />
+        reader.readAsDataURL(file);
+      }
+    };
+  }, []);
+
+  return (    <div className="space-y-6">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">

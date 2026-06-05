@@ -23,6 +23,8 @@ export interface Restaurant {
   rating: number;
   reviewCount: number;
   description: string;
+  responsible?: string;
+  hours?: string;
   createdAt: string;
   pixKey?: string;
   historyText?: string;
@@ -36,6 +38,8 @@ export interface Restaurant {
     estimatedTime: string;
     minOrder: number;
     feeByNeighborhood?: { neighborhood: string; fee: number }[];
+    radiusKm?: number;
+    observation?: string;
   };
   orderSettings?: {
     autoAccept: boolean;

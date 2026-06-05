@@ -377,6 +377,8 @@ export default function StoreSettings() {
     setLoading(true);
 
     try {
+      const deliveryFeeNum = parseFloat(formData.deliveryFee.toString());
+      const minOrderNum = parseFloat(formData.minOrder.toString());
       const updatedFields = {
         name: formData.name,
         description: formData.description,
@@ -388,14 +390,16 @@ export default function StoreSettings() {
         pickupEnabled: formData.pickupEnabled,
         dineInEnabled: formData.dineInEnabled,
         pixKey: formData.pixKey,
+        deliveryFee: deliveryFeeNum,
+        minimumOrder: isNaN(minOrderNum) ? 0 : minOrderNum,
         paymentSettings: {
           acceptCreditCard: formData.acceptCreditCard,
           creditCardLink: formData.creditCardLink,
         },
         deliverySettings: {
-          fee: parseFloat(formData.deliveryFee.toString()),
+          fee: deliveryFeeNum,
           estimatedTime: formData.estimatedTime,
-          minOrder: parseFloat(formData.minOrder.toString()),
+          minOrder: minOrderNum,
           feeByNeighborhood: formData.feeByNeighborhood
         },
         orderSettings: {
@@ -470,12 +474,12 @@ export default function StoreSettings() {
   };
 
   const copyMenuLink = () => {
-    const url = `${window.location.origin}/m/${restaurant?.slug}`;
+    const url = `${window.location.origin}/r/${restaurant?.slug}`;
     navigator.clipboard.writeText(url);
     toast.success('Link copiado!');
   };
 
-  const menuUrl = `${window.location.origin}/m/${restaurant?.slug}`;
+  const menuUrl = `${window.location.origin}/r/${restaurant?.slug}`;
 
   if (initialLoading) {
     return (

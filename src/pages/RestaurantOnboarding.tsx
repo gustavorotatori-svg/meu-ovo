@@ -81,15 +81,15 @@ export default function RestaurantOnboarding() {
 
   const handleFinish = async () => {
     // Validation
-    if (!form.name.trim()) { toast.error('Nome do restaurante é obrigatório'); setLoading(false); return; }
-    if (!form.whatsapp.trim()) { toast.error('WhatsApp é obrigatório'); setLoading(false); return; }
-    if (!form.responsible.trim()) { toast.error('Nome do responsável é obrigatório'); setLoading(false); return; }
-    if (form.whatsapp.replace(/\D/g, '').length < 10) { toast.error('WhatsApp inválido'); setLoading(false); return; }
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Email inválido'); setLoading(false); return; }
+    if (!form.name.trim()) { toast.error('Nome do restaurante é obrigatório'); return; }
+    if (!form.whatsapp.trim()) { toast.error('WhatsApp é obrigatório'); return; }
+    if (!form.responsible.trim()) { toast.error('Nome do responsável é obrigatório'); return; }
+    if (form.whatsapp.replace(/\D/g, '').length < 10) { toast.error('WhatsApp inválido'); return; }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Email inválido'); return; }
 
     const validProducts = products.filter(p => p.name.trim() && p.price);
-    if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome e preço'); setLoading(false); return; }
-    if (categories.length === 0) { toast.error('Adicione pelo menos uma categoria'); setLoading(false); return; }
+    if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome e preço'); return; }
+    if (categories.length === 0) { toast.error('Adicione pelo menos uma categoria'); return; }
 
     setLoading(true);
     try {

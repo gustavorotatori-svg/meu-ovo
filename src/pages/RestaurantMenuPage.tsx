@@ -766,7 +766,7 @@ export default function RestaurantMenuPage() {
               </div>
               <p className="text-xl font-display font-black italic tracking-tight mt-1 relative">
                 {restaurant.deliveryEnabled ? (
-                  restaurant.deliveryFee === 0 ? "Grátis" : `R$ ${restaurant.deliveryFee.toFixed(2)}`
+                  (restaurant.deliverySettings?.fee ?? restaurant.deliveryFee) === 0 ? "Grátis" : `R$ ${(restaurant.deliverySettings?.fee ?? restaurant.deliveryFee).toFixed(2)}`
                 ) : (
                   "Retirada local"
                 )}

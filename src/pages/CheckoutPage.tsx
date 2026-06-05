@@ -320,7 +320,7 @@ export default function CheckoutPage() {
     const order: Order = {
       id,
       restaurantId: restaurant.id,
-      userId: user?.uid,
+      userId: user?.id,
       customerName: name,
       customerPhone: phone,
       type: orderType,
