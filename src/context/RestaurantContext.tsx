@@ -101,7 +101,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem('meuovo_favorites', JSON.stringify(favorites));
+    try { localStorage.setItem('meuovo_favorites', JSON.stringify(favorites)); } catch (e) {}
   }, [favorites]);
 
   const toggleFavorite = (restaurantId: string) => {

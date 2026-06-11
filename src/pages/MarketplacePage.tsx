@@ -154,10 +154,10 @@ export default function MarketplacePage() {
 
     return rankedRestaurants.filter(r => {
       const matchesSearch = !search || 
-        r.name.toLowerCase().includes(searchLower) || 
-        r.cuisineType.toLowerCase().includes(searchLower) ||
-        r.neighborhood.toLowerCase().includes(searchLower) ||
-        r.city.toLowerCase().includes(searchLower) ||
+        (r.name || '').toLowerCase().includes(searchLower) || 
+        (r.cuisineType || '').toLowerCase().includes(searchLower) ||
+        (r.neighborhood || '').toLowerCase().includes(searchLower) ||
+        (r.city || '').toLowerCase().includes(searchLower) ||
         matchingProductRestaurantIds.has(r.id);
 
       if (!matchesSearch) return false;
@@ -717,7 +717,7 @@ const RestaurantCard: React.FC<{
                 r.deliveryFee === 0 ? (
                   <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded-md text-[11px]">Grátis</span>
                 ) : (
-                  <span className="text-gray-500">R$ {r.deliveryFee.toFixed(2)}</span>
+                  <span className="text-gray-500">R$ {(r.deliveryFee ?? 0).toFixed(2)}</span>
                 )
               ) : (
                 <span className="text-gray-400">Sem delivery</span>
