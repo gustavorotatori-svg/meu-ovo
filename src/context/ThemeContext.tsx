@@ -12,13 +12,21 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof window === 'undefined') return 'light';
-    const saved = localStorage.getItem('theme') as Theme | null;
-    if (saved) return saved;
+    try {
+      const saved = localStorage.getItem('theme') as Theme | null;
+      if (saved) return saved;
+    } catch {
+      // localStorage pode falhar em modo privado no mobile
+    }
     return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   useEffect(() => {
-    localStorage.setItem('theme', theme);
+    try {
+      localStorage.setItem('theme', theme);
+    } catch {
+      // localStorage pode falhar em modo privado no mobile
+    }
     const root = document.documentElement;
     if (theme === 'dark') {
       root.classList.add('dark');

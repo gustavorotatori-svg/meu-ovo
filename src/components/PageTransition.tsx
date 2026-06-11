@@ -91,7 +91,7 @@ const flameStyle = `
 
 export default function PageTransition({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const [showFlame, setShowFlame] = useState(true);
+  const [showFlame, setShowFlame] = useState(false);
 
   useEffect(() => {
     setShowFlame(true);

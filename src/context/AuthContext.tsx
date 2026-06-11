@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Try to get additional profile info from Firestore
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
@@ -45,7 +44,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...userDoc.data() as any
             });
           } else {
-            // Fallback for users without a profile doc yet
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email || '',
@@ -66,7 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    return unsub;
+    const timeout = setTimeout(() => setLoading(false), 5000);
+
+    return () => {
+      unsub();
+      clearTimeout(timeout);
+    };
   }, []);
 
   async function signUp(email: string, password: string, fullName: string, role: UserRole) {

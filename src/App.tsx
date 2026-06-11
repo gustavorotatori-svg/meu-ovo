@@ -212,10 +212,10 @@ export default function App() {
                     <Route path="*" element={<PageSuspense><NotFoundPage /></PageSuspense>} />
                   </Route>
                 </Routes>
+                <OvosDeOuroVotePopup />
+                <PwaInstallPrompt />
               </ErrorBoundary>
               <Toaster position="top-right" />
-              <OvosDeOuroVotePopup />
-              <PwaInstallPrompt />
             </BrowserRouter>
           </CartProvider>
         </RestaurantProvider>
