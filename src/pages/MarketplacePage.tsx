@@ -71,11 +71,11 @@ export default function MarketplacePage() {
 
     // Check restaurants & neighborhoods
     restaurants.forEach(r => {
-      if (r.name.toLowerCase().includes(searchLower)) {
-        matches.push({ type: 'restaurant', value: r.name, extra: r.cuisineType });
+      if ((r.name || '').toLowerCase().includes(searchLower)) {
+        matches.push({ type: 'restaurant', value: r.name || '', extra: r.cuisineType || '' });
       }
-      if (r.neighborhood.toLowerCase().includes(searchLower)) {
-        const neighborhoodValue = `${r.neighborhood}, ${r.city}`;
+      if ((r.neighborhood || '').toLowerCase().includes(searchLower)) {
+        const neighborhoodValue = `${r.neighborhood || ''}, ${r.city || ''}`;
         if (!matches.some(m => m.value === neighborhoodValue)) {
           matches.push({ type: 'neighborhood', value: neighborhoodValue });
         }
@@ -147,7 +147,7 @@ export default function MarketplacePage() {
     // Find products that match search to include their restaurants
     const matchingProductRestaurantIds = searchLower.length > 2 
       ? new Set(products.filter(p => 
-          p.name.toLowerCase().includes(searchLower) || 
+          (p.name || '').toLowerCase().includes(searchLower) || 
           p.description?.toLowerCase().includes(searchLower)
         ).map(p => p.restaurantId))
       : new Set();
