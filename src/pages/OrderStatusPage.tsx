@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Order, Restaurant } from '../types';
+import { Order, Restaurant, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChefHat, CheckCircle2, Clock, MapPin, Smartphone, ArrowLeft, Utensils, Bike, CreditCard, Heart, Ticket, Check, XCircle } from 'lucide-react';
+import { ChefHat, CheckCircle2, Clock, MapPin, Smartphone, ArrowLeft, Utensils, Bike, CreditCard, Heart, Ticket, Check, XCircle, Star, RefreshCw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -19,13 +19,26 @@ export default function OrderStatusPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-  const [showDonation, setShowDonation] = useState(false);
-  const [donationAmount, setDonationAmount] = useState(1);
-  const [donationConfirmed, setDonationConfirmed] = useState(false);
+  const [showPostPayment, setShowPostPayment] = useState(false);
+
+  // Caixinha Meu OVO
+  const [caixinhaAmount, setCaixinhaAmount] = useState(0.25);
+  const [caixinhaConfirmed, setCaixinhaConfirmed] = useState(false);
+  const [caixinhaSkipped, setCaixinhaSkipped] = useState(false);
+
+  // Social cause
+  const [socialAmount, setSocialAmount] = useState(1);
+  const [socialConfirmed, setSocialConfirmed] = useState(false);
   const navigate = useNavigate();
   const { restaurants } = useRestaurant();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+
+  // Dish rating state
+  const [eligibleItems, setEligibleItems] = useState<{ productId: string; productName: string }[]>([]);
+  const [ratings, setRatings] = useState<Record<string, number>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -34,8 +47,8 @@ export default function OrderStatusPage() {
       if (snapshot.exists()) {
         const data = snapshot.data() as Order;
         setOrder({ id: snapshot.id, ...data });
-        if (data.paymentStatus === 'paid' && !data.donationAmount) {
-          setShowDonation(true);
+        if (data.paymentStatus === 'paid' && !data.meuOvoCaixinha) {
+          setShowPostPayment(true);
         }
         // Fetch restaurant data from Firestore
         const restSnap = await getDoc(doc(db, 'restaurants', data.restaurantId));
@@ -52,6 +65,85 @@ export default function OrderStatusPage() {
     return () => unsub();
   }, [id, restaurants]);
 
+  // Load eligible items for rating when order is finished
+  useEffect(() => {
+    if (!order || !restaurant || order.status !== 'finished') return;
+
+    const ratedKey = `rated_order_${order.id}`;
+    if (localStorage.getItem(ratedKey)) {
+      setRatingSubmitted(true);
+      return;
+    }
+
+    const within48h = (Date.now() - new Date(order.createdAt).getTime()) < 48 * 60 * 60 * 1000;
+    if (!within48h) return;
+
+    const loadEligible = async () => {
+      try {
+        const catsSnap = await getDocs(query(collection(db, 'categories'), where('restaurantId', '==', restaurant.id)));
+        const categories = catsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Category));
+
+        const nonFoodKeywords = ['bebida', 'sobremesa', 'doce', 'refrigerante', 'suco', 'cerveja', 'vinho', 'drink', 'chope', 'licor', 'água'];
+        const foodCatIds = categories
+          .filter(c => !nonFoodKeywords.some(k => c.name.toLowerCase().includes(k)))
+          .map(c => c.id);
+
+        if (foodCatIds.length === 0) return;
+
+        const prodsSnap = await getDocs(query(
+          collection(db, 'products'),
+          where('restaurantId', '==', restaurant.id),
+          where('categoryId', 'in', foodCatIds)
+        ));
+        const foodProductIds = new Set(prodsSnap.docs.map(d => d.id));
+
+        const eligible = order.items
+          .filter(item => foodProductIds.has(item.productId))
+          .map(item => ({ productId: item.productId, productName: item.productName }));
+
+        setEligibleItems(eligible);
+      } catch (err) {
+        console.error('Error loading eligible items for rating:', err);
+      }
+    };
+    loadEligible();
+  }, [order?.id, order?.status, restaurant?.id]);
+
+  const handleRateDish = async () => {
+    if (!order || !restaurant || eligibleItems.length === 0) return;
+    const ratedItems = Object.keys(ratings);
+    if (ratedItems.length === 0) { toast.error('Selecione ao menos uma nota'); return; }
+
+    setSubmittingRating(true);
+    try {
+      const now = new Date();
+      const promises = ratedItems.map(productId =>
+        addDoc(collection(db, 'dish_ratings'), {
+          dishId: productId,
+          dishName: order.items.find(i => i.productId === productId)?.productName || '',
+          restaurantId: restaurant.id,
+          restaurantName: restaurant.name,
+          restaurantBairro: restaurant.neighborhood || '',
+          userId: order.userId || 'guest',
+          orderId: order.id,
+          rating: ratings[productId],
+          year: now.getFullYear(),
+          createdAt: now.toISOString(),
+        })
+      );
+      await Promise.all(promises);
+      const ratedKey = `rated_order_${order.id}`;
+      localStorage.setItem(ratedKey, '1');
+      setRatingSubmitted(true);
+      toast.success('Avaliação enviada! Obrigado por ajudar a premiar os melhores pratos!');
+    } catch (err) {
+      console.error('Error submitting ratings:', err);
+      toast.error('Erro ao enviar avaliação');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
+
   const handleConfirmPayment = async () => {
     if (!order) return;
     try {
@@ -59,23 +151,35 @@ export default function OrderStatusPage() {
         paymentStatus: 'paid'
       });
       setPaymentConfirmed(true);
-      setShowDonation(true);
+      setShowPostPayment(true);
       toast.success('Pagamento confirmado com sucesso!');
     } catch (err) {
       toast.error('Erro ao confirmar pagamento');
     }
   };
 
-  const handleDonation = async () => {
-    if (!order || donationAmount < 1) return;
+  const handleCaixinha = async () => {
+    if (!order) return;
     try {
       await updateDoc(doc(db, 'orders', order.id), {
-        donationAmount: donationAmount,
-        donationMethod: 'post-payment'
+        meuOvoCaixinha: caixinhaAmount
       });
-      setDonationConfirmed(true);
-      toast.success(`Doação de R$ ${donationAmount.toFixed(2)} confirmada! Obrigado!`);
-    } catch (err) {
+      setCaixinhaConfirmed(true);
+      toast.success('Caixinha Meu OVO de R$ ' + caixinhaAmount.toFixed(2) + ' registrada!');
+    } catch {
+      toast.error('Erro ao registrar caixinha');
+    }
+  };
+
+  const handleSocialDonation = async () => {
+    if (!order) return;
+    try {
+      await updateDoc(doc(db, 'orders', order.id), {
+        donationAmount: socialAmount
+      });
+      setSocialConfirmed(true);
+      toast.success('Doação social de R$ ' + socialAmount.toFixed(2) + ' registrada! Obrigado!');
+    } catch {
       toast.error('Erro ao registrar doação');
     }
   };
@@ -106,16 +210,6 @@ export default function OrderStatusPage() {
       txid: order.id.replace(/[^a-zA-Z0-9]/g, 'X').slice(-25).toUpperCase()
     });
   }, [restaurant, order]);
-
-  const donationPixCode = useMemo(() => {
-    if (donationAmount < 1) return null;
-    return generatePixPayload({
-      key: MEU_OVO_PIX_KEY,
-      name: 'MEU OVO',
-      amount: donationAmount,
-      txid: `DOACAO${order?.id?.replace(/[^a-zA-Z0-9]/g, 'X').slice(-19).toUpperCase()}`
-    });
-  }, [donationAmount, order]);
 
   if (loading) {
     return (
@@ -277,15 +371,43 @@ export default function OrderStatusPage() {
               </div>
             )}
 
-            {/* Credit Card Link */}
+            {/* Payment Links */}
             {restaurant?.paymentSettings?.acceptCreditCard && restaurant.paymentSettings.creditCardLink && (
-              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-6 text-center">
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Cartão de Crédito</h3>
                 <a
                   href={restaurant.paymentSettings.creditCardLink}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg"
+                >
+                  <CreditCard size={20} />
+                  Ir para Pagamento
+                </a>
+              </div>
+            )}
+            {restaurant?.paymentSettings?.acceptDebit && restaurant.paymentSettings.debitLink && (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Cartão de Débito</h3>
+                <a
+                  href={restaurant.paymentSettings.debitLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg"
+                >
+                  <CreditCard size={20} />
+                  Ir para Pagamento
+                </a>
+              </div>
+            )}
+            {restaurant?.paymentSettings?.acceptVoucher && restaurant.paymentSettings.voucherLink && (
+              <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Vale-Refeição</h3>
+                <a
+                  href={restaurant.paymentSettings.voucherLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-purple-700 transition-all shadow-lg"
                 >
                   <CreditCard size={20} />
                   Ir para Pagamento
@@ -306,113 +428,178 @@ export default function OrderStatusPage() {
           </motion.div>
         )}
 
-        {/* Donation Section (after payment) */}
-        {showDonation && !donationConfirmed && (
+        {/* Post-Payment: Caixinha Meu OVO + Social Cause */}
+        {showPostPayment && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-3xl p-8 shadow-xl border-2 border-dashed border-red-200 relative overflow-hidden"
+            className="space-y-6"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-red-50 rounded-2xl text-red-500">
-                <Heart size={24} className="animate-pulse" />
-              </div>
-              <div>
-                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">Quer Doar para o MEU OVO?</h2>
-                <p className="text-xs text-slate-500 font-medium">Sua contribuição ajuda a manter a plataforma e apoiar projetos sociais.</p>
-              </div>
-            </div>
+            {/* Step 1: Caixinha Meu OVO */}
+            {!caixinhaConfirmed && !caixinhaSkipped && (
+              <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-amber-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                    <Heart size={24} />
+                  </div>
+                  <div>
+                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">🐣 Caixinha Meu OVO</h2>
+                    <p className="text-xs text-slate-500 font-medium">Ajude a manter a plataforma gratuita para os restaurantes!</p>
+                  </div>
+                </div>
 
-            <div className="flex gap-2 mb-6">
-              {[1, 5, 10].map(v => (
-                <motion.button
-                  key={v}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setDonationAmount(v)}
-                  className={cn(
-                    "flex-1 py-4 rounded-2xl border-2 text-sm font-black transition-all",
-                    donationAmount === v
-                      ? 'border-red-500 bg-red-500 text-white shadow-lg shadow-red-200'
-                      : 'border-slate-50 bg-slate-50/50 text-slate-500 hover:border-red-200 hover:text-red-500'
-                  )}
-                >
-                  R$ {v}
-                </motion.button>
-              ))}
-            </div>
-
-            {/* MEU OVO Donation QR Code */}
-            <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
-              <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                Doe via PIX para o MEU OVO
-              </h3>
-              <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative mx-auto mb-4">
-                <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
-                  {[
-                    [1,1,1,1,1,1],[1,0,0,0,1,1],[1,0,1,0,0,1],[1,1,0,0,0,1],[1,0,0,1,0,1],[1,1,1,1,1,1]
-                  ].flat().map((v, i) => (
-                    <div key={i} className={v ? 'bg-red-800' : 'bg-transparent'} />
+                <div className="flex gap-2 mb-6">
+                  {[0.25, 0.50, 1].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setCaixinhaAmount(v)}
+                      className={`flex-1 py-4 rounded-2xl border-2 text-sm font-black transition-all ${
+                        caixinhaAmount === v
+                          ? 'border-amber-500 bg-amber-100 text-amber-800'
+                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-amber-300 hover:text-amber-600'
+                      }`}
+                    >
+                      R$ {v.toFixed(2)}
+                    </button>
                   ))}
                 </div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                  <Heart size={20} className="text-red-500" />
-                </div>
-              </div>
 
-              {donationPixCode && (
-                <div className="w-full space-y-3">
-                  <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative group overflow-hidden">
-                    <div className="truncate pr-8">{donationPixCode}</div>
-                    <motion.button
-                      whileTap={{ scale: 0.9 }}
+                <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+                    Pague via PIX para o MEU OVO
+                  </h3>
+                  <p className="text-xs font-bold text-amber-600 mb-4">
+                    Chave PIX: <strong className="text-amber-800">{MEU_OVO_PIX_KEY}</strong>
+                  </p>
+                  <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative">
+                    <div className="truncate pr-8">00020126360014br.gov.bcb.pix0114{MEU_OVO_PIX_KEY}52040000530398654{caixinhaAmount.toFixed(2).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9</div>
+                    <button
                       onClick={() => {
-                        navigator.clipboard.writeText(donationPixCode).catch(() => {});
-                        toast.success('Código PIX de doação copiado!');
+                        navigator.clipboard.writeText(`00020126360014br.gov.bcb.pix0114${MEU_OVO_PIX_KEY}52040000530398654${String(caixinhaAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9`).catch(() => {});
+                        toast.success('Código PIX da caixinha copiado!');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-red-500 text-white rounded-lg shadow-sm"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-amber-500 text-white rounded-lg shadow-sm"
                     >
                       <Ticket size={14} />
-                    </motion.button>
+                    </button>
                   </div>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                    Chave PIX: <strong className="text-red-600">{MEU_OVO_PIX_KEY}</strong>
-                  </p>
                 </div>
-              )}
-            </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={handleDonation}
-                className="w-full bg-red-600 text-white font-black py-5 rounded-2xl hover:bg-red-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-red-500/20 flex items-center justify-center gap-2"
-              >
-                <Heart size={20} />
-                Doar R$ {donationAmount.toFixed(2)}
-              </button>
-              <button
-                onClick={() => setShowDonation(false)}
-                className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm"
-              >
-                Não quero doar agora
-              </button>
-            </div>
-          </motion.div>
-        )}
+                <div className="space-y-3">
+                  <button
+                    onClick={handleCaixinha}
+                    className="w-full bg-amber-500 text-white font-black py-5 rounded-2xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+                  >
+                    <Heart size={20} />
+                    Caixinha de R$ {caixinhaAmount.toFixed(2)}
+                  </button>
+                  <button
+                    onClick={() => setCaixinhaSkipped(true)}
+                    className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm"
+                  >
+                    Pular caixinha
+                  </button>
+                </div>
+              </div>
+            )}
 
-        {/* Donation Confirmed */}
-        {donationConfirmed && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-red-50 border-2 border-red-200 rounded-3xl p-6 text-center"
-          >
-            <Heart size={48} className="text-red-400 mx-auto mb-3 animate-pulse" />
-            <h2 className="font-black text-xl text-red-700 uppercase tracking-tighter mb-2">Obrigado por Doar!</h2>
-            <p className="text-sm text-red-600 font-medium">
-              Sua doação de <strong>R$ {donationAmount.toFixed(2)}</strong> foi registrada. 
-              Você ajuda a fortalecer o MEU OVO e nossos projetos sociais!
-            </p>
+            {/* Step 1b: Caixinha Confirmed */}
+            {caixinhaConfirmed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center"
+              >
+                <Heart size={48} className="text-amber-400 mx-auto mb-3 animate-pulse" />
+                <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">Obrigado pela Caixinha!</h2>
+                <p className="text-sm text-amber-600 font-medium">
+                  Sua contribuição de <strong>R$ {caixinhaAmount.toFixed(2)}</strong> fortalece o MEU OVO!
+                </p>
+              </motion.div>
+            )}
+
+            {/* Step 2: Social Cause */}
+            {!socialConfirmed && (
+              <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-dashed border-rose-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-rose-50 rounded-2xl text-rose-500">
+                    <Heart size={24} className="animate-pulse" />
+                  </div>
+                  <div>
+                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">❤️ Ajude uma Causa Social</h2>
+                    <p className="text-xs text-slate-500 font-medium">Sua doação vai para instituições que ajudam os menos afortunados do bairro.</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 mb-6">
+                  {[1, 5, 10].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setSocialAmount(v)}
+                      className={`flex-1 py-4 rounded-2xl border-2 text-sm font-black transition-all ${
+                        socialAmount === v
+                          ? 'border-rose-500 bg-rose-100 text-rose-800'
+                          : 'border-slate-100 bg-slate-50 text-slate-500 hover:border-rose-300 hover:text-rose-600'
+                      }`}
+                    >
+                      R$ {v}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
+                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+                    Doe via PIX para o MEU OVO
+                  </h3>
+                  <p className="text-xs font-bold text-rose-600 mb-4">
+                    Chave PIX: <strong className="text-rose-800">{MEU_OVO_PIX_KEY}</strong>
+                  </p>
+                  <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative">
+                    <div className="truncate pr-8">00020126360014br.gov.bcb.pix0114{MEU_OVO_PIX_KEY}52040000530398654{String(socialAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9</div>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`00020126360014br.gov.bcb.pix0114${MEU_OVO_PIX_KEY}52040000530398654${String(socialAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9`).catch(() => {});
+                        toast.success('Código PIX de doação copiado!');
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-rose-500 text-white rounded-lg shadow-sm"
+                    >
+                      <Ticket size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <button
+                    onClick={handleSocialDonation}
+                    className="w-full bg-rose-600 text-white font-black py-5 rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2"
+                  >
+                    <Heart size={20} />
+                    Doar R$ {socialAmount.toFixed(2)}
+                  </button>
+                  <button
+                    onClick={() => setShowPostPayment(false)}
+                    className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm"
+                  >
+                    Não quero doar agora
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2b: Social Confirmed */}
+            {socialConfirmed && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-rose-50 border-2 border-rose-200 rounded-3xl p-6 text-center"
+              >
+                <Heart size={48} className="text-rose-400 mx-auto mb-3 animate-pulse" />
+                <h2 className="font-black text-xl text-rose-700 uppercase tracking-tighter mb-2">Obrigado por Doar!</h2>
+                <p className="text-sm text-rose-600 font-medium">
+                  Sua doação de <strong>R$ {socialAmount.toFixed(2)}</strong> vai ajudar quem mais precisa!
+                </p>
+              </motion.div>
+            )}
           </motion.div>
         )}
 
@@ -493,20 +680,95 @@ export default function OrderStatusPage() {
           <div className="mt-8 pt-6 border-t border-dashed border-slate-200">
             <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
               <span>Subtotal</span>
-              <span>R$ {(order.total - (order.donationAmount || 0)).toFixed(2)}</span>
+              <span>R$ {order.total.toFixed(2)}</span>
             </div>
+            {order.meuOvoCaixinha ? (
+              <div className="flex justify-between text-xs font-black uppercase tracking-widest text-amber-500 mb-2">
+                <span>🐣 Caixinha Meu OVO</span>
+                <span>R$ {order.meuOvoCaixinha.toFixed(2)}</span>
+              </div>
+            ) : null}
             {order.donationAmount ? (
-              <div className="flex justify-between text-xs font-black uppercase tracking-widest text-orange-500 mb-2">
-                <span>Doação MEU OVO</span>
+              <div className="flex justify-between text-xs font-black uppercase tracking-widest text-rose-500 mb-2">
+                <span>❤️ Doação Social</span>
                 <span>R$ {order.donationAmount.toFixed(2)}</span>
               </div>
             ) : null}
             <div className="flex justify-between text-lg font-black uppercase italic tracking-tighter">
               <span>Total</span>
-              <span>R$ {(order.total).toFixed(2)}</span>
+              <span>R$ {order.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
+
+        {/* Dish Rating Section */}
+        {order.status === 'finished' && eligibleItems.length > 0 && !ratingSubmitted && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-3xl p-8 shadow-xl border-2 border-amber-100"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                <Star size={24} />
+              </div>
+              <div>
+                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">Avalie os Pratos</h2>
+                <p className="text-xs text-slate-500 font-medium">Sua nota ajuda a premiar os melhores pratos da temporada!</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {eligibleItems.map(item => (
+                <div key={item.productId} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                  <p className="font-bold text-sm uppercase tracking-tight">{item.productName}</p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map(star => (
+                      <button
+                        key={star}
+                        onClick={() => setRatings(prev => ({ ...prev, [item.productId]: star }))}
+                        className={`p-1 rounded-lg transition-all hover:scale-110 ${
+                          (ratings[item.productId] || 0) >= star
+                            ? 'text-amber-400'
+                            : 'text-slate-200 hover:text-amber-200'
+                        }`}
+                      >
+                        <Star size={22} className={ratings[item.productId] >= star ? 'fill-amber-400' : ''} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={handleRateDish}
+              disabled={submittingRating || Object.keys(ratings).length === 0}
+              className="mt-6 w-full bg-amber-500 text-white font-black py-5 rounded-2xl hover:bg-amber-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+            >
+              {submittingRating ? (
+                <RefreshCw size={18} className="animate-spin" />
+              ) : (
+                <Star size={18} />
+              )}
+              {submittingRating ? 'Enviando...' : 'Enviar Avaliação'}
+            </button>
+          </motion.div>
+        )}
+
+        {ratingSubmitted && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center"
+          >
+            <Star size={48} className="text-amber-400 mx-auto mb-3" />
+            <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">Obrigado pela Avaliação!</h2>
+            <p className="text-sm text-amber-600 font-medium">
+              Sua nota ajuda a reconhecer e premiar os melhores pratos da temporada!
+            </p>
+          </motion.div>
+        )}
 
         {/* Actions */}
         <div className="grid grid-cols-2 gap-4">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, MoreVertical, Edit2, Trash2, GripVertical, Check, X, Trash, Clock, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Plus, Search, MoreVertical, Edit2, Trash2, GripVertical, Check, X, Trash, Clock, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../lib/firebase';
 import { 
@@ -24,6 +24,7 @@ import { Skeleton } from '../../components/Skeleton';
 import { Reorder, motion, AnimatePresence } from 'motion/react';
 import AIMenuGenerator from '../../components/admin/AIMenuGenerator';
 import AIProductGenerator from '../../components/admin/AIProductGenerator';
+import AIMenuImport from '../../components/admin/AIMenuImport';
 
 export default function MenuManagement() {
   const { t } = useTranslation();
@@ -41,6 +42,7 @@ export default function MenuManagement() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [isAIImportOpen, setIsAIImportOpen] = useState(false);
   const [isAIProductModalOpen, setIsAIProductModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -534,6 +536,9 @@ export default function MenuManagement() {
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button variant="outline" size="sm" onClick={() => setIsAIModalOpen(true)} className="h-10 px-4 font-black tracking-widest text-[10px] italic border-2 border-brand-black/10 hover:bg-slate-50 transition-colors">
               <Sparkles className="mr-2 h-3.5 w-3.5 text-orange-500" /> GERAR MENU
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setIsAIImportOpen(true)} className="h-10 px-4 font-black tracking-widest text-[10px] italic border-2 border-brand-black/10 hover:bg-slate-50 transition-colors">
+              <Upload className="mr-2 h-3.5 w-3.5 text-brand-egg" /> IMPORTAR
             </Button>
             <Button 
               variant="outline" 
@@ -1403,6 +1408,14 @@ export default function MenuManagement() {
             </div>
           </div>
         </div>
+      )}
+      {/* AI Menu Import Modal */}
+      {isAIImportOpen && restaurant && (
+        <AIMenuImport
+          restaurantId={restaurant.id}
+          onClose={() => setIsAIImportOpen(false)}
+          onSuccess={() => {}}
+        />
       )}
       {/* AI Menu Generator Modal */}
       {isAIModalOpen && restaurant && (

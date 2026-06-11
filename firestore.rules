@@ -125,5 +125,44 @@ service cloud.firestore {
       );
       allow delete: if runsRestaurant(existing().restaurantId);
     }
+
+    // --- OVOS DE OURO PARTICIPATION ---
+    match /ovos_de_ouro_participants/{restaurantId} {
+      allow read: if true;
+      allow create: if runsRestaurant(restaurantId)
+        && incoming().restaurantId == restaurantId
+        && incoming().acceptedAt == request.time;
+      allow update: if runsRestaurant(restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if runsRestaurant(restaurantId);
+    }
+
+    // --- DISH RATINGS (avaliação de pratos) ---
+    match /dish_ratings/{ratingId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().dishId is string
+        && incoming().rating is number
+        && incoming().rating >= 1 && incoming().rating <= 5
+        && incoming().year == request.time.date().year();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // --- OVOS DE OURO VOTES ---
+    match /ovos_de_ouro_votes/{voteId} {
+      allow get: if true;
+      allow list: if runsRestaurant(resource.data.restaurantId);
+      allow create: if isSignedIn()
+        && incoming().userId == request.auth.uid
+        && incoming().orderId is string
+        && incoming().restaurantRating is number
+        && incoming().restaurantRating >= 1 && incoming().restaurantRating <= 5
+        && incoming().year == request.time.date().year();
+      allow update: if false;
+      allow delete: if false;
+    }
   }
 }

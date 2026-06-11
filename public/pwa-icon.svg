@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#111111"/>
+  <g transform="translate(256,280)">
+    <!-- Frying pan handle -->
+    <rect x="30" y="-8" width="140" height="16" rx="8" fill="#555"/>
+    <!-- Frying pan body -->
+    <ellipse cx="-30" cy="0" rx="160" ry="60" fill="#444"/>
+    <ellipse cx="-30" cy="-5" rx="146" ry="50" fill="#333"/>
+    <!-- Egg white -->
+    <ellipse cx="-30" cy="-15" rx="70" ry="40" fill="white"/>
+    <!-- Egg yolk -->
+    <circle cx="-25" cy="-18" r="28" fill="#FFC928"/>
+    <!-- Steam -->
+    <path d="M-60,-65 Q-55,-85 -45,-70" stroke="white" stroke-width="4" fill="none" opacity="0.4" stroke-linecap="round"/>
+    <path d="M-20,-75 Q-15,-95 -5,-80" stroke="white" stroke-width="4" fill="none" opacity="0.3" stroke-linecap="round"/>
+    <path d="M10,-65 Q15,-80 20,-70" stroke="white" stroke-width="3" fill="none" opacity="0.2" stroke-linecap="round"/>
+  </g>
+</svg>

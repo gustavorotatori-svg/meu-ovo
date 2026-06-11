@@ -1,6 +1,7 @@
 import { Heart, CheckCircle, TrendingUp, ArrowRight, Sparkles } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -98,6 +99,10 @@ export default function SocialImpactPage() {
 
   return (
     <div className={`min-h-screen transition-colors ${isDark ? 'bg-black text-white' : 'bg-white text-[#111]'}`}>
+      <SEO 
+        title="Impacto Social - Meu Ovo"
+        description="O Meu Ovo transforma o ato de pedir comida em uma força de mudança social. Veja nosso impacto em restaurantes locais e comunidades."
+      />
       <Navbar />
 
       {/* Hero Header Banner with Live Stats */}

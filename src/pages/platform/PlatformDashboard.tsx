@@ -92,6 +92,7 @@ export default function PlatformDashboard() {
   const sidebarItems = [
     { to: '/plataforma', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { to: '/plataforma/restaurantes', label: 'Restaurantes', icon: <Store size={20} /> },
+    { to: '/plataforma/clientes', label: 'Clientes', icon: <Users size={20} /> },
     { to: '/plataforma/inteligencia', label: 'Inteligência', icon: <Brain size={20} /> },
     { to: '/plataforma/relatorios', label: 'Relatórios do Mercado', icon: <BarChart3 size={20} /> },
     { to: '/plataforma/parceiros', label: 'Parceiros Social', icon: <Heart size={20} /> },

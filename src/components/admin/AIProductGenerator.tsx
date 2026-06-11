@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Sparkles, X, Loader2, Wand2, Check, Utensils, DollarSign, Clock, Image as ImageIcon } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
 import { Button } from '../Button';
 import { toast } from 'react-hot-toast';
 import { db } from '../../lib/firebase';
@@ -150,36 +149,17 @@ export default function AIProductGenerator({
     setLoading(true);
     setErrors({});
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const systemInstruction = `Você é um chef de cozinha profissional e criativo. Gere um novo produto inovador e realista para a categoria de cardápio "${categoryName}" de um estabelecimento gourmet.
-      ${prompt ? `O usuário sugeriu como base: "${prompt}"` : 'Crie um prato especial delicioso, premium e popular que se destaque no cardápio.'}
-      O preço deve ser um valor numérico realista em Reais (BRL), sem o símbolo R$, exemplo: 35.90.
-      O tempo de preparo deve ser um número inteiro em minutos correspondente à preparação realista do item, exemplo: 15.
-      A descrição deve ser muito apetitosa, curta e atraente para o cliente final.
-      Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) condizente com este prato específico e categoria. Ex: Se for uma sobremesa, que seja uma foto de sobremesa do Unsplash.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: "Gere um prato/produto para o cardápio.",
-        config: {
-          systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING },
-              description: { type: Type.STRING },
-              price: { type: Type.NUMBER },
-              estimatedPrepTime: { type: Type.NUMBER },
-              imageUrl: { type: Type.STRING }
-            },
-            required: ["name", "description", "price", "estimatedPrepTime", "imageUrl"]
-          }
-        }
+      const resp = await fetch('/api/ai/generate-product', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ categoryName, prompt: prompt || undefined })
       });
-
-      const result = JSON.parse(response.text);
+      if (!resp.ok) {
+        const errData = await resp.json();
+        throw new Error(errData.error || 'Erro na geração');
+      }
+      const respData = await resp.json();
+      const result = respData.data;
 
       let imageSrc = result.imageUrl || '';
       if (!imageSrc || (!imageSrc.startsWith('http://') && !imageSrc.startsWith('https://'))) {

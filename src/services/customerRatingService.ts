@@ -28,7 +28,7 @@ export const submitCustomerRating = async (ratingData: Omit<CustomerRating, 'id'
     await setDoc(doc(db, 'customer_ratings', ratingId), {
       ...rating,
       customerPhoneClean: cleanPhone,
-      createdAt: new Date() // Store as server-side compatible timestamp or let Firestore rules check it
+      createdAt: rating.createdAt
     });
     
     return rating;
@@ -94,10 +94,10 @@ export const getCustomerStats = async (customerPhone: string): Promise<CustomerS
   
   if (ratings.length === 0) {
     return {
-      averageRating: 0,
+      averageRating: 5,
       totalRatings: 0,
       isProblematic: false,
-      statusText: 'Sem avaliações',
+      statusText: 'Excelente',
       tagsSummary: {},
       ratings: []
     };

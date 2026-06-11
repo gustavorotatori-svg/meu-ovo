@@ -53,6 +53,10 @@ export interface Restaurant {
   paymentSettings?: {
     acceptCreditCard: boolean;
     creditCardLink: string;
+    acceptDebit: boolean;
+    debitLink: string;
+    acceptVoucher: boolean;
+    voucherLink: string;
   };
   fiscalSettings?: {
     nfeEnabled: boolean;
@@ -167,6 +171,10 @@ export interface Order {
   discountAmount?: number; // legacy/fallback
   total: number;
   observations?: string;
+  scheduledAt?: string;
+  tip?: number;
+  tipPercent?: number;
+  meuOvoCaixinha?: number;
   problemReport?: {
     type: 'missing_item' | 'wrong_item' | 'bad_condition' | 'other';
     description: string;

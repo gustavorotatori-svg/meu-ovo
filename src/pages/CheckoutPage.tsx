@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, UtensilsCrossed, Package, Heart, Check, CreditCard, Banknote, Smartphone, Store, Ticket, Gift } from 'lucide-react';
+import { ArrowLeft, MapPin, UtensilsCrossed, Package, Heart, Check, CreditCard, Banknote, Smartphone, Store, Ticket, Gift, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
@@ -15,7 +15,7 @@ import { generatePixPayload } from '../lib/pix';
 import { getCustomerStats, checkCouponTargeting } from '../services/customerRatingService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
-type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site';
+type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
 
 export default function CheckoutPage() {
   const { t } = useTranslation();
@@ -98,6 +98,22 @@ export default function CheckoutPage() {
   // Customer Reputation Stats state
   const [customerStats, setCustomerStats] = useState<any | null>(null);
   const [isCheckingReputation, setIsCheckingReputation] = useState(false);
+
+  // Scheduled order state
+  const [scheduledAt, setScheduledAt] = useState('');
+
+  // Tip state
+  const tipOptions = [0, 5, 10, 15];
+  const [tipPercent, setTipPercent] = useState(0);
+  const tipAmount = (subtotal * tipPercent) / 100;
+
+  // Caixinha Meu OVO
+  const caixinhaOptions = [0, 0.25, 0.50, 1];
+  const [caixinhaAmount, setCaixinhaAmount] = useState(0);
+
+  // Social cause donation
+  const donationOptions = [0, 1, 2, 5];
+  const [donationAmount, setDonationAmount] = useState(0);
 
   useEffect(() => {
     const checkCustomerReputation = async () => {
@@ -248,7 +264,7 @@ export default function CheckoutPage() {
   };
 
   const deliveryFee = getDeliveryFee();
-  const total = Math.max(0, subtotal + deliveryFee - discountValue);
+  const total = Math.max(0, subtotal + deliveryFee + tipAmount - discountValue);
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -332,10 +348,14 @@ export default function CheckoutPage() {
       items: orderItems,
       subtotal,
       deliveryFee,
-      donationAmount: 0,
+      meuOvoCaixinha: caixinhaAmount > 0 ? caixinhaAmount : undefined,
+      donationAmount: donationAmount > 0 ? donationAmount : undefined,
       couponCode: appliedCoupon?.code,
       couponDiscount: appliedCoupon ? discountValue : undefined,
       total: total,
+      tip: tipAmount > 0 ? tipAmount : undefined,
+      tipPercent: tipPercent > 0 ? tipPercent : undefined,
+      scheduledAt: scheduledAt || undefined,
       observations: observations || undefined,
       createdAt: new Date().toISOString(),
       origin: 'marketplace',
@@ -374,7 +394,15 @@ export default function CheckoutPage() {
 
     // Build WhatsApp message
     const typePt = { 'dine-in': 'Salão', 'delivery': 'Delivery', 'pickup': 'Retirada' };
-    const payPt = { pix: 'PIX', cash: 'Dinheiro', 'card-on-delivery': 'Cartão na entrega', 'on-site': 'Pagamento no local' };
+    const payPt: Record<string, string> = { pix: 'PIX', cash: 'Dinheiro', 'card-on-delivery': 'Cartão na entrega', 'on-site': 'Pagamento no local', credit: 'Cartão Crédito Online', debit: 'Cartão Débito Online', voucher: 'Vale-Refeição' };
+
+    const getPaymentLink = () => {
+      if (paymentMethod === 'credit') return restaurant?.paymentSettings?.creditCardLink;
+      if (paymentMethod === 'debit') return restaurant?.paymentSettings?.debitLink;
+      if (paymentMethod === 'voucher') return restaurant?.paymentSettings?.voucherLink;
+      return '';
+    };
+    const paymentLink = getPaymentLink();
 
     const itemsText = items.map(item => {
       const addText = item.selectedAdditionals.length ? `\n   + ${item.selectedAdditionals.map(a => a.name).join(', ')}` : '';
@@ -390,6 +418,11 @@ export default function CheckoutPage() {
         : 'Retirada no balcão';
     const couponText = appliedCoupon ? `\nCupom: ${appliedCoupon.code} (- R$ ${discountValue.toFixed(2)})` : '';
     const changeText = paymentMethod === 'cash' && changeFor ? `\nTroco para: R$ ${changeFor}` : '';
+    const tipText = tipAmount > 0 ? `Gorjeta (${tipPercent}%): R$ ${tipAmount.toFixed(2)}` : '';
+    const caixinhaText = caixinhaAmount > 0 ? `🐣 Caixinha Meu OVO: R$ ${caixinhaAmount.toFixed(2)}` : '';
+    const donationText = donationAmount > 0 ? `❤️ Doação Social: R$ ${donationAmount.toFixed(2)}` : '';
+    const extrasText = [tipText, caixinhaText, donationText].filter(Boolean).join('\n');
+    const scheduleText = scheduledAt ? `\nAgendado para: ${new Date(scheduledAt).toLocaleString('pt-BR')}` : '';
     const obsText = observations ? `\nObservações gerais: ${observations}` : '';
 
     const ratingText = customerStats && customerStats.totalRatings > 0
@@ -405,12 +438,15 @@ export default function CheckoutPage() {
                 `*Tipo:* ${typePt[orderType]}\n` +
                 `*${locationText}*\n` +
                 `*Pagamento:* ${payPt[paymentMethod]}${changeText}\n` +
+                `${paymentLink ? `*Link de Pagamento:* ${paymentLink}\n` : ''}` +
+                `${scheduleText}` +
                 `----------------------------------\n\n` +
                 `*ITENS:*\n${itemsText}\n\n` +
                 `${observations ? `*OBSERVAÇÕES:*\n${observations}\n\n` : ''}` +
                 `*RESUMO FINANCEIRO:*\n` +
                 `Subtotal: R$ ${subtotal.toFixed(2)}\n` +
-                `Entrega: R$ ${deliveryFee.toFixed(2)}${couponText}\n` +
+                `Entrega: R$ ${deliveryFee.toFixed(2)}${couponText}` +
+                `${extrasText ? `\n${extrasText}` : ''}\n` +
                 `*TOTAL: R$ ${total.toFixed(2)}*\n\n` +
                 `*Acompanhe seu pedido:* ${window.location.origin}/pedido/${id}\n\n` +
                 `✅ Enviado via *MEU OVO*`;
@@ -483,7 +519,6 @@ export default function CheckoutPage() {
               >
                 <div className="flex flex-col items-center gap-4">
                   <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative group">
-                    {/* Simulated QR Code */}
                     <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
                       {[
                         [1,1,1,1,1,1],[1,0,0,0,1,1],[1,0,1,0,0,1],[1,1,0,0,0,1],[1,0,0,1,0,1],[1,1,1,1,1,1]
@@ -535,6 +570,38 @@ export default function CheckoutPage() {
               </motion.div>
             )}
 
+            {['credit', 'debit', 'voucher'].includes(paymentMethod) && (
+              <motion.div
+                initial={{ y: 10, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
+                className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-8 text-center"
+              >
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-slate-100">
+                    <CreditCard size={32} className="text-slate-700" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="font-black text-sm text-[#111]">
+                      {paymentMethod === 'credit' && 'Pagar com Cartão de Crédito'}
+                      {paymentMethod === 'debit' && 'Pagar com Cartão de Débito'}
+                      {paymentMethod === 'voucher' && 'Pagar com Vale-Refeição'}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-bold px-4">
+                      Clique no botão abaixo para ser redirecionado ao link de pagamento do restaurante.
+                    </p>
+                    <a
+                      href={paymentMethod === 'credit' ? restaurant?.paymentSettings?.creditCardLink : paymentMethod === 'debit' ? restaurant?.paymentSettings?.debitLink : restaurant?.paymentSettings?.voucherLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 mt-3 px-8 py-4 bg-[#111] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg"
+                    >
+                      <CreditCard size={18} /> Ir para Pagamento
+                    </a>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           <div className="space-y-3">
@@ -760,6 +827,34 @@ export default function CheckoutPage() {
           </AnimatePresence>
         </motion.div>
 
+        {/* Scheduled order */}
+        <motion.div 
+          variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+          className="bg-white rounded-2xl p-5 shadow-sm"
+        >
+          <h2 className="font-bold text-[#111] mb-4 flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-[#FFC928] rounded-full" />
+            Agendar Pedido
+          </h2>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
+              Data e hora (opcional)
+            </label>
+            <input
+              type="datetime-local"
+              value={scheduledAt}
+              onChange={e => setScheduledAt(e.target.value)}
+              min={new Date().toISOString().slice(0, 16)}
+              className="w-full border border-gray-100 bg-slate-50/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all"
+            />
+            {scheduledAt && (
+              <p className="text-[10px] font-black text-brand-egg tracking-widest ml-1">
+                Pedido agendado para {new Date(scheduledAt).toLocaleString('pt-BR')}
+              </p>
+            )}
+          </div>
+        </motion.div>
+
         {/* Payment */}
         <motion.div 
           variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
@@ -771,11 +866,14 @@ export default function CheckoutPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {([
-              { value: 'pix', label: t('checkout.pix'), icon: <Smartphone size={20} />, disabled: false },
-              { value: 'cash', label: t('checkout.cash'), icon: <Banknote size={20} />, disabled: false },
-              { value: 'card-on-delivery', label: t('checkout.cardOnDelivery'), icon: <CreditCard size={20} />, disabled: orderType !== 'delivery' },
-              { value: 'on-site', label: t('checkout.onSite'), icon: <Store size={20} />, disabled: false },
-            ] as const).map(opt => (
+              { value: 'pix', label: 'PIX', icon: <Smartphone size={20} />, disabled: false },
+              { value: 'cash', label: 'Dinheiro', icon: <Banknote size={20} />, disabled: false },
+              { value: 'card-on-delivery', label: 'Cartão na entrega', icon: <CreditCard size={20} />, disabled: orderType !== 'delivery' },
+              { value: 'on-site', label: 'No local', icon: <Store size={20} />, disabled: false },
+              ...(restaurant?.paymentSettings?.acceptCreditCard ? [{ value: 'credit' as const, label: 'Cartão Crédito Online', icon: <CreditCard size={20} />, disabled: false }] : []),
+              ...(restaurant?.paymentSettings?.acceptDebit ? [{ value: 'debit' as const, label: 'Cartão Débito Online', icon: <CreditCard size={20} />, disabled: false }] : []),
+              ...(restaurant?.paymentSettings?.acceptVoucher ? [{ value: 'voucher' as const, label: 'Vale-Refeição', icon: <CreditCard size={20} />, disabled: false }] : []),
+            ]).map(opt => (
               <motion.button
                 key={opt.value}
                 whileHover={!opt.disabled ? { scale: 1.02 } : {}}
@@ -802,7 +900,10 @@ export default function CheckoutPage() {
                   <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mt-0.5">
                     {opt.value === 'pix' ? 'Rápido e seguro' : 
                      opt.value === 'cash' ? 'Pague ao motoboy' : 
-                     opt.value === 'card-on-delivery' ? 'Maquininha' : 'No balcão'}
+                     opt.value === 'card-on-delivery' ? 'Maquininha' : 
+                     opt.value === 'credit' ? 'Link do restaurante' :
+                     opt.value === 'debit' ? 'Link do restaurante' :
+                     opt.value === 'voucher' ? 'Link do restaurante' : 'No balcão'}
                   </p>
                 </div>
                 {paymentMethod === opt.value && (
@@ -862,6 +963,89 @@ export default function CheckoutPage() {
             </p>
           </div>
 
+          {/* Tip */}
+          <div className="mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">
+              Gorjeta do entregador
+            </label>
+            <div className="flex gap-2">
+              {tipOptions.map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setTipPercent(pct)}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                    tipPercent === pct
+                      ? "border-[#FFC928] bg-[#FFF8E1] text-[#111]"
+                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                  )}
+                >
+                  {pct === 0 ? 'Sem' : `${pct}%`}
+                </button>
+              ))}
+            </div>
+            {tipAmount > 0 && (
+              <p className="text-[10px] font-black text-emerald-600 tracking-widest mt-2 ml-1">
+                Gorjeta: R$ {tipAmount.toFixed(2)}
+              </p>
+            )}
+          </div>
+
+          {/* Caixinha Meu OVO */}
+          <div className="mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+            <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
+              🐣 Caixinha Meu OVO
+            </label>
+            <p className="text-[9px] font-bold text-amber-600 mb-3 leading-relaxed">
+              Ajude a fortalecer o MEU OVO e manter a plataforma gratuita para os restaurantes!
+            </p>
+            <div className="flex gap-2">
+              {caixinhaOptions.map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setCaixinhaAmount(val)}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                    caixinhaAmount === val
+                      ? "border-amber-500 bg-amber-100 text-amber-800"
+                      : "border-amber-100 bg-white text-amber-500 hover:border-amber-300"
+                  )}
+                >
+                  {val === 0 ? 'Não' : `R$ ${val.toFixed(2)}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Social cause */}
+          <div className="mb-4 p-4 bg-rose-50 rounded-2xl border border-rose-200">
+            <label className="text-[10px] font-black text-rose-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
+              ❤️ Ajude uma Causa Social
+            </label>
+            <p className="text-[9px] font-bold text-rose-600 mb-3 leading-relaxed">
+              Sua contribuição vai para projetos sociais do bairro!
+            </p>
+            <div className="flex gap-2">
+              {donationOptions.map(val => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setDonationAmount(val)}
+                  className={cn(
+                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                    donationAmount === val
+                      ? "border-rose-500 bg-rose-100 text-rose-800"
+                      : "border-rose-100 bg-white text-rose-500 hover:border-rose-300"
+                  )}
+                >
+                  {val === 0 ? 'Não' : `R$ ${val.toFixed(2)}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
@@ -911,6 +1095,19 @@ export default function CheckoutPage() {
               <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">{items.length} itens no total</p>
             </div>
           </div>
+        </motion.div>
+
+        {/* Disclaimer */}
+        <motion.div
+          variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+          className="bg-red-50 border border-red-200 rounded-3xl p-5 text-center"
+        >
+          <p className="text-[10px] font-black text-red-700 uppercase tracking-wider flex items-center justify-center gap-2 mb-1">
+            <AlertTriangle size={14} /> Importante
+          </p>
+          <p className="text-[11px] font-bold text-red-600 leading-relaxed">
+            O <strong>MEU OVO</strong> é apenas a vitrine e o sistema de pedidos. O pagamento é 100% direto entre você e o restaurante. Não processamos pagamentos, não garantimos reembolsos e não nos responsabilizamos por problemas entre as partes.
+          </p>
         </motion.div>
 
         {/* Gratitude block */}

@@ -1650,13 +1650,9 @@ const OrderCard: React.FC<{
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <p className={`${compact ? 'text-sm' : 'text-lg'} font-black italic tracking-tighter uppercase ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>{order.customerName}</p>
-              {stats && stats.totalRatings > 0 ? (
+              {stats ? (
                 <span className={`inline-flex items-center gap-1 text-[9px] font-sans font-black tracking-normal px-2 py-0.5 rounded-md uppercase shrink-0 ${stats.isProblematic ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'bg-[#FFC928]/15 text-[#FFC928] border border-[#FFC928]/20'}`}>
-                  ★ {stats.averageRating.toFixed(1)} ({stats.totalRatings} aval.)
-                </span>
-              ) : stats ? (
-                <span className="inline-flex items-center text-[8px] font-sans font-bold tracking-normal px-1.5 py-0.5 rounded bg-gray-100 text-gray-400 shrink-0 border border-gray-200/50">
-                  Novo Cliente
+                  ★ {stats.averageRating.toFixed(1)} ({stats.totalRatings} {stats.totalRatings === 1 ? 'aval.' : 'aval.'})
                 </span>
               ) : null}
             </div>

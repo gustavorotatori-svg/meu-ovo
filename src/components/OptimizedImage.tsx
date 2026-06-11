@@ -28,24 +28,26 @@ export default function OptimizedImage({
   const [optimizedSrc, setOptimizedSrc] = useState(src);
 
   useEffect(() => {
-    let finalSrc = src;
-
-    // Basic optimization for Pexels/Unsplash if width/height are provided
-    if (src.includes('images.pexels.com') || src.includes('images.unsplash.com')) {
-      const url = new URL(src);
-      
-      // If we have specific width/height, replace or add them
-      if (width) url.searchParams.set('w', width.toString());
-      if (height) url.searchParams.set('h', height.toString());
-      
-      // Add auto-optimization parameters
-      url.searchParams.set('auto', 'compress,format');
-      url.searchParams.set('fit', 'crop');
-      
-      finalSrc = url.toString();
+    if (!src) {
+      setOptimizedSrc('');
+      return;
     }
 
-    setOptimizedSrc(finalSrc);
+    try {
+      if (src.includes('images.pexels.com') || src.includes('images.unsplash.com')) {
+        const url = new URL(src);
+        if (width) url.searchParams.set('w', width.toString());
+        if (height) url.searchParams.set('h', height.toString());
+        url.searchParams.set('auto', 'compress,format');
+        url.searchParams.set('fit', 'crop');
+        setOptimizedSrc(url.toString());
+        return;
+      }
+    } catch {
+      console.warn('[OptimizedImage] Invalid image URL:', src);
+    }
+
+    setOptimizedSrc(src);
   }, [src, width, height]);
 
   return (

@@ -1,9 +1,9 @@
 {
-  "framework": "vite",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
   "buildCommand": "vite build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  "installCommand": "npm install"
 }

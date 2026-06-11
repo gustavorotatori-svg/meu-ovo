@@ -33,6 +33,12 @@ Substituída versão antiga pela versão completa do AI Studio (com OVOS DE OURO
 13. **CheckoutPage:495** — `clipboard.writeText` sem `.catch()` → `.catch(() => {})`
 14. **RestaurantOnboarding:85-97** — field names errados (`cover`, `cuisine`, minOrder, deliveryTime) → corrigidos para `coverImage`, `cuisineType`, `minimumOrder`, `estimatedTime`, adicionados `deliverySettings`, `orderSettings`, `loyaltySettings`, `email`, `city`, `description`
 
+### 3 bugs corrigidos (10/06/2026) — Diagnóstico `/busca` em branco
+15. **OptimizedImage.tsx:30-48** — `new URL(src)` crashava se `src` inválido/undefined → adicionado `if (!src) return` + try/catch + fallback
+16. **ErrorBoundary.tsx** — usava `this as unknown as { props; state }` hack desnecessário → simplificado para `this.props`/`this.state` direto, adicionado `handleReload` e ícone 🍳
+17. **main.tsx** — adicionados `window.addEventListener('error')` e `unhandledrejection` globais para capturar erros que escapam do React (effects em produção)
+18. **PageTransition.tsx** — flame overlay não tinha fallback se animação falhasse (poderia cobrir tela em mobile) → adicionado `showFlame` state + `setTimeout(1500)` para remover overlay do DOM independente da animação
+
 ## Configurações aplicadas
 
 ### `.env` criado

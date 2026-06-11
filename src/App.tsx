@@ -1,50 +1,73 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import ScrollToTop from './components/ScrollToTop';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 
-const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : '/';
 import { CartProvider } from './context/CartContext';
 import { RestaurantProvider } from './context/RestaurantContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import { Toaster } from 'react-hot-toast';
 
-import LandingPage from './pages/LandingPage';
-import MarketplacePage from './pages/MarketplacePage';
-import RestaurantMenuPage from './pages/RestaurantMenuPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import RestaurantOnboarding from './pages/RestaurantOnboarding';
-import SocialImpactPage from './pages/SocialImpactPage';
-import ForRestaurantsPage from './pages/ForRestaurantsPage';
-import OrderHistoryPage from './pages/OrderHistoryPage';
-import CustomerProfilePage from './pages/CustomerProfilePage';
-import BlogPage from './pages/BlogPage';
-import OvosDeOuroInfoPage from './pages/OvosDeOuroInfoPage';
-import AboutPage from './pages/AboutPage';
-
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminOrders from './pages/admin/AdminOrders';
-import AdminCashier from './pages/admin/AdminCashier';
-import MenuManagement from './pages/admin/MenuManagement';
-import AdminWaiter from './pages/admin/AdminWaiter';
-import KitchenMode from './pages/admin/KitchenMode';
-import WaiterMode from './pages/admin/WaiterMode';
-import AdminDelivery from './pages/admin/AdminDelivery';
-import AdminReports from './pages/admin/AdminReports';
-import CouponManagement from './pages/admin/CouponManagement';
-import LoyaltyManagement from './pages/admin/LoyaltyManagement';
-import StoreSettings from './pages/admin/StoreSettings';
-import OvosDeOuro from './pages/admin/OvosDeOuro';
+import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
+import PageTransition from './components/PageTransition';
 import OvosDeOuroVotePopup from './components/OvosDeOuroVotePopup';
-import OrderStatusPage from './pages/OrderStatusPage';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 
-import PlatformDashboard from './pages/platform/PlatformDashboard';
-import PlatformRestaurants from './pages/platform/PlatformRestaurants';
-import PlatformIntelligence from './pages/platform/PlatformIntelligence';
-import PlatformMarketReports from './pages/platform/PlatformMarketReports';
-import PlatformPartners from './pages/platform/PlatformPartners';
-import PlatformDonations from './pages/platform/PlatformDonations';
-import PlatformOvosDeOuro from './pages/platform/PlatformOvosDeOuro';
+const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : '/';
+
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
+const RestaurantMenuPage = lazy(() => import('./pages/RestaurantMenuPage'));
+const CartPage = lazy(() => import('./pages/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
+const RestaurantOnboarding = lazy(() => import('./pages/RestaurantOnboarding'));
+const SocialImpactPage = lazy(() => import('./pages/SocialImpactPage'));
+const ForRestaurantsPage = lazy(() => import('./pages/ForRestaurantsPage'));
+const OrderHistoryPage = lazy(() => import('./pages/OrderHistoryPage'));
+const CustomerProfilePage = lazy(() => import('./pages/CustomerProfilePage'));
+const BlogPage = lazy(() => import('./pages/BlogPage'));
+const OvosDeOuroInfoPage = lazy(() => import('./pages/OvosDeOuroInfoPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const TermsPage = lazy(() => import('./pages/TermsPage'));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
+const AdminCashier = lazy(() => import('./pages/admin/AdminCashier'));
+const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
+const AdminWaiter = lazy(() => import('./pages/admin/AdminWaiter'));
+const KitchenMode = lazy(() => import('./pages/admin/KitchenMode'));
+const WaiterMode = lazy(() => import('./pages/admin/WaiterMode'));
+const AdminDelivery = lazy(() => import('./pages/admin/AdminDelivery'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const CouponManagement = lazy(() => import('./pages/admin/CouponManagement'));
+const LoyaltyManagement = lazy(() => import('./pages/admin/LoyaltyManagement'));
+const StoreSettings = lazy(() => import('./pages/admin/StoreSettings'));
+const OvosDeOuro = lazy(() => import('./pages/admin/OvosDeOuro'));
+const OrderStatusPage = lazy(() => import('./pages/OrderStatusPage'));
+
+const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'));
+const PlatformRestaurants = lazy(() => import('./pages/platform/PlatformRestaurants'));
+const PlatformIntelligence = lazy(() => import('./pages/platform/PlatformIntelligence'));
+const PlatformMarketReports = lazy(() => import('./pages/platform/PlatformMarketReports'));
+const PlatformPartners = lazy(() => import('./pages/platform/PlatformPartners'));
+const PlatformDonations = lazy(() => import('./pages/platform/PlatformDonations'));
+const PlatformOvosDeOuro = lazy(() => import('./pages/platform/PlatformOvosDeOuro'));
+const PlatformCustomers = lazy(() => import('./pages/platform/PlatformCustomers'));
+
+function PageSuspense({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#FFC928] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      {children}
+    </Suspense>
+  );
+}
 
 export default function App() {
   return (
@@ -54,49 +77,145 @@ export default function App() {
           <CartProvider>
             <BrowserRouter basename={basename}>
               <ScrollToTop />
-              <Routes>
-                {/* Public */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/busca" element={<MarketplacePage />} />
-                <Route path="/r/:slug" element={<RestaurantMenuPage />} />
-                <Route path="/carrinho" element={<CartPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/cadastro-restaurante" element={<RestaurantOnboarding />} />
-                <Route path="/impacto-social" element={<SocialImpactPage />} />
-                <Route path="/para-restaurantes" element={<ForRestaurantsPage />} />
-                <Route path="/ovos-de-ouro" element={<OvosDeOuroInfoPage />} />
-                <Route path="/meus-pedidos" element={<OrderHistoryPage />} />
-                <Route path="/perfil" element={<CustomerProfilePage />} />
-                <Route path="/blog" element={<BlogPage />} />
-                <Route path="/pedido/:id" element={<OrderStatusPage />} />
-                <Route path="/sobre" element={<AboutPage />} />
+              <ErrorBoundary>
+                <Routes>
+                  <Route element={<PageTransition><Outlet /></PageTransition>}>
+                    {/* Public */}
+                    <Route path="/" element={<PageSuspense><LandingPage /></PageSuspense>} />
+                    <Route path="/busca" element={<PageSuspense><MarketplacePage /></PageSuspense>} />
+                    <Route path="/r/:slug" element={<PageSuspense><RestaurantMenuPage /></PageSuspense>} />
+                    <Route path="/carrinho" element={<PageSuspense><CartPage /></PageSuspense>} />
+                    <Route path="/checkout" element={<PageSuspense><CheckoutPage /></PageSuspense>} />
+                    <Route path="/login" element={<PageSuspense><LandingPage /></PageSuspense>} />
+                    <Route path="/cadastro-restaurante" element={<PageSuspense><RestaurantOnboarding /></PageSuspense>} />
+                    <Route path="/impacto-social" element={<PageSuspense><SocialImpactPage /></PageSuspense>} />
+                    <Route path="/para-restaurantes" element={<PageSuspense><ForRestaurantsPage /></PageSuspense>} />
+                    <Route path="/ovos-de-ouro" element={<PageSuspense><OvosDeOuroInfoPage /></PageSuspense>} />
+                    <Route path="/meus-pedidos" element={<PageSuspense><OrderHistoryPage /></PageSuspense>} />
+                    <Route path="/perfil" element={<PageSuspense><CustomerProfilePage /></PageSuspense>} />
+                    <Route path="/blog" element={<PageSuspense><BlogPage /></PageSuspense>} />
+                    <Route path="/pedido/:id" element={<PageSuspense><OrderStatusPage /></PageSuspense>} />
+                    <Route path="/sobre" element={<PageSuspense><AboutPage /></PageSuspense>} />
+                    <Route path="/termos" element={<PageSuspense><TermsPage /></PageSuspense>} />
+                    <Route path="/privacidade" element={<PageSuspense><PrivacyPage /></PageSuspense>} />
 
-                {/* Restaurant admin */}
-                <Route path="/admin" element={<AdminDashboard />} />
-                <Route path="/admin/caixa" element={<AdminCashier />} />
-                <Route path="/admin/pedidos" element={<AdminOrders />} />
-                <Route path="/admin/cardapio" element={<MenuManagement />} />
-                <Route path="/admin/garcom" element={<WaiterMode />} />
-                <Route path="/admin/mesas" element={<AdminWaiter />} />
-                <Route path="/admin/cozinha" element={<KitchenMode />} />
-                <Route path="/admin/delivery" element={<AdminDelivery />} />
-                <Route path="/admin/relatorios" element={<AdminReports />} />
-                <Route path="/admin/cupons" element={<CouponManagement />} />
-                <Route path="/admin/fidelidade" element={<LoyaltyManagement />} />
-                <Route path="/admin/configuracoes" element={<StoreSettings />} />
-                <Route path="/admin/ovos-de-ouro" element={<OvosDeOuro />} />
+                    {/* Restaurant admin (requires restaurant role) */}
+                    <Route path="/admin" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminDashboard /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/caixa" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminCashier /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/pedidos" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminOrders /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/cardapio" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><MenuManagement /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/garcom" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><WaiterMode /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/mesas" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminWaiter /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/cozinha" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><KitchenMode /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/delivery" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminDelivery /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/relatorios" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminReports /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/cupons" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><CouponManagement /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/fidelidade" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><LoyaltyManagement /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/configuracoes" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><StoreSettings /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/ovos-de-ouro" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><OvosDeOuro /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
 
-                {/* Platform admin */}
-                <Route path="/plataforma" element={<PlatformDashboard />} />
-                <Route path="/plataforma/restaurantes" element={<PlatformRestaurants />} />
-                <Route path="/plataforma/inteligencia" element={<PlatformIntelligence />} />
-                <Route path="/plataforma/relatorios" element={<PlatformMarketReports />} />
-                <Route path="/plataforma/parceiros" element={<PlatformPartners />} />
-                <Route path="/plataforma/doacoes" element={<PlatformDonations />} />
-                <Route path="/plataforma/ovos-de-ouro" element={<PlatformOvosDeOuro />} />
-              </Routes>
+                    {/* Platform admin (requires admin role) */}
+                    <Route path="/plataforma" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformDashboard /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/restaurantes" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformRestaurants /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/clientes" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformCustomers /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/inteligencia" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformIntelligence /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/relatorios" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformMarketReports /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/parceiros" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformPartners /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/doacoes" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformDonations /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/plataforma/ovos-de-ouro" element={
+                      <ProtectedRoute roles={['admin']}>
+                        <PageSuspense><PlatformOvosDeOuro /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+
+                    {/* 404 */}
+                    <Route path="*" element={<PageSuspense><NotFoundPage /></PageSuspense>} />
+                  </Route>
+                </Routes>
+              </ErrorBoundary>
               <Toaster position="top-right" />
               <OvosDeOuroVotePopup />
+              <PwaInstallPrompt />
             </BrowserRouter>
           </CartProvider>
         </RestaurantProvider>

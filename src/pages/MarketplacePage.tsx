@@ -17,6 +17,7 @@ import { rankRestaurants } from '../lib/recommendations';
 const priceLabels = { low: 'R$', medium: 'R$ R$', high: 'R$ R$ R$' };
 
 export default function MarketplacePage() {
+  console.log('[MarketplacePage] rendering');
   const { restaurants, orders, products } = useRestaurant();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || searchParams.get('q') || '');

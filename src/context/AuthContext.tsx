@@ -11,6 +11,10 @@ interface User {
   full_name?: string;
   role: UserRole;
   profile_image_url?: string;
+  photoURL?: string;
+  displayName?: string;
+  customerRating?: number;
+  customerRatingCount?: number;
 }
 
 interface AuthContextType {
@@ -69,12 +73,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(res.user, { displayName: fullName });
     
-    const userData = {
+    const userData: Record<string, any> = {
       full_name: fullName,
       role: role,
       createdAt: new Date().toISOString()
     };
-    
+    if (role === 'customer') {
+      userData.customerRating = 5;
+      userData.customerRatingCount = 0;
+    }
+
     await setDoc(doc(db, 'users', res.user.uid), userData);
     
     setUser({

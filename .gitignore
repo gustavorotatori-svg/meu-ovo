@@ -10,3 +10,4 @@ firebase-applet-config.json
 .vite/
 firebase.json
 .firebaserc
+.vercel

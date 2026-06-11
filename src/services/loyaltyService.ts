@@ -25,6 +25,12 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
     );
     
     const snapshot = await getDocs(q);
+
+    // Idempotency: check if this orderId already earned points
+    if (!snapshot.empty) {
+      const profileData = snapshot.docs[0].data();
+      if (profileData.history?.some((h: any) => h.orderId === order.id)) return;
+    }
     const historyItem = {
       type: 'earn' as const,
       points: pointsToEarn,

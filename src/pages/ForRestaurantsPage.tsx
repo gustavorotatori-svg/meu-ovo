@@ -2,10 +2,15 @@ import { Link } from 'react-router-dom';
 import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SEO from '../components/SEO';
 
 export default function ForRestaurantsPage() {
   return (
     <div className="min-h-screen bg-white">
+      <SEO 
+        title="Para Restaurantes - Cadastro Grátis"
+        description="Crie seu cardápio digital grátis, receba pedidos direto no WhatsApp e venda sem comissão. Junte-se ao Meu Ovo e seja dono do seu negócio."
+      />
       <Navbar />
 
       <div className="relative pt-20 pb-24 overflow-hidden bg-[#0A0A0A] border-b border-white/5 font-sans">

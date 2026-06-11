@@ -37,6 +37,10 @@ export const mockRestaurants: Restaurant[] = [
     paymentSettings: {
       acceptCreditCard: true,
       creditCardLink: 'https://pagamento.exemplo.com/pizzaria-do-joao',
+      acceptDebit: true,
+      debitLink: 'https://pagamento.exemplo.com/pizzaria-do-joao/debito',
+      acceptVoucher: false,
+      voucherLink: '',
     },
     loyaltySettings: {
       enabled: true,

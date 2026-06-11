@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Order } from '../types';
+import { Order, Product, CartItem } from '../types';
 import { useRestaurant } from '../context/RestaurantContext';
+import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { 
   ShoppingBag, 
@@ -14,9 +15,11 @@ import {
   ArrowLeft,
   Calendar,
   Package,
-  History
+  History,
+  RotateCcw
 } from 'lucide-react';
 import { formatCurrency, cn } from '../lib/utils';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -26,6 +29,7 @@ export default function OrderHistoryPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { restaurants } = useRestaurant();
+  const { addItem } = useCart();
 
   const [phone, setPhone] = useState(localStorage.getItem('customerPhone') || '');
   const [isSearching, setIsSearching] = useState(false);
@@ -86,6 +90,49 @@ export default function OrderHistoryPage() {
   };
 
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const handleReorder = async (order: Order) => {
+    const restaurant = restaurants.find(r => r.id === order.restaurantId);
+    if (!restaurant) {
+      toast.error('Restaurante não encontrado');
+      return;
+    }
+    try {
+      const q = query(collection(db, 'products'), where('restaurantId', '==', order.restaurantId));
+      const snap = await getDocs(q);
+      const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+
+      let addedCount = 0;
+      for (const orderItem of order.items) {
+        const product = products.find(p => p.id === orderItem.productId);
+        if (!product || !product.isAvailable) continue;
+
+        const cartItem: CartItem = {
+          product,
+          quantity: orderItem.quantity,
+          selectedAdditionals: (orderItem.additionals || []).map(a => ({
+            groupId: '',
+            additionalId: '',
+            name: a.name,
+            price: a.price,
+          })),
+          observations: orderItem.observations || '',
+        };
+        addItem(cartItem);
+        addedCount++;
+      }
+
+      if (addedCount === 0) {
+        toast.error('Nenhum item disponível para reordenar');
+        return;
+      }
+      toast.success(`${addedCount} item(ns) adicionado(s) ao carrinho!`);
+      navigate('/carrinho');
+    } catch (err) {
+      console.error('Error reordering:', err);
+      toast.error('Erro ao reordenar. Tente novamente.');
+    }
+  };
 
   const toggleOrder = (orderId: string) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
@@ -390,16 +437,16 @@ export default function OrderHistoryPage() {
 
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
                               <button 
+                                onClick={() => handleReorder(order)}
+                                className="flex-1 h-12 bg-brand-egg text-brand-black rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20 active:scale-95"
+                              >
+                                <RotateCcw size={14} /> Repetir Pedido
+                              </button>
+                              <button 
                                 onClick={() => navigate(`/r/${restaurant?.slug}/status/${order.id}`)}
                                 className="flex-1 h-12 bg-[#111] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-black/10 active:scale-95"
                               >
-                                <Clock size={16} /> Acompanhar Pedido
-                              </button>
-                              <button className={cn(
-                                "flex-1 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest border transition-all",
-                                isDark ? "bg-white/5 border-white/10 text-white hover:bg-white/10" : "bg-white border-slate-100 text-[#111] hover:bg-slate-50"
-                              )}>
-                                Ajuda com o Pedido
+                                <Clock size={16} /> Acompanhar
                               </button>
                             </div>
                           </div>

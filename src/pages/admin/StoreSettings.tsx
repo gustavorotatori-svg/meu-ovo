@@ -123,6 +123,10 @@ export default function StoreSettings() {
     // Payment Settings
     acceptCreditCard: restaurant?.paymentSettings?.acceptCreditCard ?? false,
     creditCardLink: restaurant?.paymentSettings?.creditCardLink || '',
+    acceptDebit: restaurant?.paymentSettings?.acceptDebit ?? false,
+    debitLink: restaurant?.paymentSettings?.debitLink || '',
+    acceptVoucher: restaurant?.paymentSettings?.acceptVoucher ?? false,
+    voucherLink: restaurant?.paymentSettings?.voucherLink || '',
     // Fiscal settings
     nfeEnabled: restaurant?.fiscalSettings?.nfeEnabled ?? false,
     nfeCnpj: restaurant?.fiscalSettings?.nfeCnpj || '',
@@ -266,6 +270,10 @@ export default function StoreSettings() {
         pixKey: restaurant.pixKey || '',
         acceptCreditCard: restaurant.paymentSettings?.acceptCreditCard ?? false,
         creditCardLink: restaurant.paymentSettings?.creditCardLink || '',
+        acceptDebit: restaurant.paymentSettings?.acceptDebit ?? false,
+        debitLink: restaurant.paymentSettings?.debitLink || '',
+        acceptVoucher: restaurant.paymentSettings?.acceptVoucher ?? false,
+        voucherLink: restaurant.paymentSettings?.voucherLink || '',
         nfeEnabled: restaurant.fiscalSettings?.nfeEnabled ?? false,
         nfeCnpj: restaurant.fiscalSettings?.nfeCnpj || '',
         nfeInscricaoEstadual: restaurant.fiscalSettings?.nfeInscricaoEstadual || '',
@@ -395,6 +403,10 @@ export default function StoreSettings() {
         paymentSettings: {
           acceptCreditCard: formData.acceptCreditCard,
           creditCardLink: formData.creditCardLink,
+          acceptDebit: formData.acceptDebit,
+          debitLink: formData.debitLink,
+          acceptVoucher: formData.acceptVoucher,
+          voucherLink: formData.voucherLink,
         },
         deliverySettings: {
           fee: deliveryFeeNum,
@@ -1071,10 +1083,94 @@ export default function StoreSettings() {
                        </p>
                     </div>
                  </div>
-               )}
-            </section>
+                )}
 
-            {/* Módulo de Integração Fiscal (NFC-e / SAT) */}
+                {/* Débito */}
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="flex items-center gap-2.5 flex-1 text-left">
+                     <CreditCard size={16} className="text-blue-500 shrink-0" />
+                     <div className="text-left">
+                        <p className="text-[10px] font-black text-slate-700 uppercase">Aceitar Débito</p>
+                        <p className="text-[9px] text-slate-400 font-semibold uppercase">Exibir link de pagamento via débito</p>
+                     </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, acceptDebit: !formData.acceptDebit})}
+                    className={cn(
+                      "h-5 w-10 min-w-[2.5rem] rounded-full relative transition-colors duration-200 focus:outline-none",
+                      formData.acceptDebit ? "bg-blue-500" : "bg-slate-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-200",
+                      formData.acceptDebit ? "left-6" : "left-0.5"
+                    )} />
+                  </button>
+                </div>
+
+                {formData.acceptDebit && (
+                  <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Link de Pagamento (Cartão de Débito)</label>
+                       <input 
+                         type="url" 
+                         value={formData.debitLink}
+                         onChange={e => setFormData({...formData, debitLink: e.target.value})}
+                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                         placeholder="https://seu-link-pagamento.com/debito/"
+                       />
+                       <p className="text-[9px] text-slate-400 font-medium italic">
+                         Link para página de checkout de cartão de débito.
+                       </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Voucher refeição */}
+                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <div className="flex items-center gap-2.5 flex-1 text-left">
+                     <CreditCard size={16} className="text-purple-500 shrink-0" />
+                     <div className="text-left">
+                        <p className="text-[10px] font-black text-slate-700 uppercase">Aceitar Vale-Refeição</p>
+                        <p className="text-[9px] text-slate-400 font-semibold uppercase">Ticket, VR, Sodexo, Alelo etc.</p>
+                     </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({...formData, acceptVoucher: !formData.acceptVoucher})}
+                    className={cn(
+                      "h-5 w-10 min-w-[2.5rem] rounded-full relative transition-colors duration-200 focus:outline-none",
+                      formData.acceptVoucher ? "bg-purple-500" : "bg-slate-300"
+                    )}
+                  >
+                    <div className={cn(
+                      "absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-200",
+                      formData.acceptVoucher ? "left-6" : "left-0.5"
+                    )} />
+                  </button>
+                </div>
+
+                {formData.acceptVoucher && (
+                  <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
+                    <div className="space-y-1.5">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Link de Pagamento (Vale-Refeição)</label>
+                       <input 
+                         type="url" 
+                         value={formData.voucherLink}
+                         onChange={e => setFormData({...formData, voucherLink: e.target.value})}
+                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all placeholder:text-slate-300"
+                         placeholder="https://seu-link-pagamento.com/voucher/"
+                       />
+                       <p className="text-[9px] text-slate-400 font-medium italic">
+                         Link para página de checkout de vale-refeição/alimentação.
+                       </p>
+                    </div>
+                  </div>
+                )}
+             </section>
+
+             {/* Módulo de Integração Fiscal (NFC-e / SAT) */}
             {/* Módulo de Segurança, Avaliações e Bloqueio de Clientes (Anti-Trote/Anti-fraude) */}
             <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 font-sans text-left">
                <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">

@@ -53,14 +53,15 @@ export default function OvosDeOuroVotePopup() {
 
     const checkFinishedOrders = async () => {
       try {
-        // Query finished orders for this user
-        const ordersRef = collection(db, 'orders');
-        const q = query(
-          ordersRef,
-          where('userId', '==', user.id),
-          where('status', '==', 'finished')
-        );
-        const snapshot = await getDocs(q);
+      // Query finished orders for this user
+      const ordersRef = collection(db, 'orders');
+      const q = query(
+        ordersRef,
+        where('userId', '==', user.id),
+        where('status', '==', 'finished'),
+        limit(5)
+      );
+      const snapshot = await getDocs(q);
 
         if (snapshot.empty) return;
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Award, Zap, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Award, Zap, ToggleLeft, ToggleRight, Info, AlertCircle } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { cuisineTypes } from '../data/mockData';
 import { Logo } from '../components/Logo';
@@ -78,6 +78,20 @@ export default function RestaurantOnboarding() {
   const [minOrder, setMinOrder] = useState('');
   const [deliveryRadius, setDeliveryRadius] = useState('');
   const [deliveryObs, setDeliveryObs] = useState('');
+
+  const stepTips = [
+    { title: 'Dados do Restaurante', tips: ['Use o nome comercial do seu restaurante (como os clientes conhecem)', 'O WhatsApp será usado para receber os pedidos — mantenha sempre ativo', 'O endereço ajuda clientes a encontrar seu restaurante na busca'] },
+    { title: 'Categorias', tips: ['Crie categorias que façam sentido para o cliente: "Entradas", "Pratos Principais", "Bebidas"', 'Comece com 2 a 4 categorias — você pode adicionar mais depois', 'Categorias muito específicas podem confundir; prefira nomes claros'] },
+    { title: 'Produtos', tips: ['Capriche nos nomes: "Pizza Margherita" vende mais que "Pizza de Queijo"', 'Preços com centavos (ex: 29,90) passam mais credibilidade', 'Fotos de qualidade aumentam em até 30% as chances do cliente pedir'] },
+    { title: 'Delivery', tips: ['Taxa de entrega muito alta afasta clientes; comece com um valor justo', 'Defina um raio de entrega realista para não sobrecarregar sua cozinha', 'Tempo estimado sincero evita frustrações — melhor superestimar que subestimar'] },
+  ];
+
+  const fieldErrors = {
+    name: form.name && form.name.trim().length < 3 ? 'Mínimo de 3 caracteres' : null,
+    whatsapp: form.whatsapp && form.whatsapp.replace(/\D/g, '').length < 10 ? 'WhatsApp inválido (mín. 10 dígitos)' : null,
+    email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? 'E-mail inválido' : null,
+    responsible: form.responsible && form.responsible.trim().length < 2 ? 'Mínimo de 2 caracteres' : null,
+  };
 
   const handleFinish = async () => {
     // Validation
@@ -371,18 +385,41 @@ export default function RestaurantOnboarding() {
         {step === 0 && (
           <div>
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">{t('onboarding.restaurantData')}</h2>
-            <p className="text-gray-500 text-xs uppercase font-black tracking-widest mb-6">{t('onboarding.basicInfo')}</p>
+            <p className="text-gray-500 text-xs uppercase font-black tracking-widest mb-3">{t('onboarding.basicInfo')}</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[0].title}</p>
+                <ul className="space-y-1">
+                  {stepTips[0].tips.map((tip, i) => (
+                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
+                      <span className="text-[#FFC928] shrink-0">→</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
             <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100 shadow-md">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.restaurantName')} *</label>
-                  <input 
-                    value={form.name} 
-                    onChange={e => update('name', e.target.value)} 
-                    placeholder="Ex: Pizzaria do João" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
+                    <div className="relative">
+                      <input 
+                        value={form.name} 
+                        onChange={e => update('name', e.target.value)} 
+                        placeholder="Ex: Pizzaria do João" 
+                        className={`w-full bg-white border ${fieldErrors.name ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all pr-10`}
+                      />
+                      {form.name && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {fieldErrors.name ? <AlertCircle size={16} className="text-red-400" /> : <Check size={16} className="text-green-500" />}
+                        </span>
+                      )}
+                      {fieldErrors.name && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1">{fieldErrors.name}</p>}
+                    </div>
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.responsible')} *</label>
@@ -395,12 +432,20 @@ export default function RestaurantOnboarding() {
                 </div>
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.whatsapp')} *</label>
-                  <input 
-                    value={form.whatsapp} 
-                    onChange={e => update('whatsapp', e.target.value)} 
-                    placeholder="(11) 99999-9999" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
+                    <div className="relative">
+                      <input 
+                        value={form.whatsapp} 
+                        onChange={e => update('whatsapp', e.target.value)} 
+                        placeholder="(11) 99999-9999" 
+                        className={`w-full bg-white border ${fieldErrors.whatsapp ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all pr-10`}
+                      />
+                      {form.whatsapp && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2">
+                          {fieldErrors.whatsapp ? <AlertCircle size={16} className="text-red-400" /> : <Check size={16} className="text-green-500" />}
+                        </span>
+                      )}
+                      {fieldErrors.whatsapp && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1">{fieldErrors.whatsapp}</p>}
+                    </div>
                 </div>
                 <div className="col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.email')}</label>
@@ -533,7 +578,22 @@ export default function RestaurantOnboarding() {
         {step === 1 && (
           <div>
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Categorias do cardápio</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-6">Organize seus produtos em categorias.</p>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Organize seus produtos em categorias.</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[1].title}</p>
+                <ul className="space-y-1">
+                  {stepTips[1].tips.map((tip, i) => (
+                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
+                      <span className="text-[#FFC928] shrink-0">→</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-md">
               <div className="flex gap-2 mb-4">
@@ -569,7 +629,22 @@ export default function RestaurantOnboarding() {
         {step === 2 && (
           <div>
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Cadastrar produtos</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-4">Adicione os produtos do seu cardápio.</p>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Adicione os produtos do seu cardápio.</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[2].title}</p>
+                <ul className="space-y-1">
+                  {stepTips[2].tips.map((tip, i) => (
+                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
+                      <span className="text-[#FFC928] shrink-0">→</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
             {/* AI feature active container - Powered by Gemini */}
             <div className="bg-gradient-to-r from-amber-950 to-black rounded-2xl p-6 mb-6 text-left border border-amber-500/20 shadow-xl relative overflow-hidden">
@@ -690,7 +765,22 @@ export default function RestaurantOnboarding() {
         {step === 3 && (
           <div>
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Configurar delivery</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-6">Defina as condições da sua entrega.</p>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Defina as condições da sua entrega.</p>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
+              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[3].title}</p>
+                <ul className="space-y-1">
+                  {stepTips[3].tips.map((tip, i) => (
+                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
+                      <span className="text-[#FFC928] shrink-0">→</span>
+                      {tip}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
 
             <div className="bg-white rounded-2xl p-6 space-y-4 border border-gray-100 shadow-md">
               <div className="grid grid-cols-2 gap-4">

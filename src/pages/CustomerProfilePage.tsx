@@ -101,17 +101,26 @@ export default function CustomerProfilePage() {
         <Navbar />
         <div className="flex-1 flex items-center justify-center p-6 py-20">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden relative p-8 md:p-10">
-            <div className="text-center space-y-4 mb-8">
-              <div className="w-16 h-16 bg-[#FFC928]/10 rounded-2xl flex items-center justify-center mx-auto transition-transform hover:scale-110 duration-300">
-                <User size={32} className="text-[#FFC928]" />
+              <div className="text-center space-y-4 mb-8">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto transition-all duration-500 ${isLogin ? 'bg-[#FFC928]/10' : 'bg-green-100'}`}>
+                  {isLogin ? <User size={32} className="text-[#FFC928]" /> : <span className="text-3xl">🍳</span>}
+                </div>
+                <h1 className="font-display font-black text-3xl uppercase tracking-tighter italic leading-none">
+                  {isLogin ? 'Fazer Login' : 'Criar Conta'}
+                </h1>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
+                  {isLogin ? 'Entre na sua conta para acompanhar seus pedidos' : 'Crie sua conta em 30 segundos e tenha uma experiência completa'}
+                </p>
+                {!isLogin && (
+                  <div className="flex flex-wrap justify-center gap-2 mt-3">
+                    {['Pedidos salvos', 'Favoritos', 'Avaliações', 'Delivery ágil'].map(b => (
+                      <span key={b} className="px-3 py-1 bg-green-50 text-green-700 text-[9px] font-black uppercase tracking-wider rounded-lg border border-green-200">
+                        ✓ {b}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <h1 className="font-display font-black text-3xl uppercase tracking-tighter italic leading-none">
-                {isLogin ? 'Fazer Login' : 'Criar Conta'}
-              </h1>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
-                {isLogin ? 'Entre na sua conta para acompanhar seus pedidos' : 'Cadastre-se para favoritar restaurantes e salvar endereços'}
-              </p>
-            </div>
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {!isLogin && (
@@ -153,12 +162,25 @@ export default function CustomerProfilePage() {
                   <input
                     type="password"
                     required
+                    minLength={6}
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
-                    placeholder="••••••••"
+                    placeholder="Mínimo 6 caracteres"
                   />
                 </div>
+                {!isLogin && authPassword && (
+                  <div className="mt-2">
+                    <div className="flex gap-1 mb-1">
+                      {[authPassword.length >= 6, /[A-Z]/.test(authPassword), /[0-9]/.test(authPassword), authPassword.length >= 8].map((ok, i) => (
+                        <div key={i} className={`flex-1 h-1 rounded-full transition-colors ${ok ? 'bg-green-500' : 'bg-gray-200'}`} />
+                      ))}
+                    </div>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                      {authPassword.length < 6 ? 'Mínimo 6 caracteres' : authPassword.length < 8 ? 'Quase lá! Adicione mais caracteres' : 'Senha boa ✓'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

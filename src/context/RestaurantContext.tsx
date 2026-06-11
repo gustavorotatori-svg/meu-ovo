@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession } from '../types';
-import { mockRestaurants, mockDeliverySettings, mockProducts, mockCategories } from '../data/mockData';
 import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import { toast } from 'react-hot-toast';
@@ -14,7 +13,9 @@ import {
   doc, 
   deleteDoc,
   setDoc,
-  orderBy
+  orderBy,
+  getDocs,
+  arrayUnion
 } from 'firebase/firestore';
 
 interface RestaurantContextType {
@@ -52,15 +53,41 @@ const RestaurantContext = createContext<RestaurantContextType | null>(null);
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [restaurants] = useState<Restaurant[]>(mockRestaurants);
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<Table[]>([]);
-  const [deliverySettings] = useState<DeliverySettings>(mockDeliverySettings);
-  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(mockRestaurants[0]);
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>({
+    fee: 0,
+    minimumOrder: 0,
+    freeDeliveryRadius: 0,
+    maxDeliveryRadius: 10
+  });
+  const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [cashierSessions, setCashierSessions] = useState<CashierSession[]>([]);
   const [activeSession, setActiveSession] = useState<CashierSession | null>(null);
+
+  // Load cashier sessions from Firestore when currentRestaurant changes
+  useEffect(() => {
+    if (!currentRestaurant) {
+      setCashierSessions([]);
+      setActiveSession(null);
+      return;
+    }
+    const qSessions = query(
+      collection(db, 'cashier_sessions'),
+      where('restaurantId', '==', currentRestaurant.id),
+      orderBy('openedAt', 'desc')
+    );
+    const unsub = onSnapshot(qSessions, (snapshot) => {
+      const sessions = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as CashierSession));
+      setCashierSessions(sessions);
+      const open = sessions.find(s => s.status === 'open');
+      setActiveSession(open || null);
+    }, () => {});
+    return unsub;
+  }, [currentRestaurant]);
 
   // Favorites state and persistence
   const [favorites, setFavorites] = useState<string[]>(() => {
@@ -90,40 +117,55 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // Real-time listeners
+  // Listen to restaurants from Firestore
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
+      setRestaurants(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Restaurant)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'restaurants'));
+    return unsub;
+  }, []);
+
+  // Set currentRestaurant based on user's owned restaurant
+  useEffect(() => {
+    if (!user || user.role !== 'restaurant') {
+      setCurrentRestaurant(null);
+      return;
+    }
+    const q = query(collection(db, 'restaurants'), where('ownerId', '==', user.id));
+    const unsub = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0];
+        setCurrentRestaurant({ id: data.id, ...data.data() } as Restaurant);
+      } else {
+        setCurrentRestaurant(null);
+      }
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'restaurants'));
+    return unsub;
+  }, [user]);
+
+  // Real-time listeners for products, categories, orders, tables, delivery settings
   useEffect(() => {
     if (!currentRestaurant) return;
 
     // Listen to Products
     const qProducts = query(collection(db, 'products'), where('restaurantId', '==', currentRestaurant.id));
     const unsubProducts = onSnapshot(qProducts, (snapshot) => {
-      if (snapshot.empty && currentRestaurant.id === '1') {
-        setProducts(mockProducts);
-      } else {
-        setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
-      }
+      setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'products'));
 
     // Listen to Categories
     const qCats = query(collection(db, 'categories'), where('restaurantId', '==', currentRestaurant.id));
     const unsubCats = onSnapshot(qCats, (snapshot) => {
-      if (snapshot.empty && currentRestaurant.id === '1') {
-        setCategories(mockCategories);
-      } else {
-        setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
-      }
+      setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'categories'));
 
     // Listen to Orders
     let unsubOrders = () => {};
-    // Only subscribe to ALL orders if the user is potentially an admin/staff
-    // We check against the user ID. 
-    // Note: our AuthContext has a user object with 'id'.
     const isOwner = user && currentRestaurant.ownerId === user.id;
-    
+
     if (isOwner) {
       const qOrders = query(
-        collection(db, 'orders'), 
+        collection(db, 'orders'),
         where('restaurantId', '==', currentRestaurant.id),
         orderBy('createdAt', 'desc')
       );
@@ -149,11 +191,19 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    // Listen to Delivery Settings
+    const unsubDelivery = onSnapshot(doc(db, 'deliverySettings', currentRestaurant.id), (snapshot) => {
+      if (snapshot.exists()) {
+        setDeliverySettings(snapshot.data() as DeliverySettings);
+      }
+    }, () => {});
+
     return () => {
       unsubProducts();
       unsubCats();
       unsubOrders();
       unsubTables();
+      unsubDelivery();
     };
   }, [currentRestaurant, user]);
 
@@ -310,9 +360,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const openCashier = (amount: number, user: string) => {
-    const newSession: CashierSession = {
-      id: Math.random().toString(36).substr(2, 9),
+  const openCashier = async (amount: number, user: string) => {
+    const newSession: Omit<CashierSession, 'id'> = {
       restaurantId: currentRestaurant?.id || '',
       openedAt: new Date().toISOString(),
       openedBy: user,
@@ -322,33 +371,46 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       withdrawals: [],
       additions: [],
     };
-    setActiveSession(newSession);
-    setCashierSessions(prev => [newSession, ...prev]);
+    try {
+      const docRef = await addDoc(collection(db, 'cashier_sessions'), newSession);
+      const created = { id: docRef.id, ...newSession } as CashierSession;
+      setActiveSession(created);
+      setCashierSessions(prev => [created, ...prev]);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
+    }
   };
 
-  const closeCashier = (amount: number) => {
+  const closeCashier = async (amount: number) => {
     if (!activeSession) return;
-    const closedSession: CashierSession = {
-      ...activeSession,
-      closedAt: new Date().toISOString(),
-      closingAmount: amount,
-      status: 'closed',
-    };
-    setActiveSession(null);
-    setCashierSessions(prev => prev.map(s => s.id === closedSession.id ? closedSession : s));
+    try {
+      await updateDoc(doc(db, 'cashier_sessions', activeSession.id), {
+        closedAt: new Date().toISOString(),
+        closingAmount: amount,
+        status: 'closed',
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
+    }
   };
 
-  const addCashierMovement = (type: 'withdrawal' | 'addition', amount: number, reason: string) => {
+  const addCashierMovement = async (type: 'withdrawal' | 'addition', amount: number, reason: string) => {
     if (!activeSession) return;
     const movement = { amount, reason, time: new Date().toISOString() };
-    const updatedSession = { ...activeSession };
-    if (type === 'withdrawal') {
-      updatedSession.withdrawals.push(movement);
-    } else {
-      updatedSession.additions.push(movement);
+    try {
+      const sessionRef = doc(db, 'cashier_sessions', activeSession.id);
+      if (type === 'withdrawal') {
+        await updateDoc(sessionRef, {
+          withdrawals: arrayUnion(movement),
+        } as any);
+      } else {
+        await updateDoc(sessionRef, {
+          additions: arrayUnion(movement),
+        } as any);
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
     }
-    setActiveSession(updatedSession);
-    setCashierSessions(prev => prev.map(s => s.id === updatedSession.id ? updatedSession : s));
   };
 
   return (

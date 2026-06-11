@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Sparkles, X, Loader2, Wand2, Check, AlertCircle } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
 import { Button } from '../Button';
 import { toast } from 'react-hot-toast';
 import { db } from '../../lib/firebase';
@@ -44,56 +43,17 @@ export default function AIMenuGenerator({ restaurantId, onClose, onSuccess }: AI
 
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const prompt = `Você é um especialista em gastronomia e consultor de restaurantes. Gere um cardápio digital profissional para um restaurante de culinária "${cuisine}" chamado "${restaurantName}"${slogan ? ` com o slogan "${slogan}"` : ''}.
-      O cardápio deve conter 3 a 4 categorias lógicas (ex: Entradas, Pratos Principais, Bebidas, Sobremesas).
-      Cada categoria deve ter de 3 a 5 produtos realistas e atraentes.
-      As descrições devem ser curtas e vender bem o prato.
-      Os preços devem ser em Reais (BRL), condizentes com o tipo de culinária.
-      O tempo de preparo deve ser em minutos.
-
-      Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              categories: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    name: { type: Type.STRING },
-                    items: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          name: { type: Type.STRING },
-                          description: { type: Type.STRING },
-                          price: { type: Type.NUMBER },
-                          estimatedPrepTime: { type: Type.NUMBER }
-                        },
-                        required: ["name", "description", "price", "estimatedPrepTime"]
-                      }
-                    }
-                  },
-                  required: ["name", "items"]
-                }
-              }
-            },
-            required: ["categories"]
-          }
-        }
+      const resp = await fetch('/api/ai/generate-menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cuisine, restaurantName, slogan: slogan || undefined })
       });
-
-      const result = JSON.parse(response.text);
-      setGeneratedMenu(result);
+      if (!resp.ok) {
+        const errData = await resp.json();
+        throw new Error(errData.error || 'Erro na geração');
+      }
+      const result = await resp.json();
+      setGeneratedMenu(result.data);
       toast.success('Cardápio gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar cardápio:', error);
