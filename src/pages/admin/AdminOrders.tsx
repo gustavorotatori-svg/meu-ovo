@@ -7,7 +7,7 @@ import { Order } from '../../types';
 import { db } from '../../lib/firebase';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { awardLoyaltyPoints } from '../../services/loyaltyService';
-import { triggerAutomaticNotification } from '../../services/whatsappService';
+import { triggerAutomaticNotification, WA_NUMBER } from '../../services/whatsappService';
 import { getCustomerStats, submitCustomerRating, CustomerStats } from '../../services/customerRatingService';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -945,7 +945,7 @@ export default function AdminOrders() {
                 `Você pode acompanhar o status em tempo real aqui: ${window.location.origin}/r/${restaurant?.slug}/status/${order.id}\n\n` +
                 `Obrigado pela preferência!`;
 
-    const url = `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 

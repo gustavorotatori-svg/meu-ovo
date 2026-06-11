@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Truck, ChefHat, Eye, Clock, Sparkles, Ticket, Gift, MessageCircle, Bike, Package, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
+import { WA_NUMBER } from '../../services/whatsappService';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
@@ -612,7 +613,7 @@ export default function AdminDashboard() {
               Abra seu WhatsApp Web para responder clientes e gerenciar suporte. Configurado para: {currentRestaurant?.whatsapp}
             </p>
             <a 
-              href={`https://web.whatsapp.com/send?phone=${currentRestaurant?.whatsapp.replace(/\D/g, '')}`}
+              href={`https://web.whatsapp.com/send?phone=${WA_NUMBER}`}
               target="_blank"
               rel="noreferrer"
               className="inline-block bg-white text-[#128C7E] font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"

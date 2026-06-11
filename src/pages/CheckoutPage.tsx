@@ -10,6 +10,7 @@ import { collection, query, where, getDocs, limit, doc, updateDoc, increment, ar
 import { Order, Coupon } from '../types';
 import { toast } from 'react-hot-toast';
 import { formatCurrency, cn } from '../lib/utils';
+import { WA_NUMBER } from '../services/whatsappService';
 import { motion, AnimatePresence } from 'motion/react';
 import { generatePixPayload } from '../lib/pix';
 import { getCustomerStats, checkCouponTargeting } from '../services/customerRatingService';
@@ -451,7 +452,7 @@ export default function CheckoutPage() {
                 `*Acompanhe seu pedido:* ${window.location.origin}/pedido/${id}\n\n` +
                 `✅ Enviado via *MEU OVO*`;
 
-    const cleanRestaurantPhone = (restaurant.whatsapp || '').replace(/\D/g, '');
+    const cleanRestaurantPhone = WA_NUMBER;
     if (cleanRestaurantPhone) {
       const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');

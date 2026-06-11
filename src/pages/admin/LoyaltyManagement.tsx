@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { useAuth } from '../../context/AuthContext';
 import { useRestaurant } from '../../context/RestaurantContext';
+import { WA_NUMBER } from '../../services/whatsappService';
 import { Button } from '../../components/Button';
 import { toast } from 'react-hot-toast';
 import { cn, formatCurrency } from '../../lib/utils';
@@ -812,7 +813,7 @@ export default function LoyaltyManagement() {
                                 </div>
                                 
                                 <a
-                                  href={`https://wa.me/${selectedProfileHistory.customerPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(
+                                  href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
                                     `Olá, ${selectedProfileHistory.customerName?.split(' ')[0]}! Aqui é da equipe do ${restaurant.name} 🍳💛. Notamos que você é um de nossos clientes mais frequentes! Como forma de agradecimento, criamos um cupom de desconto exclusivo de ${couponDiscountValue}% na nossa cozinha feito especialmente para você: *${generatedCouponCode}* (Mínimo R$30, válido por 10 dias). Esperamos seu próximo lanche!`
                                   )}`}
                                   target="_blank"

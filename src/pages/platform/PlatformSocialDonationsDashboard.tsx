@@ -6,6 +6,7 @@ import {
 import { db } from '../../lib/firebase';
 import { collection, onSnapshot, doc, getDocs } from 'firebase/firestore';
 import toast from 'react-hot-toast';
+import { WA_NUMBER } from '../../services/whatsappService';
 
 interface RestaurantDonationInfo {
   id: string;
@@ -594,7 +595,6 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
                         
                         <button 
                           onClick={() => {
-                            const cleanerPhone = item.contactPhone.replace(/\D/g, '');
                             const message = encodeURIComponent(
                               `Olá, parceiro da *${item.name}*! Sou o administrador do *Meu Ovo*.\n\n` +
                               `Aqui estão seus números consolidados de impacto social referentes a *${monthLabels[selectedMonth]}*:\n\n` +
@@ -606,7 +606,7 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
                               `Pedimos o PIX de R$ ${item.checkoutDonations.toFixed(2)} (apenas doações de checkout) para nossa conta consolidada (*chave: financeiro@meuovo.org*) para fazermos a doação final integral para a ONG beneficente parceira. Doações diretas pós-pagamento já estão conosco.\n\n` +
                               `Muito obrigado por somar na nossa causa local! 🍳🍳❤️`
                             );
-                            window.open(`https://wa.me/${cleanerPhone}?text=${message}`, '_blank');
+                            window.open(`https://wa.me/${WA_NUMBER}?text=${message}`, '_blank');
                           }}
                           className="p-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all rounded-xl"
                           title="Chamar lojista direto no WhatsApp"

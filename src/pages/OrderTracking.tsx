@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { Order } from '../types';
 import { useRestaurant } from '../context/RestaurantContext';
+import { WA_NUMBER } from '../services/whatsappService';
 import { 
   CheckCircle2, 
   Clock, 
@@ -87,7 +88,7 @@ export default function OrderTracking() {
     };
 
     const msg = `Olá! Gostaria de uma atualização sobre o meu pedido *#${order.id.slice(-6).toUpperCase()}*. No site ele consta como: *${STATUS_PT[order.status]}*.`;
-    const url = `https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
@@ -271,7 +272,7 @@ export default function OrderTracking() {
         {/* Support Actions */}
         <div className="grid grid-cols-2 gap-3">
            <a 
-            href={`tel:${restaurant?.whatsapp}`}
+            href={`tel:${WA_NUMBER}`}
             className="h-12 bg-white border-2 border-slate-200 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:border-slate-400 transition-all shadow-sm"
            >
               <Phone size={16} className="text-slate-400" /> SUPORTE

@@ -1,5 +1,7 @@
 import { Order, Restaurant } from '../types';
 
+export const WA_NUMBER = '5511942221028';
+
 export const STATUS_MESSAGES: Record<Order['status'], string> = {
   received: 'recebido e está aguardando confirmação',
   accepted: 'aguardando pagamento',

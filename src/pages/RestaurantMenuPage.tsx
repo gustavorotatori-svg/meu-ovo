@@ -31,6 +31,7 @@ import ShareModal from '../components/ShareModal';
 import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { Skeleton } from '../components/Skeleton';
+import { WA_NUMBER } from '../services/whatsappService';
 import { cn } from '../lib/utils';
 
 // Helper to match emojis to category names dynamically
@@ -709,13 +710,13 @@ export default function RestaurantMenuPage() {
             {/* Quick Action Button & Social Sharing Icon */}
             <div className="flex flex-col gap-2.5 min-w-[200px] md:self-stretch justify-center">
               <a
-                href={restaurant.whatsapp && restaurant.whatsapp.trim() ? `https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá! Estou vendo o delicioso cardápio de ${restaurant.name} no Meu Ovo e gostaria de tirar uma dúvida.`)}` : '#'}
+                href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Olá! Estou vendo o delicioso cardápio de ${restaurant.name} no Meu Ovo e gostaria de tirar uma dúvida.`)}`}
                 target="_blank"
                 rel="noreferrer"
-                className={`w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl hover:-translate-y-0.5 active:scale-95 ${restaurant.whatsapp && restaurant.whatsapp.trim() ? 'bg-green-500/10 dark:bg-green-500/25 text-green-500 border border-green-500/20 dark:border-green-500/40 hover:bg-green-500 hover:text-white shadow-green-500/5' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 border border-gray-200 dark:border-gray-700 cursor-not-allowed'}`}
+                className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl hover:-translate-y-0.5 active:scale-95 bg-green-500/10 dark:bg-green-500/25 text-green-500 border border-green-500/20 dark:border-green-500/40 hover:bg-green-500 hover:text-white shadow-green-500/5"
               >
                 <MessageCircle size={15} strokeWidth={2.5} />
-                <span>{restaurant.whatsapp && restaurant.whatsapp.trim() ? 'Dúvidas? Chame no Zap' : 'WhatsApp não disponível'}</span>
+                <span>Dúvidas? Chame no Zap</span>
               </a>
               <p className="text-[9px] text-center text-gray-500 font-bold uppercase tracking-wider">
                 🍳 PEDIDOS SEM INTERMEDIÁRIOS COM IMPACTO REAL

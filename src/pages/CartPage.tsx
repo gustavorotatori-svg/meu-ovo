@@ -6,6 +6,7 @@ import { useRestaurant } from '../context/RestaurantContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
+import { WA_NUMBER } from '../services/whatsappService';
 import OptimizedImage from '../components/OptimizedImage';
 import { toast } from 'react-hot-toast';
 
@@ -247,7 +248,7 @@ export default function CartPage() {
                           `*ITENS:*\n${itemsText}\n\n` +
                           `*SUBTOTAL: R$ ${subtotal.toFixed(2)}*\n\n` +
                           `Gostaria de combinar a entrega/retirada por aqui!`;
-              const url = `https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
+              const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
               window.open(url, '_blank');
             }}
             className="w-full font-black py-4 rounded-2xl text-xs flex items-center justify-center gap-3 transition-all bg-[#25D366] text-white hover:opacity-90 shadow-lg shadow-green-200 uppercase tracking-widest"

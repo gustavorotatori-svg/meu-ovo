@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRestaurant } from '../context/RestaurantContext';
 import { generatePixPayload } from '../lib/pix';
+import { WA_NUMBER } from '../services/whatsappService';
 import { toast } from 'react-hot-toast';
 
 const MEU_OVO_PIX_KEY = 'meuovo@example.com'; // Platform-level PIX key for donations
@@ -774,9 +775,8 @@ export default function OrderStatusPage() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => {
-              const phoneNum = restaurant?.whatsapp ? restaurant.whatsapp.replace(/\D/g, '') : '5511999999999';
               const textMsg = encodeURIComponent(`Olá! Estou acompanhando meu pedido #${order.id} no Meu Ovo e gostaria de falar com o restaurante.`);
-              window.open(`https://wa.me/${phoneNum}?text=${textMsg}`, '_blank');
+              window.open(`https://wa.me/${WA_NUMBER}?text=${textMsg}`, '_blank');
             }}
             className="flex flex-col items-center justify-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-lg hover:bg-slate-50 transition-all gap-2 focus:outline-none hover:scale-[1.02] active:scale-95"
             id="btn-status-whatsapp"
@@ -786,9 +786,8 @@ export default function OrderStatusPage() {
           </button>
           <button 
             onClick={() => {
-              const phoneNum = restaurant?.whatsapp ? restaurant.whatsapp.replace(/\D/g, '') : '5511999999999';
               const textMsg = encodeURIComponent(`Olá! Preciso de ajuda urgente com o status do meu pedido #${order.id} no Meu Ovo.`);
-              window.open(`https://wa.me/${phoneNum}?text=${textMsg}`, '_blank');
+              window.open(`https://wa.me/${WA_NUMBER}?text=${textMsg}`, '_blank');
             }}
             className="flex flex-col items-center justify-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-lg hover:bg-slate-50 transition-all gap-2 focus:outline-none hover:scale-[1.02] active:scale-95"
             id="btn-status-ajuda"

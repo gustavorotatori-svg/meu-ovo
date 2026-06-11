@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, onSnapshot, orderBy, limit, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Restaurant, Category, Product, OrderItem, Coupon } from '../types';
 import { Logo } from '../components/Logo';
+import { WA_NUMBER } from '../services/whatsappService';
 import { 
   ShoppingBag, 
   ChevronRight, 
@@ -408,7 +409,7 @@ export default function MenuDisplay() {
       }).join('\n')}\n\nSubtotal: ${formatCurrency(cartTotal)}\n${orderType === 'delivery' ? 'Entrega: ' + formatCurrency(deliveryFee) + '\n' : ''}${donationAmount > 0 ? 'Doação social: ' + formatCurrency(donationAmount) + '\n' : ''}Total: ${formatCurrency(finalTotal)}`;
       
       const encodedMsg = encodeURIComponent(message);
-      const whatsappUrl = `https://api.whatsapp.com/send?phone=${restaurant?.whatsapp.replace(/\D/g, '')}&text=${encodedMsg}`;
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${WA_NUMBER}&text=${encodedMsg}`;
       
       setCart([]);
       setIsCartOpen(false);
@@ -503,7 +504,7 @@ export default function MenuDisplay() {
             </button>
           )}
           <a 
-            href={`https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Gostaria de fazer um novo pedido.')}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de fazer um novo pedido.')}`}
             target="_blank"
             rel="noreferrer"
             className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl text-white hover:bg-white/20 transition-all flex items-center gap-2"
@@ -512,7 +513,7 @@ export default function MenuDisplay() {
             <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline text-white">PEDIR VIA WHATSAPP</span>
           </a>
           <a 
-            href={`https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Gostaria de falar com o restaurante.')}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de falar com o restaurante.')}`}
             target="_blank"
             rel="noreferrer"
             className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl text-white hover:bg-white/20 transition-all flex items-center gap-2"
@@ -707,7 +708,7 @@ export default function MenuDisplay() {
         <motion.a
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          href={`https://wa.me/${restaurant.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre o cardápio.')}`}
+          href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre o cardápio.')}`}
           target="_blank"
           rel="noreferrer"
           className="fixed bottom-6 left-6 z-50 bg-[#25D366] text-white p-3.5 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
