@@ -236,7 +236,7 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
   };
 
   // Copy beautiful message text to send to restaurant
-  const handleCopyRestaurantDraft = (item: any) => {
+  const handleCopyRestaurantDraft = (item: RestaurantDonationInfo) => {
     const draftText = `🍳 *MEU OVO - RELATÓRIO SOCIAL DE DOAÇÕES* ❤️\n` +
       `-----------------------------------------\n` +
       `*Estabelecimento:* ${item.name}\n` +
@@ -610,6 +610,7 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
                           }}
                           className="p-2 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all rounded-xl"
                           title="Chamar lojista direto no WhatsApp"
+                          aria-label="Compartilhar"
                         >
                           <Share2 size={13} />
                         </button>
@@ -626,7 +627,7 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
 
       {/* Individual Report Template Modal */}
       {activeReportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Relatório de doação" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-neutral-900 rounded-[2rem] border border-gray-100 dark:border-neutral-800 p-6 max-w-lg w-full text-left shadow-2xl relative animate-in zoom-in-95 duration-200">
             <h3 className="font-display font-black text-lg uppercase italic tracking-tight text-[#111] dark:text-white mb-2 flex items-center gap-2">
               📜 Relatório Social - {activeReportModal.name}

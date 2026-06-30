@@ -1,18 +1,13 @@
-import React from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
 import { 
-  Heart, 
-  Sparkles, 
-  Utensils, 
-  Users, 
-  Award, 
   Flame, 
   ArrowLeft,
-  ChevronRight,
   ShieldAlert,
   Handshake,
-  Soup
+  Soup,
+  ChevronDown
 } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -22,6 +17,7 @@ import { useTheme } from '../context/ThemeContext';
 export default function AboutPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const [showFullStory, setShowFullStory] = useState(false);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-black text-white' : 'bg-white text-[#111]'}`}>
@@ -65,39 +61,52 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
-            Minha infância inteira foi cercada pela rotina implacável de uma cozinha comercial. Eu via meus pais acordarem antes do sol nascer para ir ao Ceasa negociar cada caixa de tomate. Eu vi as contas que não batiam no fim do mês, as queimas inesperadas de motores de geladeira nos dias mais quentes e o cansaço visível em cada ruga do rosto deles ao desligarem a coifa no final do expediente.
-          </p>
+          {!showFullStory && (
+            <button
+              onClick={() => setShowFullStory(true)}
+              className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-[#FFC928] hover:opacity-80 transition-opacity mx-auto mt-6"
+            >
+              Ler história completa <ChevronDown size={14} />
+            </button>
+          )}
 
-          <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
-            Mas, acima de tudo, eu vivi a <strong>magia indomável</strong> que só quem cozinha entende: o orgulho de entregar comida de verdade, quente, bem-temperada, e ver o prato voltar limpo para a pia. A cozinha não é apenas um negócio; ela é uma extensão da alma de quem serve.
-          </p>
+          {showFullStory && (
+            <>
+              <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium mt-8">
+                Minha infância inteira foi cercada pela rotina implacável de uma cozinha comercial. Eu via meus pais acordarem antes do sol nascer para ir ao Ceasa negociar cada caixa de tomate. Eu vi as contas que não batiam no fim do mês, as queimas inesperadas de motores de geladeira nos dias mais quentes e o cansaço visível em cada ruga do rosto deles ao desligarem a coifa no final do expediente.
+              </p>
 
-          <div className="my-12 p-8 rounded-[2.5rem] border bg-gradient-to-br from-[#FFC928]/5 via-[#FFC928]/0 to-transparent border-gray-100 dark:border-white/5 space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="p-2 rounded-xl bg-[#FFC928]/10 text-[#FFC928]">
-                <Flame size={20} className="animate-pulse" />
-              </span>
-              <h3 className="font-display font-black uppercase text-lg sm:text-xl italic tracking-tight">
-                De donos de restaurante, para donos de restaurante.
+              <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
+                Mas, acima de tudo, eu vivi a <strong>magia indomável</strong> que só quem cozinha entende: o orgulho de entregar comida de verdade, quente, bem-temperada, e ver o prato voltar limpo para a pia. A cozinha não é apenas um negócio; ela é uma extensão da alma de quem serve.
+              </p>
+
+              <div className="my-12 p-8 rounded-[2.5rem] border bg-gradient-to-br from-[#FFC928]/5 via-[#FFC928]/0 to-transparent border-gray-100 dark:border-white/5 space-y-4">
+                <div className="flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-[#FFC928]/10 text-[#FFC928]">
+                    <Flame size={20} className="animate-pulse" />
+                  </span>
+                  <h3 className="font-display font-black uppercase text-lg sm:text-xl italic tracking-tight">
+                    De donos de restaurante, para donos de restaurante.
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold">
+                  O <strong>Meu Ovo</strong> nasceu da nossa revolta legítima diante do mercado tecnológico atual. Nós nos cansamos de ver grandes corporações frias e algoritmos predadores que tratam a arte da culinária como mera engrenagem logística, esmagando as margens de lucro de quem realmente acorda cedo para ralar. Aqui, não criamos intermediários gulosos; nós criamos uma <strong>ponte honesta e transparente</strong>.
+                </p>
+              </div>
+
+              <h3 className="font-display font-black text-2xl uppercase italic tracking-tight mt-12">
+                Aqui, você é o <span className="text-[#FFC928]">Ator Principal</span>
               </h3>
-            </div>
-            <p className="text-xs sm:text-sm text-gray-500 leading-relaxed font-semibold">
-              O <strong>Meu Ovo</strong> nasceu da nossa revolta legítima diante do mercado tecnológico atual. Nós nos cansamos de ver grandes corporações frias e algoritmos predadores que tratam a arte da culinária como mera engrenagem logística, esmagando as margens de lucro de quem realmente acorda cedo para ralar. Aqui, não criamos intermediários gulosos; nós criamos uma <strong>ponte honesta e transparente</strong>.
-            </p>
-          </div>
 
-          <h3 className="font-display font-black text-2xl uppercase italic tracking-tight mt-12">
-            Aqui, você é o <span className="text-[#FFC928]">Ator Principal</span>
-          </h3>
+              <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
+                Entendemos que o restaurante é o verdadeiro combustível do bairro. É o sabor que conecta pessoas, que embala encontros e que conforta após dias longos. Por isso, no Meu Ovo, o restaurante nunca é tratado em letrinhas miúdas como um simples fornecedor secundário. Você é a estrela.
+              </p>
 
-          <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
-            Entendemos que o restaurante é o verdadeiro combustível do bairro. É o sabor que conecta pessoas, que embala encontros e que conforta após dias longos. Por isso, no Meu Ovo, o restaurante nunca é tratado em letrinhas miúdas como um simples fornecedor secundário. Você é a estrela.
-          </p>
-
-          <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
-            Desde a concepção do nosso código, criamos ferramentas para que você tenha controle absoluto do seu negócio: taxas extremamente enxutas e transparentes, acompanhamento geográfico detalhado e o prêmio independente <strong>Ovos de Ouro</strong>, desenhado com auditoria matemática à prova de fraudes para prestigiar o seu talento genuíno, sem favorecer corporações bilionárias.
-          </p>
+              <p className="text-sm sm:text-base leading-relaxed text-gray-500 font-medium">
+                Desde a concepção do nosso código, criamos ferramentas para que você tenha controle absoluto do seu negócio: taxas extremamente enxutas e transparentes, acompanhamento geográfico detalhado e o prêmio independente <strong>Ovos de Ouro</strong>, desenhado com auditoria matemática à prova de fraudes para prestigiar o seu talento genuíno, sem favorecer corporações bilionárias.
+              </p>
+            </>
+          )}
         </div>
       </section>
 
@@ -154,7 +163,7 @@ export default function AboutPage() {
               Pronto para retomar o controle de sua cozinha?
             </h2>
             <p className="text-xs sm:text-sm text-gray-500 font-semibold leading-relaxed">
-              Junte-se à nossa rede de parceiros e faça parte do ecossistema que trata comida com o devido respeito. Comece agora a receber pedidos no melhor marketplace independente de São Paulo.
+              Junte-se à nossa rede de parceiros e faça parte do ecossistema que trata comida com o devido respeito. Comece agora a receber pedidos no melhor marketplace independente do Brasil.
             </p>
             
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">

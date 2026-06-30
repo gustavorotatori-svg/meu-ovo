@@ -99,7 +99,7 @@ export default function AdminOrders() {
     }
   }, [isPrinterModalOpen]);
 
-  const [fiscalLogs, setFiscalLogs] = useState<any[]>([]);
+  const [fiscalLogs, setFiscalLogs] = useState<{ timestamp: string; isValid: boolean }[]>([]);
 
   useEffect(() => {
     try {
@@ -250,13 +250,13 @@ export default function AdminOrders() {
 
     const receivedOrders = orders.filter(o => o.status === 'received');
     receivedOrders.forEach(order => {
-      handleStatusChange(order.id, 'accepted');
+      handleStatusChange(order.id, 'accepted', order);
     });
   }, [orders, restaurant?.orderSettings?.autoAccept]);
 
-  const handleStatusChange = useCallback(async (orderId: string, newStatus: Order['status']) => {
+  const handleStatusChange = useCallback(async (orderId: string, newStatus: Order['status'], orderData?: Order) => {
     try {
-      const updateData: any = { status: newStatus };
+      const updateData: Record<string, unknown> = { status: newStatus };
       
       if (newStatus === 'accepted') {
         updateData.acceptedAt = new Date().toISOString();
@@ -270,7 +270,7 @@ export default function AdminOrders() {
       
       updateOrderStatus(orderId, newStatus);
       
-      const order = orders.find(o => o.id === orderId);
+      const order = orderData || orders.find(o => o.id === orderId);
       if (order && restaurant) {
         // Trigger automatic WhatsApp notification if enabled
         if (restaurant.orderSettings?.whatsappNotificationsEnabled) {
@@ -287,7 +287,7 @@ export default function AdminOrders() {
       console.error('Error updating status:', error);
       toast.error('Erro ao atualizar status');
     }
-  }, [restaurant, updateOrderStatus, orders]);
+  }, [restaurant, updateOrderStatus]);
 
   const printOrder = (order: Order, type: 'ticket' | 'account' = 'ticket') => {
     const printWindow = window.open('', '_blank', 'width=400,height=600');
@@ -320,7 +320,7 @@ export default function AdminOrders() {
         <span>R$ ${(item.quantity * item.unitPrice).toFixed(2)}</span>
       </div>
       ${settings.showComments && item.observations ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px;">* OBS: ${item.observations}</div>` : ''}
-      ${item.additionals.length > 0 ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px; color: #333;">+ ${item.additionals.map(a => a.name).join(', ')}</div>` : ''}
+      ${(item.additionals?.length ?? 0) > 0 ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px; color: #333;">+ ${item.additionals.map(a => a.name).join(', ')}</div>` : ''}
     `).join('');
 
     let singleReceiptHtml = `
@@ -354,7 +354,7 @@ export default function AdminOrders() {
         <div style="text-align: right; margin-top: 5px; font-size: 0.95em;">
           SUBTOTAL: R$ ${order.subtotal.toFixed(2)}<br/>
           ${order.discountAmount ? `DESC: R$ ${order.discountAmount.toFixed(2)}<br/>` : ''}
-          TAXA: R$ ${order.deliveryFee.toFixed(2)}
+          TAXA: R$ ${(order.deliveryFee || 0).toFixed(2)}
         </div>
 
         <div class="total">
@@ -823,7 +823,7 @@ export default function AdminOrders() {
       // Items string format: "Item A (2x) | Item B (1x)"
       const itemsStr = o.items.map(item => `${item.productName || item.name || 'N/A'} (${item.quantity}x)`).join(' | ');
       
-      const subTotal = o.items.reduce((sum, item) => sum + ((item.unitPrice || item.price || 0) * item.quantity), 0);
+      const subTotal = o.items.reduce((sum, item) => sum + ((item.unitPrice ?? item.price ?? 0) * item.quantity), 0);
       const discount = o.discountAmount || 0;
       const deliveryFee = o.deliveryFee || 0;
 
@@ -945,7 +945,7 @@ export default function AdminOrders() {
                 `Você pode acompanhar o status em tempo real aqui: ${window.location.origin}/r/${restaurant?.slug}/status/${order.id}\n\n` +
                 `Obrigado pela preferência!`;
 
-    const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+    const url = `https://wa.me/${order.customerPhone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
 
@@ -1283,6 +1283,7 @@ export default function AdminOrders() {
                     <button 
                       onClick={() => setSelectedOrderIds([])}
                       className={`p-3 rounded-xl border-2 transition-all ${isDark ? 'border-white/10 text-gray-500 hover:text-white' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
+                      aria-label="Cancelar pedido"
                     >
                       <XCircle size={14} />
                     </button>
@@ -1387,7 +1388,7 @@ export default function AdminOrders() {
       {/* Thermal Printer Settings Modal */}
       <AnimatePresence>
         {isPrinterModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-label="Configurações de impressão" className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -1411,6 +1412,7 @@ export default function AdminOrders() {
                   className={`p-2 rounded-xl transition-all ${
                     isDark ? 'hover:bg-white/5 text-gray-400 hover:text-white' : 'hover:bg-slate-50 text-slate-400 hover:text-[#111]'
                   }`}
+                  aria-label="Fechar"
                 >
                   <X size={18} />
                 </button>
@@ -1625,6 +1627,7 @@ const OrderCard: React.FC<{
       {onToggleSelection && !compact && (
         <button 
           onClick={onToggleSelection}
+          aria-label="Confirmar"
           className={`absolute top-4 right-4 z-10 w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selected ? 'bg-orange-500 border-orange-500 text-white' : (isDark ? 'border-white/10 bg-black/20 text-transparent' : 'border-gray-200 bg-white text-transparent group-hover:border-orange-200')}`}
         >
           <CheckCircle size={14} />
@@ -1652,7 +1655,7 @@ const OrderCard: React.FC<{
               <p className={`${compact ? 'text-sm' : 'text-lg'} font-black italic tracking-tighter uppercase ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>{order.customerName}</p>
               {stats ? (
                 <span className={`inline-flex items-center gap-1 text-[9px] font-sans font-black tracking-normal px-2 py-0.5 rounded-md uppercase shrink-0 ${stats.isProblematic ? 'bg-red-500 text-white animate-pulse shadow-sm' : 'bg-[#FFC928]/15 text-[#FFC928] border border-[#FFC928]/20'}`}>
-                  ★ {stats.averageRating.toFixed(1)} ({stats.totalRatings} {stats.totalRatings === 1 ? 'aval.' : 'aval.'})
+                  ★ {stats.averageRating.toFixed(1)} ({stats.totalRatings} {stats.totalRatings === 1 ? 'avaliação' : 'avaliações'})
                 </span>
               ) : null}
             </div>
@@ -1682,10 +1685,10 @@ const OrderCard: React.FC<{
           )}
           {compact && (
             <div className="flex gap-1">
-              <button onClick={() => onPrint?.('account')} className="p-2 rounded-lg bg-orange-50 text-orange-400 hover:text-black">
+              <button onClick={() => onPrint?.('account')} className="p-2 rounded-lg bg-orange-50 text-orange-400 hover:text-black" aria-label="Visualizar nota fiscal">
                 <FileText size={16} />
               </button>
-              <button onClick={() => onPrint?.('ticket')} className="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-black">
+              <button onClick={() => onPrint?.('ticket')} className="p-2 rounded-lg bg-slate-50 text-slate-400 hover:text-black" aria-label="Imprimir">
                 <Printer size={16} />
               </button>
             </div>
@@ -1734,6 +1737,7 @@ const OrderCard: React.FC<{
               </button>
               <button
                 onClick={() => setExpanded(!expanded)}
+                aria-label={expanded ? "Recolher" : "Expandir"}
                 className={`rounded-xl border-2 transition-all ${isDark ? 'border-white/10 text-gray-500 hover:text-white hover:border-white/20' : 'border-gray-200 text-gray-500 hover:bg-gray-50'} ${compact ? 'p-2' : 'p-3.5'}`}
               >
                 <ChevronDown size={compact ? 12 : 16} className={`transition-transform duration-300 ${expanded ? 'rotate-180 text-orange-500' : ''}`} />
@@ -1755,14 +1759,14 @@ const OrderCard: React.FC<{
                 <button 
                   onClick={() => onPrint('account')}
                   className={`p-4 rounded-2xl border-2 transition-all ${isDark ? 'border-white/10 text-orange-500 hover:text-white' : 'border-orange-100 text-orange-500 hover:bg-orange-50'}`}
-                  title="Imprimir Conta"
+                  aria-label="Visualizar nota fiscal"
                 >
                   <FileText size={18} />
                 </button>
                 <button 
                   onClick={() => onPrint('ticket')}
                   className={`p-4 rounded-2xl border-2 transition-all ${isDark ? 'border-white/10 text-gray-500 hover:text-white' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}
-                  title="Imprimir na Térmica"
+                  aria-label="Imprimir"
                 >
                   <Printer size={18} />
                 </button>
@@ -1770,6 +1774,7 @@ const OrderCard: React.FC<{
             )}
             <button
               onClick={() => setExpanded(!expanded)}
+              aria-label={expanded ? "Recolher" : "Expandir"}
               className={`rounded-xl border-2 transition-all ${isDark ? 'border-white/10 text-gray-500 hover:text-white hover:border-white/20' : 'border-gray-200 text-gray-500 hover:bg-gray-50'} ${compact ? 'p-2' : 'p-4'}`}
             >
               <ChevronDown size={compact ? 14 : 18} className={`transition-transform duration-300 ${expanded ? 'rotate-180 text-orange-500' : ''}`} />
@@ -1805,7 +1810,7 @@ const OrderCard: React.FC<{
                   <div key={i} className="flex justify-between text-sm">
                     <div>
                       <span className={`font-black ${isDark ? 'text-white' : 'text-[#111]'}`}>{item.quantity}x {item.productName}</span>
-                      {item.additionals.length > 0 && (
+                      {(item.additionals?.length ?? 0) > 0 && (
                         <div className="text-gray-400 text-xs mt-1 font-medium">{item.additionals.map(a => a.name).join(', ')}</div>
                       )}
                       {item.observations && (
@@ -1830,13 +1835,15 @@ const OrderCard: React.FC<{
                  >
                     <FileText size={14} /> Fiscal NFC-e
                  </button>
-                 <button
-                   onClick={() => onStatusChange('cancelled')}
-                   className="px-4 py-3 border-2 border-red-100 text-red-500 rounded-xl hover:bg-red-50 text-[10px] font-black"
-                 >
-                   CANCELAR
-                 </button>
-              </div>
+                 {order.status !== 'cancelled' && order.status !== 'ready' && order.status !== 'finished' && (
+                   <button
+                     onClick={() => onStatusChange('cancelled')}
+                     className="px-4 py-3 border-2 border-red-100 text-red-500 rounded-xl hover:bg-red-50 text-[10px] font-black"
+                   >
+                     CANCELAR
+                   </button>
+                 )}
+               </div>
 
               {/* Seção de Reputação e Avaliação do Cliente */}
               <div className={`mt-6 border-t pt-5 ${isDark ? 'border-white/5' : 'border-gray-200/60'}`}>
@@ -1898,6 +1905,7 @@ const OrderCard: React.FC<{
                         key={star}
                         type="button"
                         onClick={() => setRatingInput(star)}
+                        aria-label={`Avaliar como ${star} ${star === 1 ? 'estrela' : 'estrelas'}`}
                         className="transition-all transform hover:scale-125 focus:outline-none"
                       >
                         <Star 

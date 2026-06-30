@@ -4,16 +4,18 @@ import { doc, onSnapshot, updateDoc, getDoc, collection, query, where, getDocs, 
 import { db } from '../lib/firebase';
 import { Order, Restaurant, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChefHat, CheckCircle2, Clock, MapPin, Smartphone, ArrowLeft, Utensils, Bike, CreditCard, Heart, Ticket, Check, XCircle, Star, RefreshCw } from 'lucide-react';
+import { ChefHat, CheckCircle2, Clock, MapPin, Smartphone, ArrowLeft, Utensils, Bike, CreditCard, Heart, Ticket, Check, XCircle, Star, RefreshCw, RotateCcw } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRestaurant } from '../context/RestaurantContext';
+import { useCart } from '../context/CartContext';
 import { generatePixPayload } from '../lib/pix';
 import { WA_NUMBER } from '../services/whatsappService';
 import { toast } from 'react-hot-toast';
+import SEO from '../components/SEO';
 
-const MEU_OVO_PIX_KEY = 'meuovo@example.com'; // Platform-level PIX key for donations
+const MEU_OVO_PIX_KEY = import.meta.env.VITE_PLATFORM_PIX_KEY || 'meuovo@example.com';
 
 export default function OrderStatusPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +34,7 @@ export default function OrderStatusPage() {
   const [socialConfirmed, setSocialConfirmed] = useState(false);
   const navigate = useNavigate();
   const { restaurants } = useRestaurant();
+  const { addItem } = useCart();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
@@ -186,12 +189,12 @@ export default function OrderStatusPage() {
   };
 
   const steps = [
-    { status: 'received', label: 'Recebido', icon: <Clock size={20} />, description: 'O restaurante recebeu seu pedido' },
-    { status: 'accepted', label: 'Aprovado', icon: <CreditCard size={20} />, description: 'Restaurante aprovou! Aguardando pagamento' },
-    { status: 'preparing', label: 'Preparando', icon: <ChefHat size={20} />, description: 'Seu pedido está sendo preparado' },
-    { status: 'ready', label: 'Pronto', icon: <Utensils size={20} />, description: 'Pedido finalizado e pronto!' },
-    { status: 'out-for-delivery', label: 'A caminho', icon: <Bike size={20} />, description: 'O entregador já saiu com seu pedido' },
-    { status: 'finished', label: 'Entregue', icon: <CheckCircle2 size={20} />, description: 'Bom apetite!' },
+    { status: 'received', label: 'Recebido', icon: <Clock size={20} />, description: 'O restaurante recebeu seu pedido', time: order?.createdAt },
+    { status: 'accepted', label: 'Aprovado', icon: <CreditCard size={20} />, description: 'Restaurante aprovou! Aguardando pagamento', time: order?.acceptedAt },
+    { status: 'preparing', label: 'Preparando', icon: <ChefHat size={20} />, description: 'Seu pedido está sendo preparado', time: undefined },
+    { status: 'ready', label: 'Pronto', icon: <Utensils size={20} />, description: 'Pedido finalizado e pronto!', time: undefined },
+    { status: 'out-for-delivery', label: 'A caminho', icon: <Bike size={20} />, description: 'O entregador já saiu com seu pedido', time: undefined },
+    { status: 'finished', label: 'Entregue', icon: <CheckCircle2 size={20} />, description: 'Bom apetite!', time: undefined },
   ];
 
   const currentStep = steps.findIndex(s => s.status === order?.status);
@@ -241,7 +244,7 @@ export default function OrderStatusPage() {
       <div className="bg-[#111111] text-white p-8 rounded-b-[3rem] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] rounded-full blur-[100px] opacity-20 -mr-32 -mt-32" />
         
-        <button onClick={() => navigate(-1)} className="mb-4 opacity-60 hover:opacity-100 transition-opacity focus:outline-none" id="btn-status-back">
+        <button onClick={() => navigate(-1)} className="mb-4 opacity-60 hover:opacity-100 transition-opacity focus:outline-none" id="btn-status-back" aria-label="Voltar">
           <ArrowLeft size={24} />
         </button>
 
@@ -480,6 +483,7 @@ export default function OrderStatusPage() {
                         toast.success('Código PIX da caixinha copiado!');
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-amber-500 text-white rounded-lg shadow-sm"
+                      aria-label="Visualizar ingresso"
                     >
                       <Ticket size={14} />
                     </button>
@@ -563,6 +567,7 @@ export default function OrderStatusPage() {
                         toast.success('Código PIX de doação copiado!');
                       }}
                       className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-rose-500 text-white rounded-lg shadow-sm"
+                      aria-label="Visualizar ingresso"
                     >
                       <Ticket size={14} />
                     </button>
@@ -630,12 +635,17 @@ export default function OrderStatusPage() {
                     {isCompleted ? <CheckCircle2 size={18} /> : step.icon}
                   </div>
 
-                  <div>
+                   <div>
                     <h3 className={cn(
-                      "font-black text-sm uppercase tracking-widest",
+                      "font-black text-sm uppercase tracking-widest flex items-center gap-2",
                       isCompleted ? "text-green-600" : "text-slate-400"
                     )}>
                       {step.label}
+                      {step.time && isCompleted && (
+                        <span className="text-[10px] font-mono text-slate-400 font-normal normal-case tracking-normal">
+                          {format(new Date(step.time), "HH:mm", { locale: ptBR })}
+                        </span>
+                      )}
                     </h3>
                     <p className="text-xs text-slate-500 mt-1">{step.description}</p>
                     {isCurrent && (
@@ -769,6 +779,28 @@ export default function OrderStatusPage() {
               Sua nota ajuda a reconhecer e premiar os melhores pratos da temporada!
             </p>
           </motion.div>
+        )}
+
+        {/* Reorder */}
+        {order.status === 'finished' && (
+          <button
+            onClick={() => {
+              if (!order.items?.length) return toast.error('Nenhum item para reordenar');
+              order.items.forEach(item => {
+                addItem({
+                  product: { id: item.productId, name: item.productName, price: item.price, image: item.image || '', restaurantId: order.restaurantId } as any,
+                  quantity: item.quantity,
+                  selectedAdditionals: (item.additionals || []).map(a => ({ groupId: '', additionalId: '', name: a.name, price: a.price })),
+                  observations: item.observations || '',
+                });
+              });
+              toast.success('Itens copiados para o carrinho!');
+              navigate('/carrinho');
+            }}
+            className="w-full mb-4 bg-[#FFC928] text-black font-black py-4 rounded-2xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20 active:scale-[0.98]"
+          >
+            <RotateCcw size={16} /> Repetir Pedido
+          </button>
         )}
 
         {/* Actions */}

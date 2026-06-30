@@ -266,7 +266,21 @@ export const cuisineEmojis: Record<string, string> = {
   'Pizza': '🍕',
   'Hamburguer': '🍔',
   'Marmita': '🍱',
-  // ...
+  'Brasileira': '🇧🇷',
+  'Japonesa': '🍣',
+  'Chinesa': '🥟',
+  'Arabe': '🥙',
+  'Mexicana': '🌮',
+  'Acai': '🫐',
+  'Padaria': '🥐',
+  'Doceria': '🍰',
+  'Saudavel': '🥗',
+  'Vegana': '🥬',
+  'Bebidas': '🧃',
+  'Churrasco': '🥩',
+  'Pastel': '🥟',
+  'Sorvete': '🍦',
+  'Cafe': '☕',
 };
 
 export const mockAnalytics = {

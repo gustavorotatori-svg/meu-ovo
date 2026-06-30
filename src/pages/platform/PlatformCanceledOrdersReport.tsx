@@ -410,7 +410,7 @@ export default function PlatformCanceledOrdersReport({ isDark }: ReportProps) {
                     <XAxis type="number" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#666' : '#999', fontSize: 10, fontWeight: '700' }} unit="%" />
                     <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fill: isDark ? '#aaa' : '#444', fontSize: 10, fontWeight: '800' }} width={170} />
                     <Tooltip 
-                      formatter={(value: any, name: any, props: any) => [`${value}% (${props.payload.count} pedidos)`, 'Fração']}
+                      formatter={(value: number, name: string, props: { payload?: { count: number } }) => [`${value}% (${props.payload?.count ?? 0} pedidos)`, 'Fração']}
                       contentStyle={{ backgroundColor: isDark ? '#111' : '#fff', borderRadius: '12px', border: 'none', color: isDark ? '#fff' : '#000', fontSize: '11px', fontWeight: 'bold' }}
                     />
                     <Bar dataKey="value" radius={[0, 8, 8, 0]}>

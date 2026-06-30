@@ -51,6 +51,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
+            role="dialog" aria-modal="true" aria-label="Compartilhar"
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
           />
           <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[101] p-4">
@@ -63,7 +64,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-2xl font-black italic uppercase tracking-tighter text-brand-black">Compartilhar</h3>
-                  <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <button onClick={onClose} aria-label="Fechar" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                     <X size={20} className="text-slate-400" />
                   </button>
                 </div>

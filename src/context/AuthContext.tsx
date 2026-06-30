@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { auth, db } from '../lib/firebase';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, updateProfile } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth } from '../lib/firebase-auth';
+import { db } from '../lib/firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, updateProfile, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { getFCMToken } from '../lib/fcm';
 
 type UserRole = 'customer' | 'restaurant' | 'admin';
 
@@ -15,6 +17,8 @@ interface User {
   displayName?: string;
   customerRating?: number;
   customerRatingCount?: number;
+  pwaInstallPending?: boolean;
+  onboardingComplete?: boolean;
 }
 
 interface AuthContextType {
@@ -22,8 +26,13 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
   isAuthenticated: boolean;
+  resendVerification: () => Promise<void>;
+  emailVerified: boolean;
+  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,17 +40,28 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(false);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        setEmailVerified(firebaseUser.emailVerified);
         try {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
+            const data = userDoc.data();
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email || '',
-              ...userDoc.data() as any
+              full_name: data?.full_name,
+              role: data?.role || 'customer',
+              profile_image_url: data?.profile_image_url,
+              photoURL: data?.photoURL,
+              displayName: data?.displayName,
+              customerRating: data?.customerRating,
+              customerRatingCount: data?.customerRatingCount,
+              pwaInstallPending: data?.pwaInstallPending,
+              onboardingComplete: data?.onboardingComplete,
             });
           } else {
             setUser({
@@ -72,14 +92,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  async function registerFCMAndActivity(uid: string) {
+    try {
+      const token = await getFCMToken();
+      const updates: Record<string, unknown> = { lastActiveAt: new Date().toISOString() };
+      if (token) updates.fcmToken = token;
+      await updateDoc(doc(db, 'users', uid), updates);
+    } catch {
+      // Non-critical
+    }
+  }
+
   async function signUp(email: string, password: string, fullName: string, role: UserRole) {
     const res = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(res.user, { displayName: fullName });
-    
-    const userData: Record<string, any> = {
+
+    const userData: Record<string, unknown> = {
       full_name: fullName,
       role: role,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      pwaInstallPending: true,
+      onboardingComplete: false,
     };
     if (role === 'customer') {
       userData.customerRating = 5;
@@ -87,20 +120,119 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     await setDoc(doc(db, 'users', res.user.uid), userData);
-    
+
+    try {
+      await sendEmailVerification(res.user);
+      console.log('Email de verificação enviado para', email);
+    } catch (_e) {
+      // Non-critical — user can still use the app
+    }
+
     setUser({
       id: res.user.uid,
       email,
       ...userData
     });
+
+    registerFCMAndActivity(res.user.uid);
   }
 
   async function signIn(email: string, password: string) {
-    await signInWithEmailAndPassword(auth, email, password);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      if (!cred.user.emailVerified) {
+        // Allow access but user can verify later
+      }
+      registerFCMAndActivity(cred.user.uid);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function signInWithGoogleFn() {
+    const provider = new GoogleAuthProvider();
+    const res = await signInWithPopup(auth, provider);
+    const userDoc = await getDoc(doc(db, 'users', res.user.uid));
+    if (!userDoc.exists()) {
+      await setDoc(doc(db, 'users', res.user.uid), {
+        full_name: res.user.displayName || 'Usuário',
+        role: 'customer',
+        createdAt: new Date().toISOString(),
+        pwaInstallPending: true,
+        onboardingComplete: false,
+        customerRating: 5,
+        customerRatingCount: 0,
+      });
+    }
+    registerFCMAndActivity(res.user.uid);
   }
 
   async function signOut() {
-    await firebaseSignOut(auth);
+    try {
+      await firebaseSignOut(auth);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function resendVerification() {
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser);
+    }
+  }
+
+  async function resetPassword(email: string) {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async function refreshUserProfile() {
+    if (!auth.currentUser) return;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        setUser({
+          id: auth.currentUser.uid,
+          email: auth.currentUser.email || '',
+          full_name: data?.full_name,
+          role: data?.role || 'customer',
+          profile_image_url: data?.profile_image_url,
+          photoURL: data?.photoURL,
+          displayName: data?.displayName,
+          customerRating: data?.customerRating,
+          customerRatingCount: data?.customerRatingCount,
+          pwaInstallPending: data?.pwaInstallPending,
+          onboardingComplete: data?.onboardingComplete,
+        });
+      }
+    } catch (e) {
+      console.error("Error refreshing user profile:", e);
+    }
+  }
+
+  if (loading) {
+    return (
+      <AuthContext.Provider value={{
+        user: null,
+        loading: true,
+        signUp, signIn, signInWithGoogle: signInWithGoogleFn, signOut, resetPassword,
+        isAuthenticated: false,
+        resendVerification: async () => {},
+        emailVerified: true,
+        refreshUserProfile,
+      }}>
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-[#FFC928] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Carregando...</p>
+          </div>
+        </div>
+      </AuthContext.Provider>
+    );
   }
 
   return (
@@ -109,10 +241,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signUp,
       signIn,
+      signInWithGoogle: signInWithGoogleFn,
       signOut,
+      resetPassword,
       isAuthenticated: !!user,
+      resendVerification,
+      emailVerified,
+      refreshUserProfile,
     }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

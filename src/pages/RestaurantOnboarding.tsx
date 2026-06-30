@@ -1,19 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Award, Zap, ToggleLeft, ToggleRight, Info, AlertCircle } from 'lucide-react';
+import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Info, AlertCircle, MapPin } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import { useTheme } from '../context/ThemeContext';
 import { cuisineTypes } from '../data/mockData';
 import { Logo } from '../components/Logo';
+import { useAuth } from '../context/AuthContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { toast } from 'react-hot-toast';
+import { encodeGeohash } from '../lib/geohash';
 
 export default function RestaurantOnboarding() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const { registerRestaurant } = useRestaurant();
   const isDark = theme === 'dark';
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/cadastro-restaurante', { replace: true });
+    } else if (user?.role === 'restaurant') {
+      navigate('/admin', { replace: true });
+    } else if (user?.role !== 'admin') {
+      navigate('/busca', { replace: true });
+    }
+  }, [isAuthenticated, user?.role, navigate]);
   
   const STEPS = [
     t('onboarding.step1'), 
@@ -27,57 +41,70 @@ export default function RestaurantOnboarding() {
   const [loading, setLoading] = useState(false);
   const [logoBase64, setLogoBase64] = useState<string>('');
   const [isAiParsing, setIsAiParsing] = useState(false);
+  const [showTips, setShowTips] = useState(false);
   
-  // Delivery carrier connection plugins
-  const [deliveryPlugins, setDeliveryPlugins] = useState([
-    {
-      id: 'lalamove',
-      name: 'Lalamove Delivery',
-      logo: '⚡',
-      description: 'Entregas ultra-rápidas para motos, utilitários, furgões e carros.',
-      connected: false,
-      apiKey: '',
-      apiSecret: '',
-    },
-    {
-      id: 'loggi',
-      name: 'Loggi Pro',
-      logo: '📦',
-      description: 'A maior malha de motoboys qualificados do Brasil com faturamento corporativo.',
-      connected: false,
-      apiKey: '',
-      apiSecret: '',
-    },
-    {
-      id: 'uberdirect',
-      name: 'Uber Direct',
-      logo: '🚗',
-      description: 'Acione motoristas e motociclistas parceiros da Uber diretamente do seu painel.',
-      connected: false,
-      apiKey: '',
-      apiSecret: '',
-    }
-  ]);
-
   const [form, setForm] = useState({
     name: '', responsible: '', whatsapp: '', email: '',
-    address: '', neighborhood: '', city: '', cuisineType: 'Pizza',
+    cep: '', address: '', neighborhood: '', city: '', cuisineType: 'Pizza',
     hours: '', primaryColor: '#FFC928',
     delivery: true, pickup: true, dineIn: false,
     deliveryFee: '', minOrder: '', estimatedTime: '',
-    deliveryRadius: '', deliveryObs: '',
+    deliveryRadius: '', deliveryObs: '', cnpj: '',
   });
+  const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
   const [categories, setCategories] = useState<string[]>(['Mais Vendidos', 'Bebidas']);
   const [newCat, setNewCat] = useState('');
   const [products, setProducts] = useState([{ name: '', price: '', category: '', image: '' }]);
 
   const update = (field: string, value: string | boolean) => setForm(f => ({ ...f, [field]: value }));
 
-  const [deliveryFee, setDeliveryFee] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('');
-  const [minOrder, setMinOrder] = useState('');
-  const [deliveryRadius, setDeliveryRadius] = useState('');
-  const [deliveryObs, setDeliveryObs] = useState('');
+  const maskPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return `(${digits}`;
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
+  const handleCepBlur = async (cep: string) => {
+    const digits = cep.replace(/\D/g, '');
+    if (digits.length !== 8) return;
+    try {
+      const res = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const data = await res.json();
+      if (!data.erro) {
+        setForm(f => ({
+          ...f,
+          address: data.logradouro || f.address,
+          neighborhood: data.bairro || f.neighborhood,
+          city: data.localidade || f.city,
+        }));
+      }
+    } catch {
+      // silent — user types manually
+    }
+  };
+
+  const requestGeoLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error('Geolocalização não suportada pelo navegador');
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLatLng({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoLoading(false);
+        toast.success('Localização obtida!');
+      },
+      (err) => {
+        setGeoLoading(false);
+        if (err.code === 1) toast.error('Permissão negada. Você pode digitar o endereço manualmente.');
+        else toast.error('Erro ao obter localização.');
+      }
+    );
+  };
 
   const stepTips = [
     { title: 'Dados do Restaurante', tips: ['Use o nome comercial do seu restaurante (como os clientes conhecem)', 'O WhatsApp será usado para receber os pedidos — mantenha sempre ativo', 'O endereço ajuda clientes a encontrar seu restaurante na busca'] },
@@ -91,15 +118,17 @@ export default function RestaurantOnboarding() {
     whatsapp: form.whatsapp && form.whatsapp.replace(/\D/g, '').length < 10 ? 'WhatsApp inválido (mín. 10 dígitos)' : null,
     email: form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) ? 'E-mail inválido' : null,
     responsible: form.responsible && form.responsible.trim().length < 2 ? 'Mínimo de 2 caracteres' : null,
+    cnpj: form.cnpj && form.cnpj.replace(/\D/g, '').length < 11 ? 'CPF/CNPJ inválido (mín. 11 dígitos)' : null,
   };
 
   const handleFinish = async () => {
-    // Validation
     if (!form.name.trim()) { toast.error('Nome do restaurante é obrigatório'); return; }
     if (!form.whatsapp.trim()) { toast.error('WhatsApp é obrigatório'); return; }
     if (!form.responsible.trim()) { toast.error('Nome do responsável é obrigatório'); return; }
+    if (!form.city.trim()) { toast.error('Cidade é obrigatória para aparecer na busca'); return; }
     if (form.whatsapp.replace(/\D/g, '').length < 10) { toast.error('WhatsApp inválido'); return; }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Email inválido'); return; }
+    if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade para continuar'); return; }
 
     const validProducts = products.filter(p => p.name.trim() && p.price);
     if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome e preço'); return; }
@@ -107,20 +136,27 @@ export default function RestaurantOnboarding() {
 
     setLoading(true);
     try {
-      const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+      const raw = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      const slug = raw.replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
       const restaurantId = slug || `rest-${Math.random().toString(36).substr(2, 5)}`;
-      const parsedMinOrder = parseFloat(minOrder) || 10;
-      const parsedEstimatedTime = parseInt(estimatedTime) || 30;
-      
+      const parsedMinOrder = parseFloat(form.minOrder) || 10;
+      const parsedEstimatedTime = parseInt(form.estimatedTime) || 30;
+
+      const geoHash = latLng ? encodeGeohash(latLng.lat, latLng.lng, 6) : undefined;
+
       const restaurantData = {
         id: restaurantId,
         name: form.name,
         slug: restaurantId,
+        latitude: latLng?.lat,
+        longitude: latLng?.lng,
+        geohash: geoHash,
         logo: logoBase64 || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=400&fit=crop',
         coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
         cuisineType: form.cuisineType,
         email: form.email,
         city: form.city,
+        cnpj: form.cnpj,
         description: form.hours ? `${form.cuisineType} • ${form.hours}` : '',
         responsible: form.responsible,
         hours: form.hours,
@@ -128,7 +164,7 @@ export default function RestaurantOnboarding() {
         reviewCount: 0,
         priceRange: 'medium',
         estimatedTime: parsedEstimatedTime,
-        deliveryFee: parseFloat(deliveryFee) || 0,
+        deliveryFee: parseFloat(form.deliveryFee) || 0,
         minimumOrder: parsedMinOrder,
         deliveryEnabled: form.delivery,
         pickupEnabled: form.pickup,
@@ -139,12 +175,12 @@ export default function RestaurantOnboarding() {
         primaryColor: form.primaryColor,
         isOpen: true,
         deliverySettings: {
-          fee: parseFloat(deliveryFee) || 0,
+          fee: parseFloat(form.deliveryFee) || 0,
           estimatedTime: `${parsedEstimatedTime} min`,
           minOrder: parsedMinOrder,
           feeByNeighborhood: [],
-          radiusKm: parseFloat(deliveryRadius) || undefined,
-          observation: deliveryObs || undefined,
+          radiusKm: parseFloat(form.deliveryRadius) || undefined,
+          observation: form.deliveryObs || undefined,
         },
         orderSettings: {
           autoAccept: true,
@@ -160,7 +196,6 @@ export default function RestaurantOnboarding() {
         },
       };
 
-      // Filter out empty products
       const cleanedProducts = validProducts.map(p => ({
         name: p.name,
         price: p.price,
@@ -275,7 +310,7 @@ export default function RestaurantOnboarding() {
             setCategories(loadedCategories);
           }
           if (loadedProducts && loadedProducts.length > 0) {
-            const formattedProducts = loadedProducts.map((p: any) => ({
+            const formattedProducts = loadedProducts.map((p: { name?: string; price?: string | number; category?: string }) => ({
               name: p.name || '',
               price: p.price ? String(p.price) : '',
               category: p.category || '',
@@ -288,9 +323,9 @@ export default function RestaurantOnboarding() {
         } else {
           throw new Error('Falha no formato retornado da IA');
         }
-      } catch (err: any) {
-        console.error(err);
-        toast.error(`Falha ao ler cardápio com IA: ${err.message || err}`, { id: toastId });
+      } catch (error) {
+        console.error(error);
+        toast.error(`Falha ao ler cardápio com IA: ${error instanceof Error ? error.message : error}`, { id: toastId });
       } finally {
         setIsAiParsing(false);
       }
@@ -303,30 +338,6 @@ export default function RestaurantOnboarding() {
   };
 
   // Carrier toggler
-  const handleTogglePlugin = (pluginId: string) => {
-    setDeliveryPlugins(prev => prev.map(p => {
-      if (p.id === pluginId) {
-        if (p.connected) {
-          toast.success(`${p.name} desconectado.`);
-          return { ...p, connected: false, apiKey: '', apiSecret: '' };
-        } else {
-          toast.success(`${p.name} pré-ativado via plugin corporativo!`);
-          return { ...p, connected: true };
-        }
-      }
-      return p;
-    }));
-  };
-
-  const handlePluginCredChange = (pluginId: string, type: 'apiKey' | 'apiSecret', val: string) => {
-    setDeliveryPlugins(prev => prev.map(p => {
-      if (p.id === pluginId) {
-        return { ...p, [type]: val };
-      }
-      return p;
-    }));
-  };
-
   return (
     <div className={`min-h-screen transition-colors pb-16 ${isDark ? 'bg-[#121212]' : 'bg-[#F9FAFB]'}`}>
       
@@ -352,8 +363,9 @@ export default function RestaurantOnboarding() {
           </div>
           <div className="flex flex-col items-center md:items-end gap-1 flex-shrink-0">
             <Logo size="lg" variant="white" className="mb-2" />
-            <span className="text-[9px] font-black uppercase tracking-wider text-[#FFC928] px-3 py-1 bg-white/5 border border-white/10 rounded-lg">
-              Registo Grátis e Ilimitado
+            <span className="text-[9px] font-black uppercase tracking-wider relative inline-flex items-center gap-1">
+              <span className="relative z-10 bg-gradient-to-r from-[#FFC928] via-yellow-200 to-[#FFC928] bg-clip-text text-transparent animate-gradient-shift">📋 Registro Grátis e Ilimitado</span>
+              <span className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FFC928]/60 via-yellow-300/40 to-[#FFC928]/60 animate-gradient-shift rounded-full" />
             </span>
           </div>
         </div>
@@ -387,11 +399,17 @@ export default function RestaurantOnboarding() {
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">{t('onboarding.restaurantData')}</h2>
             <p className="text-gray-500 text-xs uppercase font-black tracking-widest mb-3">{t('onboarding.basicInfo')}</p>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[0].title}</p>
-                <ul className="space-y-1">
+            <button
+              onClick={() => setShowTips(!showTips)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
+            >
+              <Info size={14} /> Dicas
+              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+
+            {showTips && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <ul className="space-y-1.5">
                   {stepTips[0].tips.map((tip, i) => (
                     <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
                       <span className="text-[#FFC928] shrink-0">→</span>
@@ -400,7 +418,7 @@ export default function RestaurantOnboarding() {
                   ))}
                 </ul>
               </div>
-            </div>
+            )}
 
             <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100 shadow-md">
               <div className="grid grid-cols-2 gap-4">
@@ -431,11 +449,21 @@ export default function RestaurantOnboarding() {
                   />
                 </div>
                 <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CPF / CNPJ</label>
+                  <input 
+                    value={form.cnpj} 
+                    onChange={e => update('cnpj', e.target.value)} 
+                    placeholder="000.000.000-00" 
+                    className={`w-full bg-white border ${fieldErrors.cnpj ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all`}
+                  />
+                  {fieldErrors.cnpj && <p className="text-[10px] text-red-500 font-bold mt-1">{fieldErrors.cnpj}</p>}
+                </div>
+                <div>
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.whatsapp')} *</label>
                     <div className="relative">
                       <input 
                         value={form.whatsapp} 
-                        onChange={e => update('whatsapp', e.target.value)} 
+                        onChange={e => update('whatsapp', maskPhone(e.target.value))} 
                         placeholder="(11) 99999-9999" 
                         className={`w-full bg-white border ${fieldErrors.whatsapp ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all pr-10`}
                       />
@@ -456,6 +484,30 @@ export default function RestaurantOnboarding() {
                     placeholder="seu@email.com" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
                   />
+                </div>
+                <div className="col-span-2 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CEP</label>
+                    <input
+                      value={form.cep}
+                      onChange={e => update('cep', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                      onBlur={() => handleCepBlur(form.cep)}
+                      placeholder="00000-000"
+                      maxLength={8}
+                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                  <div className="flex items-end pb-1">
+                    <button
+                      type="button"
+                      onClick={requestGeoLocation}
+                      disabled={geoLoading}
+                      className="w-full flex items-center justify-center gap-2 bg-[#111] text-white text-xs font-black px-4 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+                    >
+                      {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                      {latLng ? 'Localizado ✓' : 'Usar GPS'}
+                    </button>
+                  </div>
                 </div>
                 <div className="col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.address')}</label>
@@ -568,9 +620,9 @@ export default function RestaurantOnboarding() {
                       </div>
                     </label>
                   ))}
-                </div>
               </div>
             </div>
+          </div>
           </div>
         )}
 
@@ -580,11 +632,17 @@ export default function RestaurantOnboarding() {
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Categorias do cardápio</h2>
             <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Organize seus produtos em categorias.</p>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[1].title}</p>
-                <ul className="space-y-1">
+            <button
+              onClick={() => setShowTips(!showTips)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
+            >
+              <Info size={14} /> Dicas
+              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+
+            {showTips && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <ul className="space-y-1.5">
                   {stepTips[1].tips.map((tip, i) => (
                     <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
                       <span className="text-[#FFC928] shrink-0">→</span>
@@ -593,7 +651,7 @@ export default function RestaurantOnboarding() {
                   ))}
                 </ul>
               </div>
-            </div>
+            )}
 
             <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-md">
               <div className="flex gap-2 mb-4">
@@ -604,7 +662,7 @@ export default function RestaurantOnboarding() {
                   placeholder="Nome da categoria (ex: Massas)"
                   className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all"
                 />
-                <button onClick={addCategory} className="bg-[#FFC928] text-[#111] font-black px-5 py-3 rounded-xl hover:bg-[#e6b520] transition-colors flex items-center justify-center">
+                <button onClick={addCategory} className="bg-[#FFC928] text-[#111] font-black px-5 py-3 rounded-xl hover:bg-[#e6b520] transition-colors flex items-center justify-center" aria-label="Adicionar produto">
                   <Plus size={20} />
                 </button>
               </div>
@@ -613,14 +671,14 @@ export default function RestaurantOnboarding() {
                 {categories.map((cat, i) => (
                   <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
                     <span className="font-bold text-slate-800 text-xs uppercase tracking-wider">{cat}</span>
-                    <button onClick={() => setCategories(c => c.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500 transition-colors">
+                    <button onClick={() => setCategories(c => c.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Excluir produto">
                       <Trash2 size={16} />
                     </button>
                   </div>
                 ))}
               </div>
 
-              <p className="text-xs text-gray-400 mt-4 leading-relaxed font-bold uppercase tracking-wider">Sugestões: Pratos Executivos, Entradas, Pizzas Clássicas, Burguers, Combos Inteiros, Sobremesas, Bebidas</p>
+              <p className="text-xs text-gray-400 mt-4 leading-relaxed font-bold uppercase tracking-wider">Sugestões: Pratos Executivos, Entradas, Pizzas Clássicas, Hambúrgueres, Combos Inteiros, Sobremesas, Bebidas</p>
             </div>
           </div>
         )}
@@ -631,11 +689,17 @@ export default function RestaurantOnboarding() {
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Cadastrar produtos</h2>
             <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Adicione os produtos do seu cardápio.</p>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[2].title}</p>
-                <ul className="space-y-1">
+            <button
+              onClick={() => setShowTips(!showTips)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
+            >
+              <Info size={14} /> Dicas
+              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+
+            {showTips && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <ul className="space-y-1.5">
                   {stepTips[2].tips.map((tip, i) => (
                     <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
                       <span className="text-[#FFC928] shrink-0">→</span>
@@ -644,7 +708,7 @@ export default function RestaurantOnboarding() {
                   ))}
                 </ul>
               </div>
-            </div>
+            )}
 
             {/* AI feature active container - Powered by Gemini */}
             <div className="bg-gradient-to-r from-amber-950 to-black rounded-2xl p-6 mb-6 text-left border border-amber-500/20 shadow-xl relative overflow-hidden">
@@ -655,7 +719,7 @@ export default function RestaurantOnboarding() {
                  </div>
                  <div className="flex-1 space-y-1">
                    <div className="flex items-center gap-2">
-                     <span className="font-black text-[#FFC928] text-[10px] uppercase tracking-widest">Tecnologia Gemini 3.5 Flash</span>
+                     <span className="font-black text-[#FFC928] text-[10px] uppercase tracking-widest">Tecnologia Gemini</span>
                      <span className="bg-amber-400/20 text-yellow-300 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded border border-amber-400/10">Ativo</span>
                    </div>
                    <h4 className="text-lg font-black text-white leading-tight uppercase tracking-tight italic">Super Leitor de Cardápio por IA</h4>
@@ -689,7 +753,7 @@ export default function RestaurantOnboarding() {
                   <div className="flex items-center justify-between mb-4">
                     <span className="font-black text-slate-800 text-xs uppercase tracking-widest">Produto {i + 1}</span>
                     {products.length > 1 && (
-                      <button onClick={() => removeProduct(i)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <button onClick={() => removeProduct(i)} className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Excluir">
                         <Trash2 size={16} />
                       </button>
                     )}
@@ -767,11 +831,17 @@ export default function RestaurantOnboarding() {
             <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Configurar delivery</h2>
             <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Defina as condições da sua entrega.</p>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-start gap-3">
-              <Info size={16} className="text-[#FFC928] shrink-0 mt-0.5" />
-              <div>
-                <p className="text-xs font-black text-amber-800 uppercase tracking-wider mb-1">{stepTips[3].title}</p>
-                <ul className="space-y-1">
+            <button
+              onClick={() => setShowTips(!showTips)}
+              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
+            >
+              <Info size={14} /> Dicas
+              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
+            </button>
+
+            {showTips && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+                <ul className="space-y-1.5">
                   {stepTips[3].tips.map((tip, i) => (
                     <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
                       <span className="text-[#FFC928] shrink-0">→</span>
@@ -780,7 +850,7 @@ export default function RestaurantOnboarding() {
                   ))}
                 </ul>
               </div>
-            </div>
+            )}
 
             <div className="bg-white rounded-2xl p-6 space-y-4 border border-gray-100 shadow-md">
               <div className="grid grid-cols-2 gap-4">
@@ -788,8 +858,8 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Taxa de entrega (R$)</label>
                   <input 
                     type="number"
-                    value={deliveryFee}
-                    onChange={e => setDeliveryFee(e.target.value)}
+                    value={form.deliveryFee}
+                    onChange={e => update('deliveryFee', e.target.value)}
                     placeholder="6.00" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
                   />
@@ -798,8 +868,8 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Tempo estimado (minutos)</label>
                   <input 
                     type="number"
-                    value={estimatedTime}
-                    onChange={e => setEstimatedTime(e.target.value)}
+                    value={form.estimatedTime}
+                    onChange={e => update('estimatedTime', e.target.value)}
                     placeholder="45" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
                   />
@@ -808,8 +878,8 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Pedido mínimo (R$)</label>
                   <input 
                     type="number"
-                    value={minOrder}
-                    onChange={e => setMinOrder(e.target.value)}
+                    value={form.minOrder}
+                    onChange={e => update('minOrder', e.target.value)}
                     placeholder="30.00" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
                   />
@@ -818,8 +888,8 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Raio de entrega (km)</label>
                   <input 
                     type="number"
-                    value={deliveryRadius}
-                    onChange={e => setDeliveryRadius(e.target.value)}
+                    value={form.deliveryRadius}
+                    onChange={e => update('deliveryRadius', e.target.value)}
                     placeholder="5" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
                   />
@@ -828,8 +898,8 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Observação sobre entrega</label>
                   <input 
                     type="text"
-                    value={deliveryObs}
-                    onChange={e => setDeliveryObs(e.target.value)}
+                    value={form.deliveryObs}
+                    onChange={e => update('deliveryObs', e.target.value)}
                     placeholder="Ex: Entregamos todos os dias das 18h às 23h" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
                   />
@@ -837,76 +907,25 @@ export default function RestaurantOnboarding() {
               </div>
             </div>
 
-            {/* Carriers plugin integration connection hub */}
-            <div className="bg-[#111111] border border-amber-500/10 rounded-2xl p-6 mt-4 shadow-xl text-left">
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="bg-amber-400/10 p-2 rounded-xl text-[#FFC928]">
-                  <Zap size={20} className="animate-pulse" />
-                </div>
+            {/* LGPD Consent */}
+            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-md mt-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lgpdConsent}
+                  onChange={e => setLgpdConsent(e.target.checked)}
+                  className="mt-0.5 h-5 w-5 text-[#FFC928] border-gray-300 rounded focus:ring-[#FFC928] accent-[#FFC928]"
+                />
                 <div>
-                  <h3 className="font-black text-white text-base uppercase tracking-tight italic">Hub de Plugins de Entrega</h3>
-                  <p className="text-gray-400 text-[10px] uppercase tracking-widest font-bold">Conecte seus provedores para despacho em um clique</p>
+                  <span className="text-xs font-black text-[#111] block leading-tight">
+                    Aceito os termos de privacidade
+                  </span>
+                  <span className="text-[10px] text-gray-500 font-medium mt-1 block leading-relaxed">
+                    Ao marcar esta opção, você autoriza o Meu Ovo a coletar e tratar seus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD) para fins de operação da plataforma, incluindo cadastro, comunicação e emissão de notas fiscais. Você pode solicitar a exclusão dos seus dados a qualquer momento.{' '}
+                    <Link to="/privacidade" className="text-[#FFC928] font-bold underline">Ver Política de Privacidade</Link>
+                  </span>
                 </div>
-              </div>
-              
-              <div className="mt-4 space-y-3">
-                {deliveryPlugins.map((plugin) => (
-                  <div key={plugin.id} className="bg-white/5 border border-white/10 rounded-xl p-4 transition-all hover:bg-white/[0.07]">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{plugin.logo}</span>
-                        <div>
-                          <span className="font-extrabold text-white text-xs block">{plugin.name}</span>
-                          <span className="text-gray-400 text-[10px] block mt-0.5 max-w-sm">{plugin.description}</span>
-                        </div>
-                      </div>
-                      
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePlugin(plugin.id)}
-                        className={`text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${plugin.connected ? 'bg-green-500/10 text-green-400 border border-green-500/30' : 'bg-[#FFC928] text-black font-black'}`}
-                      >
-                        {plugin.connected ? (
-                          <>
-                            <Check size={10} className="stroke-[3]" /> Conectado (Plugin Ativo)
-                          </>
-                        ) : (
-                          'Conectar Plugin'
-                        )}
-                      </button>
-                    </div>
-                    
-                    {/* Credential configuration fields appearing dynamically under active plugin */}
-                    {plugin.connected && (
-                      <div className="mt-3.5 pt-3.5 border-t border-white/10 grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest block mb-1">API Key / Token</label>
-                          <input 
-                            type="text" 
-                            value={plugin.apiKey}
-                            onChange={(e) => handlePluginCredChange(plugin.id, 'apiKey', e.target.value)}
-                            placeholder="Insira a chave da prestadora"
-                            className="bg-zinc-900 border border-white/10 w-full rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-[#FFC928]"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-[8px] font-black uppercase text-gray-400 tracking-widest block mb-1">Merchant ID (Mesa/Identificador)</label>
-                          <input 
-                            type="text" 
-                            value={plugin.apiSecret}
-                            onChange={(e) => handlePluginCredChange(plugin.id, 'apiSecret', e.target.value)}
-                            placeholder="Insira o ID de loja"
-                            className="bg-zinc-900 border border-white/10 w-full rounded-lg px-2.5 py-1.5 text-[10px] text-white focus:outline-none focus:border-[#FFC928]"
-                          />
-                        </div>
-                        <p className="col-span-2 text-[9px] text-[#FFC928] font-bold leading-normal">
-                          ✓ Plugin ativado para a região. O envio ao motoboy parceiro será roteado automaticamente sob demanda!
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              </label>
             </div>
           </div>
         )}
@@ -920,50 +939,55 @@ export default function RestaurantOnboarding() {
             <h2 className="font-black text-3xl text-[#111] mb-2">Tudo pronto!</h2>
             <p className="text-gray-500 mb-8">Seu cardápio digital está configurado e pronto para receber pedidos.</p>
 
-            <div className="bg-white rounded-2xl p-6 mb-6 text-left">
-              <h3 className="font-bold text-[#111] mb-4">Seu link de cardápio</h3>
-              <div className="bg-[#F5F5F5] rounded-xl p-4 flex items-center justify-between">
-                <span className="text-sm font-mono text-[#111]">meuovo.com.br/r/{form.name.toLowerCase().replace(/\s+/g, '-')}</span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/r/${form.name.toLowerCase().replace(/\s+/g, '-')}`);
-                    toast.success('Link copiado!');
-                  }}
-                  className="bg-[#FFC928] text-[#111] font-bold text-xs px-3 py-2 rounded-lg"
-                >
-                  Copiar
-                </button>
+              <div className="bg-white rounded-2xl p-6 mb-6 text-left">
+                <h3 className="font-bold text-[#111] mb-4">Seu link de cardápio</h3>
+                <div className="bg-[#F5F5F5] rounded-xl p-4 flex items-center justify-between">
+                  <span className="text-sm font-mono text-[#111]">meuovo.com.br/r/{form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}</span>
+                  <button
+                    onClick={() => {
+                      const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+                      navigator.clipboard.writeText(`${window.location.origin}/r/${slug}`);
+                      toast.success('Link copiado!');
+                    }}
+                    className="bg-[#FFC928] text-[#111] font-bold text-xs px-3 py-2 rounded-lg"
+                  >
+                    Copiar
+                  </button>
+                </div>
               </div>
-            </div>
 
             <div className="bg-white rounded-2xl p-6 mb-6">
               <div className="flex items-center gap-3 mb-4">
                 <QrCode size={24} className="text-[#FFC928]" />
                 <h3 className="font-bold text-[#111]">QR Code para o salão</h3>
               </div>
-              <div className="w-32 h-32 bg-[#F5F5F5] rounded-xl mx-auto flex items-center justify-center">
-                <QrCode size={64} className="text-gray-300" />
+              <div className="flex justify-center">
+                <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                  {(form.name.trim()) ? (
+                    <QRCodeCanvas
+                      id="onboarding-qrcode"
+                      value={`${window.location.origin}/r/${form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`}
+                      size={160}
+                      bgColor="#FFFFFF"
+                      fgColor="#111111"
+                      level="M"
+                    />
+                  ) : (
+                    <div className="w-40 h-40 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs font-bold">Nome inválido</div>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = 200;
-                  canvas.height = 200;
-                  const ctx = canvas.getContext('2d');
-                  if (ctx) {
-                    ctx.fillStyle = '#F5F5F5';
-                    ctx.fillRect(0, 0, 200, 200);
-                    ctx.fillStyle = '#999';
-                    ctx.font = '10px monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('QR Code', 100, 100);
-                    ctx.fillText(`${window.location.origin}/r/${form.name.toLowerCase().replace(/\s+/g, '-')}`, 100, 130);
+                  const canvas = document.getElementById('onboarding-qrcode') as HTMLCanvasElement;
+                  if (canvas) {
+                    const link = document.createElement('a');
+                    const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+                    link.download = `qrcode-${slug}.png`;
+                    link.href = canvas.toDataURL();
+                    link.click();
+                    toast.success('QR Code baixado!');
                   }
-                  const link = document.createElement('a');
-                  link.download = `qrcode-${form.name.toLowerCase().replace(/\s+/g, '-')}.png`;
-                  link.href = canvas.toDataURL();
-                  link.click();
-                  toast.success('QR Code baixado!');
                 }}
                 className="mt-4 w-full border border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 text-sm"
               >
@@ -979,7 +1003,10 @@ export default function RestaurantOnboarding() {
                 Acessar painel do restaurante
               </button>
               <button
-                onClick={() => navigate(`/r/${form.name.toLowerCase().replace(/\s+/g, '-')}`)}
+                onClick={() => {
+                  const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+                  navigate(`/r/${slug}`);
+                }}
                 className="w-full border border-gray-200 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-50"
               >
                 Ver cardápio público

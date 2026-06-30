@@ -78,7 +78,7 @@ export default function AdminKitchen() {
             <p className="text-2xl font-black italic">{time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
             <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">{time.toLocaleDateString('pt-BR', { weekday: 'long' })}</p>
           </div>
-          <button onClick={() => window.history.back()} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border-2 border-white/5 transition-all active:scale-95">
+          <button onClick={() => window.history.back()} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border-2 border-white/5 transition-all active:scale-95" aria-label="Expandir tela">
             <Maximize2 size={24} className="text-gray-400" />
           </button>
         </div>

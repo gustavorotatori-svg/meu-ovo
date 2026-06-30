@@ -22,7 +22,7 @@ export default function ProtectedRoute({
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`} replace />;
   }
 
   if (roles && !roles.includes(user.role)) {

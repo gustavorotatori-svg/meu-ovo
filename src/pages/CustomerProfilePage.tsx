@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield, Plus, Trash2, Check, Home } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Order } from '../types';
+import { Order, SavedAddress } from '../types';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { cn } from '../lib/utils';
@@ -14,6 +14,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getCustomerStats } from '../services/customerRatingService';
 
+type Tab = 'orders' | 'favorites' | 'addresses';
+
 export default function CustomerProfilePage() {
   const { t } = useTranslation();
   const { user, signOut, signIn, signUp } = useAuth();
@@ -21,7 +23,16 @@ export default function CustomerProfilePage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [customerStats, setCustomerStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'orders' | 'favorites'>('orders');
+  const [activeTab, setActiveTab] = useState<Tab>('orders');
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(() => {
+    try { return JSON.parse(localStorage.getItem('meuovo_addresses') || '[]'); } catch { return []; }
+  });
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState({ label: '', street: '', number: '', complement: '', neighborhood: '', city: '' });
+
+  useEffect(() => {
+    try { localStorage.setItem('meuovo_addresses', JSON.stringify(savedAddresses)); } catch {}
+  }, [savedAddresses]);
 
   useEffect(() => {
     if (!orders || orders.length === 0) return;
@@ -45,6 +56,7 @@ export default function CustomerProfilePage() {
   const [authPassword, setAuthPassword] = useState('');
   const [authName, setAuthName] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
 
   const favoriteRestaurants = restaurants.filter(r => favorites.includes(r.id));
 
@@ -55,7 +67,7 @@ export default function CustomerProfilePage() {
       try {
         const q = query(
           collection(db, 'orders'),
-          where('userId', '==', user.uid),
+          where('userId', '==', user.id),
           orderBy('createdAt', 'desc')
         );
         const snapshot = await getDocs(q);
@@ -71,10 +83,14 @@ export default function CustomerProfilePage() {
     fetchOrders();
   }, [user]);
 
-  const handleAuthSubmit = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!authEmail || !authPassword || (!isLogin && !authName)) {
       toast.error('Por favor, preencha todos os campos obrigatórios.');
+      return;
+    }
+    if (!isLogin && !lgpdConsent) {
+      toast.error('Você precisa aceitar os termos de privacidade para criar uma conta.');
       return;
     }
 
@@ -87,9 +103,9 @@ export default function CustomerProfilePage() {
         await signUp(authEmail, authPassword, authName, 'customer');
         toast.success('Conta de cliente criada com sucesso!');
       }
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err.message || 'Ocorreu um erro ao processar a autenticação.');
+    } catch (error) {
+      console.error(error);
+      toast.error(error instanceof Error ? error.message : 'Ocorreu um erro ao processar a autenticação.');
     } finally {
       setAuthLoading(false);
     }
@@ -182,6 +198,48 @@ export default function CustomerProfilePage() {
                   </div>
                 )}
               </div>
+
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!authEmail.trim()) { toast.error('Digite seu e-mail primeiro'); return; }
+                    try {
+                      const { sendPasswordResetEmail } = await import('firebase/auth');
+                      const { auth } = await import('../lib/firebase-auth');
+                      await sendPasswordResetEmail(auth, authEmail);
+                      toast.success('E-mail de recuperação enviado!');
+                    } catch (error) {
+                      toast.error(error instanceof Error ? error.message : 'Erro ao enviar e-mail de recuperação');
+                    }
+                  }}
+                  className="text-[10px] font-bold text-slate-400 hover:text-[#FFC928] transition-colors block"
+                >
+                  Esqueci minha senha
+                </button>
+              )}
+
+              {!isLogin && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={lgpdConsent}
+                      onChange={e => setLgpdConsent(e.target.checked)}
+                      className="mt-0.5 h-5 w-5 text-[#FFC928] border-gray-300 rounded focus:ring-[#FFC928] accent-[#FFC928]"
+                    />
+                    <div>
+                      <span className="text-[10px] font-black text-slate-700 block leading-tight">
+                        Aceito os termos de privacidade
+                      </span>
+                      <span className="text-[9px] text-slate-500 font-medium mt-0.5 block leading-relaxed">
+                        Autorizo o tratamento dos meus dados conforme a LGPD.{' '}
+                        <Link to="/privacidade" className="text-[#FFC928] font-bold underline">Ver Política de Privacidade</Link>
+                      </span>
+                    </div>
+                  </label>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -318,19 +376,19 @@ export default function CustomerProfilePage() {
 
             <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 space-y-1">
                {[
-                 { id: 'orders', label: 'Meus Pedidos', icon: <Package size={18} /> },
-                 { id: 'favorites', label: 'Restaurantes Favoritos', icon: <Heart size={18} /> },
-                 { id: 'addresses', label: 'Endereços Salvos', icon: <MapPin size={18} />, disabled: true },
-                 { id: 'settings', label: 'Configurações', icon: <Settings size={18} />, disabled: true },
-               ].map((item, i) => (
-                 <button 
-                  key={i}
-                  disabled={item.disabled}
-                  onClick={() => {
-                    if (item.id === 'orders' || item.id === 'favorites') {
-                      setActiveTab(item.id as any);
-                    }
-                  }}
+                  { id: 'orders', label: 'Meus Pedidos', icon: <Package size={18} /> },
+                  { id: 'favorites', label: 'Restaurantes Favoritos', icon: <Heart size={18} /> },
+                  { id: 'addresses', label: 'Endereços Salvos', icon: <MapPin size={18} /> },
+                  { id: 'settings', label: 'Configurações', icon: <Settings size={18} />, disabled: true },
+                ].map((item, i) => (
+                  <button 
+                   key={i}
+                   disabled={item.disabled}
+                   onClick={() => {
+                     if (item.id === 'orders' || item.id === 'favorites' || item.id === 'addresses') {
+                       setActiveTab(item.id as Tab);
+                     }
+                   }}
                   className={cn(
                     "w-full flex items-center justify-between p-4 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest text-left",
                     activeTab === item.id ? "bg-[#FFC928] text-black" : "text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-50"
@@ -358,10 +416,10 @@ export default function CustomerProfilePage() {
             <header className="flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-display font-black text-[#111] uppercase tracking-tighter italic">
-                  {activeTab === 'orders' ? 'Histórico de Pedidos' : 'Restaurantes Favoritos'}
+                  {activeTab === 'orders' ? 'Histórico de Pedidos' : activeTab === 'favorites' ? 'Restaurantes Favoritos' : 'Endereços Salvos'}
                 </h3>
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                  {activeTab === 'orders' ? 'Acompanhe suas últimas experiências gastronômicas' : 'Seus estabelecimentos preferidos salvos'}
+                  {activeTab === 'orders' ? 'Acompanhe suas últimas experiências gastronômicas' : activeTab === 'favorites' ? 'Seus estabelecimentos preferidos salvos' : 'Seus endereços de entrega favoritos'}
                 </p>
               </div>
             </header>
@@ -421,7 +479,7 @@ export default function CustomerProfilePage() {
                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Que tal fazer o seu primeiro hoje?</p>
                   </div>
                 )
-              ) : (
+              ) : activeTab === 'favorites' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {favoriteRestaurants.map(r => (
                     <motion.div
@@ -450,6 +508,7 @@ export default function CustomerProfilePage() {
                           }}
                           className="p-2 bg-red-50 hover:bg-red-100 text-red-500 rounded-full transition-all"
                           title="Remover dos favoritos"
+                          aria-label="Favoritar"
                         >
                           <Heart size={14} className="fill-red-500" />
                         </button>
@@ -477,6 +536,97 @@ export default function CustomerProfilePage() {
                        </Link>
                     </div>
                   )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {savedAddresses.length === 0 ? (
+                    <div className="bg-white rounded-[2rem] p-16 text-center border-2 border-slate-100">
+                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <MapPin size={32} className="text-slate-200" />
+                      </div>
+                      <p className="font-display font-black text-slate-300 uppercase text-2xl italic tracking-tighter">Nenhum endereço salvo</p>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Adicione endereços para agilizar seus pedidos</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {savedAddresses.map((addr, i) => (
+                        <div key={addr.id} className="bg-white rounded-[2rem] p-6 border-2 border-slate-100 hover:border-[#FFC928] transition-all relative">
+                          {addr.isDefault && <span className="absolute top-4 right-4 text-[8px] font-black uppercase tracking-widest text-[#FFC928] bg-[#FFC928]/10 px-3 py-1 rounded-full">Padrão</span>}
+                          <div className="flex items-center gap-2 mb-3">
+                            <Home size={16} className="text-slate-400" />
+                            <span className="text-xs font-black text-slate-700 uppercase tracking-wider">{addr.label}</span>
+                          </div>
+                          <p className="text-sm text-slate-600 font-bold leading-relaxed">
+                            {addr.street}, {addr.number}{addr.complement ? ` - ${addr.complement}` : ''}
+                          </p>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider mt-1">{addr.neighborhood}, {addr.city}</p>
+                          <button
+                            onClick={() => {
+                              setSavedAddresses(prev => prev.filter(a => a.id !== addr.id));
+                              toast.success('Endereço removido');
+                            }}
+                            className="mt-4 text-[10px] text-red-400 hover:text-red-500 font-black uppercase tracking-widest flex items-center gap-1 transition-colors"
+                          >
+                            <Trash2 size={12} /> Remover
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <AnimatePresence>
+                    {showAddressForm ? (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="bg-white rounded-[2rem] p-6 border-2 border-[#FFC928] overflow-hidden">
+                        <h4 className="text-xs font-black text-[#111] uppercase tracking-wider mb-4">Novo Endereço</h4>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="col-span-2">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Identificação *</label>
+                            <input value={addressForm.label} onChange={e => setAddressForm(f => ({ ...f, label: e.target.value }))} placeholder="Ex: Casa, Trabalho" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Rua *</label>
+                            <input value={addressForm.street} onChange={e => setAddressForm(f => ({ ...f, street: e.target.value }))} placeholder="Nome da rua" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                          <div>
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Número *</label>
+                            <input value={addressForm.number} onChange={e => setAddressForm(f => ({ ...f, number: e.target.value }))} placeholder="Nº" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Complemento</label>
+                            <input value={addressForm.complement} onChange={e => setAddressForm(f => ({ ...f, complement: e.target.value }))} placeholder="Apto, Bloco" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Bairro *</label>
+                            <input value={addressForm.neighborhood} onChange={e => setAddressForm(f => ({ ...f, neighborhood: e.target.value }))} placeholder="Seu bairro" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                          <div className="col-span-2 md:col-span-1">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Cidade *</label>
+                            <input value={addressForm.city} onChange={e => setAddressForm(f => ({ ...f, city: e.target.value }))} placeholder="Sua cidade" className="w-full mt-1 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-bold focus:ring-2 focus:ring-[#FFC928] outline-none" />
+                          </div>
+                        </div>
+                        <div className="flex gap-3 mt-4">
+                          <button onClick={() => setShowAddressForm(false)} className="flex-1 bg-slate-100 text-slate-500 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all">Cancelar</button>
+                          <button onClick={() => {
+                            if (!addressForm.label.trim() || !addressForm.street.trim() || !addressForm.number.trim() || !addressForm.neighborhood.trim() || !addressForm.city.trim()) {
+                              toast.error('Preencha todos os campos obrigatórios');
+                              return;
+                            }
+                            const newAddr: SavedAddress = { id: `addr-${Date.now()}`, userId: user?.id || '', ...addressForm, complement: addressForm.complement, isDefault: savedAddresses.length === 0, createdAt: new Date().toISOString() };
+                            setSavedAddresses(prev => [...prev, newAddr]);
+                            setAddressForm({ label: '', street: '', number: '', complement: '', neighborhood: '', city: '' });
+                            setShowAddressForm(false);
+                            toast.success('Endereço salvo!');
+                          }} className="flex-1 bg-[#FFC928] text-black font-black py-3 rounded-xl text-[10px] uppercase tracking-widest hover:bg-yellow-400 transition-all flex items-center justify-center gap-2">
+                            <Check size={14} /> Salvar
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <button onClick={() => setShowAddressForm(true)} className="w-full border-2 border-dashed border-slate-200 hover:border-[#FFC928] text-slate-400 hover:text-black font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                        <Plus size={16} /> Adicionar Endereço
+                      </button>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
             </div>

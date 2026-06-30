@@ -122,6 +122,7 @@ export default function KitchenMode() {
             <button
               onClick={toggleFullscreen}
               className={cn("p-3 rounded-xl transition-all", isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200')}
+              aria-label="Alternar tamanho da tela"
             >
               {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
             </button>
@@ -131,6 +132,7 @@ export default function KitchenMode() {
                 "p-3 rounded-xl transition-all",
                 soundEnabled ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
               )}
+              aria-label="Alternar som"
             >
               {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
             </button>

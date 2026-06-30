@@ -82,8 +82,8 @@ export default function AIMenuImport({ restaurantId, onClose, onSuccess }: AIMen
 
       setParsed(data.data);
       toast.success('Cardápio importado com sucesso!', { id: toastId });
-    } catch (err: any) {
-      toast.error(`Erro: ${err.message}`, { id: toastId });
+    } catch (err: unknown) {
+      toast.error(`Erro: ${(err as Error).message}`, { id: toastId });
     } finally {
       setParsing(false);
     }
@@ -124,8 +124,8 @@ export default function AIMenuImport({ restaurantId, onClose, onSuccess }: AIMen
       toast.success(`${parsed.products.length} produtos adicionados ao cardápio!`);
       onSuccess();
       onClose();
-    } catch (err: any) {
-      toast.error('Erro ao salvar cardápio: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Erro ao salvar cardápio: ' + (err as Error).message);
     } finally {
       setApplying(false);
     }
@@ -134,7 +134,7 @@ export default function AIMenuImport({ restaurantId, onClose, onSuccess }: AIMen
   const allowedTypes = 'image/*,application/pdf,.doc,.docx';
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+    <div role="dialog" aria-modal="true" aria-label="Importar cardápio com IA" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
       <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-slate-100 bg-brand-black text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -146,7 +146,7 @@ export default function AIMenuImport({ restaurantId, onClose, onSuccess }: AIMen
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Foto, PDF ou Word</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} aria-label="Fechar" className="text-slate-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>

@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 
 function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches
-    || (window.navigator as any).standalone === true;
+    || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
 function isMobile(): boolean {
@@ -78,7 +78,7 @@ export default function PwaInstallPrompt() {
             isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'
           }`}
         >
-          <button onClick={handleDismiss} className={`absolute top-3 right-3 p-1 rounded-full ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
+          <button onClick={handleDismiss} aria-label="Fechar" className={`absolute top-3 right-3 p-2.5 rounded-full ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
             <X size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
           </button>
 

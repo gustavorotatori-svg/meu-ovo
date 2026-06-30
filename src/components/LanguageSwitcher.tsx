@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useState } from 'react';
 
 const languages = [
   { code: 'pt', name: 'Português', flag: '🇧🇷' },
@@ -9,55 +8,39 @@ const languages = [
   { code: 'es', name: 'Español', flag: '🇪🇸' },
 ];
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ isDark }: { isDark?: boolean }) {
   const { i18n } = useTranslation();
-  const [isOpen, setIsOpen] = useState(false);
-
-  const currentLanguage = languages.find(lang => i18n.language.startsWith(lang.code)) || languages[0];
 
   return (
     <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors text-slate-700"
+      <Globe size={14} className={cn(
+        "absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10",
+        isDark ? "text-gray-400" : "text-slate-500"
+      )} />
+      <select
+        value={i18n.language.startsWith('pt') ? 'pt' : i18n.language.startsWith('es') ? 'es' : 'en'}
+        onChange={(e) => i18n.changeLanguage(e.target.value)}
+        className={cn(
+          "appearance-none pl-8 pr-7 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors cursor-pointer",
+          isDark
+            ? "bg-white/5 text-gray-300 hover:bg-white/10 border-0"
+            : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-0"
+        )}
       >
-        <Globe size={18} className="text-slate-500" />
-        <span className="text-xs font-black uppercase tracking-widest">{currentLanguage.code.toUpperCase()}</span>
-      </button>
-
-      {isOpen && (
-        <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setIsOpen(false)} 
-          />
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-200">
-            {languages.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => {
-                  i18n.changeLanguage(lang.code);
-                  setIsOpen(false);
-                }}
-                className={cn(
-                  "w-full flex items-center justify-between px-4 py-2 text-xs font-black uppercase tracking-widest transition-colors",
-                  i18n.language.startsWith(lang.code) 
-                    ? "text-brand-black bg-slate-50" 
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{lang.flag}</span>
-                  <span>{lang.name}</span>
-                </div>
-                {i18n.language === lang.code && (
-                  <div className="w-1.5 h-1.5 rounded-full bg-brand-egg" />
-                )}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+        {languages.map((lang) => (
+          <option key={lang.code} value={lang.code}>
+            {lang.flag} {lang.name}
+          </option>
+        ))}
+      </select>
+      <div className={cn(
+        "absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none",
+        isDark ? "text-gray-500" : "text-slate-400"
+      )}>
+        <svg width="10" height="6" viewBox="0 0 10 6" fill="none">
+          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
     </div>
   );
 }

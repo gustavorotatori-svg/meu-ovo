@@ -76,7 +76,7 @@ export default function OrderHistoryPage() {
   };
 
   useEffect(() => {
-    let unsubscribe: any;
+    let unsubscribe: (() => void) | undefined;
     if (phone && phone.replace(/\D/g, '').length >= 10) {
       unsubscribe = fetchOrders(phone);
     }
@@ -176,6 +176,7 @@ export default function OrderHistoryPage() {
               "p-3 rounded-2xl transition-all",
               isDark ? "bg-white/5 text-white hover:bg-white/10" : "bg-white text-brand-black hover:bg-gray-50 shadow-sm"
             )}
+            aria-label="Voltar"
           >
             <ArrowLeft size={20} />
           </button>

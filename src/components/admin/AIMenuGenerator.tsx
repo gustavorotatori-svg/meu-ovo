@@ -109,7 +109,7 @@ export default function AIMenuGenerator({ restaurantId, onClose, onSuccess }: AI
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
+    <div role="dialog" aria-modal="true" aria-label="Gerar cardápio com IA" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md">
       <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-slate-100 bg-brand-black text-white flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export default function AIMenuGenerator({ restaurantId, onClose, onSuccess }: AI
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Crie um menu inicial em segundos</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+          <button onClick={onClose} aria-label="Fechar" className="text-slate-400 hover:text-white transition-colors">
             <X size={20} />
           </button>
         </div>

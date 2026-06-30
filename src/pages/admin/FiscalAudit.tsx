@@ -594,6 +594,7 @@ export default function FiscalAudit() {
                           onClick={(e) => deleteSingleLog(log.id, e)}
                           title="Remover este registro de auditoria"
                           className="p-1 px-1.5 hover:text-red-650 text-slate-400 hover:bg-red-50 rounded-lg transition-all shrink-0 cursor-pointer"
+                          aria-label="Excluir"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -627,6 +628,7 @@ export default function FiscalAudit() {
                                     onClick={() => copyToClipboard(log.metadata?.chaveAcesso || '')}
                                     className="p-0.5 bg-white border border-slate-200 rounded text-slate-500 hover:text-orange-550 transition-colors shrink-0"
                                     title="Copiar Chave de Acesso"
+                                    aria-label="Copiar"
                                   >
                                     <Copy size={11} />
                                   </button>

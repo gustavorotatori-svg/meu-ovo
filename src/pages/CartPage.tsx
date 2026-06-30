@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 import { WA_NUMBER } from '../services/whatsappService';
+import SEO from '../components/SEO';
 import OptimizedImage from '../components/OptimizedImage';
 import { toast } from 'react-hot-toast';
 
@@ -64,6 +65,7 @@ export default function CartPage() {
 
   return (
     <div className={cn("min-h-screen", isDark ? 'bg-[#1a1a1a]' : 'bg-[#F5F5F5]')}>
+      <SEO title="Carrinho" description="Revise seu carrinho de compras no MEU OVO antes de finalizar o pedido." url="/carrinho" />
       <div className={cn("bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10", isDark ? 'bg-[#111111] border-[#2a2a2a]' : '')}>
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <motion.button 
@@ -133,6 +135,7 @@ export default function CartPage() {
                           </div>
                           <button
                             onClick={() => handleRemove(index, item.product.name)}
+                            aria-label={`Remover ${item.product.name}`}
                             className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
                           >
                             <Trash2 size={16} />

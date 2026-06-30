@@ -648,7 +648,7 @@ export default function StoreSettings() {
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Faixa de Preço</label>
                    <select 
                      value={formData.priceRange}
-                     onChange={e => setFormData({...formData, priceRange: e.target.value as any})}
+                      onChange={e => setFormData({...formData, priceRange: e.target.value as 'low' | 'medium' | 'high'})}
                      className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
                    >
                      <option value="low">Econômico (R$)</option>
@@ -889,6 +889,7 @@ export default function StoreSettings() {
                             setFormData({...formData, feeByNeighborhood: newList});
                           }}
                           className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg border border-slate-200 hover:border-red-100 transition-all shrink-0 bg-white shadow-sm"
+                          aria-label="Excluir"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -1668,7 +1669,7 @@ export default function StoreSettings() {
                               </p>
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                                {analysis.commonFails.slice(0, 4).map((fail: any, idx: number) => (
+                                 {analysis.commonFails.slice(0, 4).map((fail: { count: number; category: string; code: string; suggestion: string }, idx: number) => (
                                   <div key={idx} className="p-3 bg-white border border-slate-150 rounded-lg shadow-sm space-y-1">
                                     <div className="flex justify-between items-center">
                                       <span className="text-[8px] font-black uppercase text-rose-500 tracking-wider font-sans bg-rose-50/50 px-1.5 py-0.5 rounded">
@@ -1843,6 +1844,7 @@ export default function StoreSettings() {
                                                    }
                                                 }}
                                                 className="p-1 text-slate-500 hover:text-orange-605 hover:bg-slate-150 rounded transition-all cursor-pointer"
+                                                aria-label="Visualizar"
                                              >
                                                 <Eye size={12} />
                                              </button>

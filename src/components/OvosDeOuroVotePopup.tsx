@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, X, Check, ArrowRight, Sparkles, Utensils, HelpCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { Order, OrderItem } from '../types';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, limit, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
@@ -22,7 +23,7 @@ const isDrinkOrDessert = (name: string, categoryName?: string): boolean => {
 export default function OvosDeOuroVotePopup() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [lastOrder, setLastOrder] = useState<any | null>(null);
+  const [lastOrder, setLastOrder] = useState<Order | null>(null);
   const [restaurantName, setRestaurantName] = useState('');
   
   // Voting States
@@ -30,15 +31,13 @@ export default function OvosDeOuroVotePopup() {
   const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Check if current date is within voting period (Jan 1st - Dec 10th)
+  // Check if current date is within voting period (Jan 1st - Dec 15th)
   const isVotingPeriod = () => {
     const now = new Date();
-    const month = now.getMonth(); // 0 is January, 11 is December
+    const month = now.getMonth();
     const day = now.getDate();
-    // January is month 0, December is month 11
-    if (month > 11) return false; // Beyond December
-    if (month === 11 && day > 10) return false; // Beyond Dec 10th
-    return true; // Jan 1st - Dec 10th
+    if (month === 11 && day > 15) return false;
+    return true;
   };
 
   useEffect(() => {
@@ -66,10 +65,10 @@ export default function OvosDeOuroVotePopup() {
         if (snapshot.empty) return;
 
         // Sort locally by createdAt desc to get the last one
-        const finishedOrders = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
-        finishedOrders.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const finishedOrders = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Order));
+        finishedOrders.sort((a: Order, b: Order) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         
-        const latestFinished = finishedOrders[0] as any;
+        const latestFinished = finishedOrders[0] as Order;
 
         // Check if user has already voted for this order
         const voteDocRef = doc(db, 'ovos_de_ouro_votes', latestFinished.id);
@@ -97,7 +96,7 @@ export default function OvosDeOuroVotePopup() {
           
           // Pre-populate item ratings for non-drink/non-dessert items
           const initialItemRatings: Record<string, number> = {};
-          latestFinished.items?.forEach((item: any) => {
+          latestFinished.items?.forEach((item: OrderItem) => {
             if (!isDrinkOrDessert(item.productName)) {
               initialItemRatings[item.productId || item.productName] = 5;
             }
@@ -128,7 +127,7 @@ export default function OvosDeOuroVotePopup() {
         customerName: lastOrder.customerName || user?.full_name || 'Cliente',
         restaurantRating,
         items: Object.entries(itemRatings).map(([productId, rating]) => {
-          const originalItem = lastOrder.items.find((i: any) => (i.productId || i.productName) === productId);
+          const originalItem = lastOrder.items.find((i: OrderItem) => (i.productId || i.productName) === productId);
           return {
             productId,
             productName: originalItem?.productName || productId,
@@ -166,7 +165,7 @@ export default function OvosDeOuroVotePopup() {
   if (!isOpen || !lastOrder) return null;
 
   // Filter out drinks and desserts from the rating list
-  const evaluableItems = lastOrder.items?.filter((item: any) => !isDrinkOrDessert(item.productName)) || [];
+  const evaluableItems = lastOrder.items?.filter((item: OrderItem) => !isDrinkOrDessert(item.productName)) || [];
 
   return (
     <AnimatePresence>
@@ -177,6 +176,7 @@ export default function OvosDeOuroVotePopup() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsOpen(false)}
+          role="dialog" aria-modal="true" aria-label="Votar Ovos de Ouro"
           className="fixed inset-0 bg-black/85 backdrop-blur-md"
         />
 
@@ -195,6 +195,7 @@ export default function OvosDeOuroVotePopup() {
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors"
                 title="Fechar"
+                aria-label="Fechar"
               >
                 <X size={18} />
               </button>
@@ -209,7 +210,7 @@ export default function OvosDeOuroVotePopup() {
               </div>
             </div>
 
-            <h3 className="text-xl font-black italic uppercase tracking-tighter leading-none">Ovos de Ouro {new Date().getFullYear()}</h3>
+            <h3 className="text-xl font-black italic uppercase tracking-tighter leading-none bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent animate-gradient-shift">Ovos de Ouro {new Date().getFullYear()}</h3>
             <p className="text-[9px] font-black uppercase text-amber-100 tracking-widest mt-1.5 leading-none">Prêmio de voto popular do Meu Ovo</p>
           </div>
 
@@ -243,6 +244,7 @@ export default function OvosDeOuroVotePopup() {
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setRestaurantRating(star)}
                       className="p-1 focus:outline-none"
+                      aria-label={`Avaliar com ${star} ${star === 1 ? 'estrela' : 'estrelas'}`}
                     >
                       <Star
                         size={32}
@@ -267,7 +269,7 @@ export default function OvosDeOuroVotePopup() {
               <div className="space-y-3">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Como estavam os pratos principais do pedido?</p>
                 <div className="space-y-3">
-                  {evaluableItems.map((item: any) => {
+                  {evaluableItems.map((item: OrderItem) => {
                     const itemId = item.productId || item.productName;
                     const rating = itemRatings[itemId] ?? 5;
 
@@ -284,6 +286,7 @@ export default function OvosDeOuroVotePopup() {
                               type="button"
                               onClick={() => setItemRatings(prev => ({ ...prev, [itemId]: star }))}
                               className="focus:outline-none p-0.5"
+                              aria-label={`Avaliar com ${star} ${star === 1 ? 'estrela' : 'estrelas'}`}
                             >
                               <Star
                                 size={18}

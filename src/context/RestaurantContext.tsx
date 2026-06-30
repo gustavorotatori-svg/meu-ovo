@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession } from '../types';
-import { db, handleFirestoreError, OperationType, auth } from '../lib/firebase';
+import { auth } from '../lib/firebase-auth';
+import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from './AuthContext';
 import { toast } from 'react-hot-toast';
+import { mockRestaurants, mockProducts, mockCategories, mockOrders, mockTables, mockDeliverySettings } from '../data/mockData';
 import { 
   collection, 
   query, 
@@ -52,12 +54,12 @@ interface RestaurantContextType {
 const RestaurantContext = createContext<RestaurantContextType | null>(null);
 
 export function RestaurantProvider({ children }: { children: ReactNode }) {
-  const { user } = useAuth();
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [tables, setTables] = useState<Table[]>([]);
+  const { user, refreshUserProfile } = useAuth();
+  const [restaurants, setRestaurants] = useState<Restaurant[]>(mockRestaurants);
+  const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [tables, setTables] = useState<Table[]>(mockTables);
   const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>({
     fee: 0,
     minimumOrder: 0,
@@ -219,7 +221,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const updateProduct = async (p: Product) => {
     try {
       const { id, ...data } = p;
-      await updateDoc(doc(db, 'products', id), data as any);
+      await updateDoc(doc(db, 'products', id), data as Partial<Product>);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `products/${p.id}`);
     }
@@ -243,6 +245,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'orders');
+      throw error;
     }
   };
 
@@ -251,6 +254,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       await updateDoc(doc(db, 'orders', id), { status });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `orders/${id}`);
+      throw error;
     }
   };
 
@@ -295,7 +299,15 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       };
       await setDoc(doc(db, 'restaurants', rId), finalRData);
 
-      // 2. Create Categories
+      // 2. Update user role to 'restaurant'
+      await updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        role: 'restaurant',
+        pwaInstallPending: false,
+      });
+
+      await refreshUserProfile();
+
+      // 3. Create Categories
       const catMap: Record<string, string> = {};
       for (const name of categoryNames) {
         const catId = Math.random().toString(36).substr(2, 9);
@@ -308,7 +320,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         catMap[name] = catId;
       }
 
-      // 3. Create Products
+      // 4. Create Products
       for (const p of productData) {
         const prodId = Math.random().toString(36).substr(2, 9);
         const productPrice = parseFloat(p.price);
@@ -318,7 +330,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           name: p.name,
           price: isNaN(productPrice) ? 0 : productPrice,
           categoryId: catMap[p.category] || '',
-          image: p.image || undefined,
+          imageUrl: p.image || undefined,
           description: p.description || undefined,
           isActive: true,
           isAvailable: true
@@ -328,6 +340,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       setCurrentRestaurant({ ...restaurant, ...finalRData });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'restaurants/multi');
+      throw error;
     }
   };
 
@@ -346,7 +359,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const updateTable = async (t: Table) => {
     try {
       const { id, ...data } = t;
-      await updateDoc(doc(db, 'tables', id), data as any);
+      await updateDoc(doc(db, 'tables', id), data as Partial<Table>);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `tables/${t.id}`);
     }
@@ -402,11 +415,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       if (type === 'withdrawal') {
         await updateDoc(sessionRef, {
           withdrawals: arrayUnion(movement),
-        } as any);
+        } as unknown as Partial<CashierSession>);
       } else {
         await updateDoc(sessionRef, {
           additions: arrayUnion(movement),
-        } as any);
+        } as unknown as Partial<CashierSession>);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');

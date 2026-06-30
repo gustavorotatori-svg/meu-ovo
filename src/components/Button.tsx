@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cn } from '../lib/utils';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -20,7 +20,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes = {
-      sm: 'px-2.5 py-1.5 text-xs font-semibold tracking-wide uppercase',
+      sm: 'px-2.5 py-2.5 text-xs font-semibold tracking-wide uppercase',
       md: 'px-3.5 py-2 text-sm',
       lg: 'px-5 py-2.5 text-base',
       icon: 'p-2',
@@ -28,7 +28,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     return (
       <motion.button
-        ref={ref as any}
+        ref={ref as React.Ref<HTMLButtonElement>}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         disabled={disabled || isLoading}

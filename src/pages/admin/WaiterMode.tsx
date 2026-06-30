@@ -315,6 +315,7 @@ export default function WaiterMode() {
                             onClick={() => setViewingTableOrders(table.number)}
                             className="p-2 bg-white rounded-xl text-slate-400 hover:text-[#111] shadow-sm transition-all"
                             title="Ver pedidos desta mesa"
+                            aria-label="Visualizar"
                           >
                             <Eye size={16} />
                           </button>
@@ -548,9 +549,9 @@ export default function WaiterMode() {
                           <p className="text-[10px] text-slate-400">{formatCurrency(item.product.price)}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => removeFromCart(item.product.id)} className="w-6 h-6 flex items-center justify-center bg-slate-100 rounded-lg text-slate-400 hover:bg-slate-200"><Minus size={12}/></button>
+                          <button onClick={() => removeFromCart(item.product.id)} className="w-6 h-6 flex items-center justify-center bg-slate-100 rounded-lg text-slate-400 hover:bg-slate-200" aria-label="Diminuir"><Minus size={12}/></button>
                           <span className="w-4 text-center text-xs font-black">{item.quantity}</span>
-                          <button onClick={() => addToCart(item.product)} className="w-6 h-6 flex items-center justify-center bg-slate-100 rounded-lg text-slate-400 hover:bg-slate-200"><Plus size={12}/></button>
+                          <button onClick={() => addToCart(item.product)} className="w-6 h-6 flex items-center justify-center bg-slate-100 rounded-lg text-slate-400 hover:bg-slate-200" aria-label="Adicionar"><Plus size={12}/></button>
                         </div>
                       </div>
                     ))}
@@ -614,10 +615,10 @@ export default function WaiterMode() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setShowQrModal(table)} className="p-3 bg-white rounded-xl text-slate-400 hover:text-[#111] transition-all shadow-sm">
+                    <button onClick={() => setShowQrModal(table)} className="p-3 bg-white rounded-xl text-slate-400 hover:text-[#111] transition-all shadow-sm" aria-label="Exibir QR Code">
                       <QrIcon size={18} />
                     </button>
-                    <button onClick={() => window.print()} className="p-3 bg-white rounded-xl text-slate-400 hover:text-brand-orange transition-all shadow-sm">
+                    <button onClick={() => window.print()} className="p-3 bg-white rounded-xl text-slate-400 hover:text-brand-orange transition-all shadow-sm" aria-label="Imprimir">
                       <Printer size={18} />
                     </button>
                   </div>
@@ -631,7 +632,7 @@ export default function WaiterMode() {
       {/* QR Modal */}
       <AnimatePresence>
         {showQrModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="QR Code da mesa">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -649,6 +650,7 @@ export default function WaiterMode() {
               <button 
                 onClick={() => setShowQrModal(null)} 
                 className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="Fechar"
               >
                 <X size={20} />
               </button>
@@ -689,7 +691,7 @@ export default function WaiterMode() {
       {/* Table Orders Modal */}
       <AnimatePresence>
         {viewingTableOrders && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Pedidos da mesa">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -706,6 +708,7 @@ export default function WaiterMode() {
                <button 
                 onClick={() => setViewingTableOrders(null)} 
                 className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="Fechar"
               >
                 <X size={20} />
               </button>

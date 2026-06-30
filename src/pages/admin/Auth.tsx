@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { Logo } from '../../components/Logo';
 import { ChefHat, Mail, Lock, User, Store, Trophy, Shield } from 'lucide-react';
 import { Button } from '../../components/Button';
-import { auth, db } from '../../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth } from '../../lib/firebase-auth';
+import { db } from '../../lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 export default function AdminAuth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [wantToParticipate, setWantToParticipate] = useState(true);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -23,6 +25,17 @@ export default function AdminAuth() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleForgotPassword = async () => {
+    if (!formData.email.trim()) { toast.error('Digite seu e-mail primeiro'); return; }
+    try {
+      await sendPasswordResetEmail(auth, formData.email);
+      toast.success('E-mail de recuperação enviado!');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao enviar e-mail de recuperação';
+      toast.error(msg);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,36 +53,35 @@ export default function AdminAuth() {
           console.warn("Could not save restaurant participant preference on login:", dbErr);
         }
         toast.success('Bem-vindo de volta!');
+        navigate('/admin/dashboard');
       } else {
+        if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         await updateProfile(user, { displayName: formData.name });
-        
-        // Create restaurant document
-        const slug = formData.restaurantName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-        const restaurantData = {
+
+        // Create users doc with role 'restaurant'
+        await setDoc(doc(db, 'users', user.uid), {
+          full_name: formData.name,
+          role: 'restaurant',
+          createdAt: new Date().toISOString(),
+        });
+
+        // Save Ovos de Ouro preference
+        const slug = formData.restaurantName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+        await setDoc(doc(db, 'restaurants', slug), {
           name: formData.restaurantName,
           slug,
           ownerId: user.uid,
-          description: '',
-          address: '',
-          phone: '',
-          isDeliveryOpen: true,
-          isTableOpen: true,
-          deliverySettings: {
-            fee: 0,
-            estimatedTime: '30-45 min',
-            minOrder: 0,
-          },
           ovosDeOuroParticipant: wantToParticipate,
           createdAt: new Date().toISOString(),
-        };
-        
-        await setDoc(doc(db, 'restaurants', user.uid), restaurantData);
-        toast.success('Conta criada com sucesso!');
+        }, { merge: true });
+
+        toast.success('Conta criada! Agora complete o cadastro do seu restaurante.');
+        navigate('/install-app');
       }
-      navigate('/admin/dashboard');
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Erro ao autenticar';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -183,6 +195,38 @@ export default function AdminAuth() {
               Garantia de Confidencialidade: Suas avaliações individuais acumuladas serão invisíveis para clientes e concorrentes, visíveis somente para o próprio estabelecimento e para a equipe Meu Ovo. Publicaremos apenas os 3 primeiros colocados generais em 15 de Dezembro. Austeridade e imparcialidade total.
             </p>
           </div>
+
+          {isLogin && (
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-[10px] font-bold text-slate-400 hover:text-orange-600 transition-colors block"
+            >
+              Esqueci minha senha
+            </button>
+          )}
+
+          {!isLogin && (
+            <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-2 text-left">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={lgpdConsent}
+                  onChange={e => setLgpdConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500 accent-amber-500"
+                />
+                <div>
+                  <span className="text-[10px] font-black text-slate-700 block leading-tight">
+                    Aceito os termos de privacidade
+                  </span>
+                  <span className="text-[8px] text-slate-500 font-medium mt-0.5 block leading-relaxed">
+                    Autorizo o tratamento dos meus dados conforme a LGPD.{' '}
+                    <Link to="/privacidade" className="text-orange-600 font-bold underline">Ver Política</Link>
+                  </span>
+                </div>
+              </label>
+            </div>
+          )}
 
           <Button type="submit" className="w-full h-11 text-xs font-black uppercase tracking-[0.2em]" isLoading={loading}>
             {isLogin ? 'Entrar no Sistema' : 'Ativar Conta Grátis'}

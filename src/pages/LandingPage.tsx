@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote, Egg } from 'lucide-react';
+import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -54,8 +55,8 @@ export default function LandingPage() {
       restaurant: 'Sushi Santo Amaro',
       location: 'Santo Amaro, SP',
       initial: 'R',
-      tag: 'Sushi • Logística Precisa',
-      text: 'Buscávamos uma solução sem segredos. A integração do painel de entregadores por bairro de São Paulo é espetacular. Nossos motoboys recebem as corridas certas e as queixas de atrasos despencaram. E o imposto sobre taxas virou zero!',
+      tag: 'Sushi • Sem Taxas Abusivas',
+      text: 'Buscávamos uma solução sem segredos. O sistema de vendas diretas do Meu Ovo eliminou de vez a dependência de plataformas que cobravam taxas abusivas. O pedido chega limpo no nosso WhatsApp e a margem ficou muito mais saudável. E o imposto sobre taxas virou zero!',
       saving: 'R$ 5.100/mês economizados',
       image: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?w=150&h=150&fit=crop'
     }
@@ -87,13 +88,32 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className={`pt-32 lg:pt-48 pb-20 px-4 overflow-hidden transition-colors ${
+      <section className={`pt-32 lg:pt-48 pb-20 px-4 overflow-hidden relative transition-colors ${
         isDark 
           ? 'bg-gradient-to-b from-[#0e0e11] to-black' 
           : 'bg-gradient-to-b from-gray-50 to-white'
       }`}>
+        {/* Floating egg particles */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
+          <div className="absolute top-[10%] left-[5%] opacity-[0.04] animate-float" style={{ animationDuration: '7s', animationDelay: '0s' }}>
+            <Egg size={48} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
+          </div>
+          <div className="absolute top-[30%] right-[8%] opacity-[0.03] animate-float" style={{ animationDuration: '9s', animationDelay: '2s' }}>
+            <Egg size={36} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
+          </div>
+          <div className="absolute bottom-[15%] left-[12%] opacity-[0.03] animate-drift" style={{ animationDuration: '12s', animationDelay: '1s' }}>
+            <Egg size={32} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
+          </div>
+          <div className="absolute bottom-[25%] right-[15%] opacity-[0.02] animate-float" style={{ animationDuration: '8s', animationDelay: '3s' }}>
+            <Egg size={28} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
+          </div>
+          <div className="absolute top-[55%] left-[50%] opacity-[0.02] animate-drift" style={{ animationDuration: '11s', animationDelay: '0.5s' }}>
+            <Egg size={40} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-          <div className="text-left">
+          <ScrollReveal direction="up" delay={0} className="text-left">
             <div className="inline-block bg-[#FFC928] text-[#111] text-[10px] lg:text-xs font-black px-4 py-2 rounded-lg mb-8 lg:mb-12 uppercase tracking-widest font-display">
               {t('landing.freeBadge')}
             </div>
@@ -135,10 +155,10 @@ export default function LandingPage() {
                 <span className={isDark ? 'text-white' : 'text-black'}>{t('landing.activeRestaurants')}</span>
               </p>
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* Visual Mockup */}
-          <div className="relative group perspective-1000 hidden lg:block">
+          <ScrollReveal direction="right" delay={150} className="relative group perspective-1000 hidden lg:block">
             <div className="relative transform rotate-y-[-12deg] rotate-x-[8deg] transition-all duration-700 group-hover:rotate-y-[-5deg] group-hover:rotate-x-[2deg]">
               {/* Phone Frame */}
               <div className="w-[320px] bg-[#1a1a1a] rounded-[3.5rem] p-4 shadow-2xl border-4 border-gray-800/50 relative">
@@ -210,7 +230,7 @@ export default function LandingPage() {
                 <div className="text-white font-bold text-sm">Entrega VIP</div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -244,35 +264,41 @@ export default function LandingPage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
-            <div className={`p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6">
-                <CheckCircle className="text-[#FFC928]" size={24} />
+            <ScrollReveal direction="up" delay={0}>
+              <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
+                <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6">
+                  <CheckCircle className="text-[#FFC928]" size={24} />
+                </div>
+                <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>100% Gratuito</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  Sem mensalidade, Zero Taxa de setup e sem comissão por pedido. Para sempre.
+                </p>
               </div>
-              <h3 className={`text-2xl font-display font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>100% Gratuito</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Sem mensalidade, Zero Taxa de setup e sem comissão por pedido. Para sempre.
-              </p>
-            </div>
+            </ScrollReveal>
 
-            <div className={`p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6">
-                <Zap className="text-[#FF7A00]" size={24} />
+            <ScrollReveal direction="up" delay={100}>
+              <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
+                <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6">
+                  <Zap className="text-[#FF7A00]" size={24} />
+                </div>
+                <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Link próprio</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  Compartilhe seu cardápio pelo WhatsApp e Instagram em segundos.
+                </p>
               </div>
-              <h3 className={`text-2xl font-display font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Link próprio</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Compartilhe seu cardápio pelo WhatsApp e Instagram em segundos.
-              </p>
-            </div>
+            </ScrollReveal>
 
-            <div className={`p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
-              <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6 text-[#FFC928]">
-                <QrCode size={24} />
+            <ScrollReveal direction="up" delay={200}>
+              <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
+                <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6 text-[#FFC928]">
+                  <QrCode size={24} />
+                </div>
+                <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.qrCodeTitle')}</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  {t('landing.qrCodeDesc')}
+                </p>
               </div>
-              <h3 className={`text-2xl font-display font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.qrCodeTitle')}</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('landing.qrCodeDesc')}
-              </p>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -281,35 +307,41 @@ export default function LandingPage() {
       <section className={`py-16 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className={`p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all group ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
-              <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
-                <Smartphone className="text-[#FFC928]" size={32} />
+            <ScrollReveal direction="up" delay={0}>
+              <div className={`group p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all cursor-default ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
+                <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
+                  <Smartphone className="text-[#FFC928]" size={32} />
+                </div>
+                <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.deliveryTitle')}</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  {t('landing.deliveryDesc')}
+                </p>
               </div>
-              <h3 className={`text-2xl font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.deliveryTitle')}</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                {t('landing.deliveryDesc')}
-              </p>
-            </div>
+            </ScrollReveal>
 
-            <div className={`p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all group ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
-              <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
-                <TrendingUp className="text-[#FFC928]" size={32} />
+            <ScrollReveal direction="up" delay={100}>
+              <div className={`group p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all cursor-default ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
+                <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
+                  <TrendingUp className="text-[#FFC928]" size={32} />
+                </div>
+                <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.dashboardTitle')}</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  {t('landing.dashboardDesc')}
+                </p>
               </div>
-              <h3 className={`text-2xl font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.dashboardTitle')}</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                {t('landing.dashboardDesc')}
-              </p>
-            </div>
+            </ScrollReveal>
 
-            <div className={`p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all group ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
-              <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
-                <Heart className="text-[#FFC928]" size={32} />
+            <ScrollReveal direction="up" delay={200}>
+              <div className={`group p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all cursor-default ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
+                <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
+                  <Heart className="text-[#FFC928]" size={32} />
+                </div>
+                <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.socialTitle')}</h3>
+                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                  {t('landing.socialDesc')}
+                </p>
               </div>
-              <h3 className={`text-2xl font-black mb-4 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.socialTitle')}</h3>
-              <p className={`font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                {t('landing.socialDesc')}
-              </p>
-            </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
@@ -317,19 +349,21 @@ export default function LandingPage() {
       {/* Ovos de Ouro Competition Introduction Banner */}
       <section className={`py-24 border-y transition-colors ${isDark ? 'bg-zinc-950/40 border-white/5' : 'bg-amber-50/40 border-amber-100'}`}>
         <div className="max-w-7xl mx-auto px-6">
+          <ScrollReveal direction="up" delay={0}>
           <div className="bg-gradient-to-br from-[#111] via-[#1a1a1a] to-[#121212] border border-[#FFC928]/30 rounded-[3rem] p-8 md:p-16 relative overflow-hidden text-left shadow-2xl text-white">
             <div className="absolute top-0 right-0 w-80 h-80 bg-[#FFC928]/5 rounded-full blur-3xl -z-1" />
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-center relative z-10">
               <div className="lg:col-span-2 space-y-4">
-                <div className="inline-flex items-center gap-2 bg-[#FFC928]/20 border border-[#FFC928]/35 px-3.5 py-1 rounded-full text-[10px] font-black text-[#FFC928] uppercase tracking-wider leading-none">
-                  🏆 Competição Anual Meu Ovo
+                <div className="relative inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider leading-none">
+                  <span className="relative z-10 bg-gradient-to-r from-[#FFC928] via-yellow-300 to-[#FFC928] bg-clip-text text-transparent animate-gradient-shift">🏆 Competição Anual Meu Ovo</span>
+                  <span className="absolute -bottom-1 left-0 right-0 h-[2px] bg-gradient-to-r from-[#FFC928]/60 via-yellow-300/40 to-[#FFC928]/60 animate-gradient-shift rounded-full" />
                 </div>
                 <h2 className="text-3xl md:text-5xl font-display font-black leading-none uppercase italic tracking-tighter">
                   Prêmio Ovos de Ouro
                 </h2>
                 <p className="text-gray-400 font-medium text-sm md:text-base max-w-xl leading-relaxed">
-                  Buscamos o melhor sabor de São Paulo com integridade total. No Meu OVO, as avaliações acumuladas do campeonato são sigilosas e privadas. Apenas os 3 melhores de cada ano são revelados de forma triunfal.
+                  Buscamos os melhores sabores do Brasil com integridade total. No Meu OVO, as avaliações acumuladas do campeonato são sigilosas e privadas. Apenas os 3 melhores de cada ano são revelados de forma triunfal.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                   <div className="flex items-center gap-2.5">
@@ -338,7 +372,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Trophy className="text-[#FFC928]" size={18} />
-                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Divulgação estrita (Top 3)</span>
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Divulgação restrita (Top 3)</span>
                   </div>
                 </div>
               </div>
@@ -359,6 +393,7 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -378,16 +413,19 @@ export default function LandingPage() {
               { id: '03', title: t('landing.step3Title'), desc: t('landing.step3Desc') },
               { id: '04', title: t('landing.step4Title'), desc: t('landing.step4Desc') }
             ].map((step, i) => (
-              <div key={i} className="relative z-10 flex flex-col items-center">
-                <div className="w-20 h-20 bg-[#FFC928] rounded-[1.5rem] flex items-center justify-center text-2xl font-display font-black text-black mb-8 shadow-xl shadow-[#FFC928]/10 group-hover:scale-110 transition-transform">
+              <ScrollReveal key={i} direction="up" delay={i * 100}>
+              <div className="group relative z-10 flex flex-col items-center cursor-default">
+                <div className="w-20 h-20 bg-[#FFC928] rounded-[1.5rem] flex items-center justify-center text-2xl font-display font-black text-black mb-8 shadow-xl shadow-[#FFC928]/10 transition-transform">
                   {step.id}
                 </div>
-                <h3 className="text-xl font-display font-black text-white mb-4">{step.title}</h3>
-                <p className="text-gray-500 text-sm font-medium leading-relaxed">{step.desc}</p>
+                <h3 className="text-xl font-display font-black text-white">{step.title}</h3>
+                <p className="mt-3 text-gray-500 text-sm font-medium leading-relaxed transition-all duration-300 opacity-0 group-hover:opacity-100 h-0 group-hover:h-16 overflow-hidden">{step.desc}</p>
               </div>
+              </ScrollReveal>
             ))}
           </div>
 
+          <ScrollReveal direction="up" delay={200}>
           <div className="mt-20">
             <Link
               to="/cadastro-restaurante"
@@ -396,19 +434,22 @@ export default function LandingPage() {
               {t('landing.startNow')} <ArrowRight size={28} />
             </Link>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 
       {/* Testimonials Carousel */}
       <section className={`py-32 transition-colors overflow-hidden ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="max-w-5xl mx-auto px-6">
+          <ScrollReveal direction="up" delay={0}>
           <div className="text-center mb-16 space-y-3">
             <span className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC928]">Quem usa, comprova</span>
             <h2 className={`text-3xl md:text-5xl font-display font-black leading-none uppercase italic tracking-tighter transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
-              Histórias de Sucesso Parceiras
+              Histórias de Sucesso de Parceiros
             </h2>
             <p className="text-xs sm:text-sm text-gray-400 font-semibold max-w-md mx-auto">Relatos reais de quem assumiu as rédeas do próprio delivery com taxa zero</p>
           </div>
+          </ScrollReveal>
 
           <div className="relative min-h-[440px] sm:min-h-[340px] md:min-h-[290px] flex flex-col justify-center">
             <AnimatePresence mode="wait" custom={direction}>
@@ -527,6 +568,7 @@ export default function LandingPage() {
       {/* Final CTA */}
       <section className="py-32 bg-[#0a0a0a]">
         <div className="max-w-4xl mx-auto px-4 text-center">
+          <ScrollReveal direction="up" delay={0}>
           <h2 className="text-4xl md:text-7xl font-display font-black text-white mb-6">
             O cliente é seu.<br />
             <span className="text-[#FFC928]">O pedido também.</span>
@@ -549,6 +591,7 @@ export default function LandingPage() {
               Buscar restaurantes
             </Link>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 

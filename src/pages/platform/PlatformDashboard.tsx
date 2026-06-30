@@ -95,7 +95,7 @@ export default function PlatformDashboard() {
     { to: '/plataforma/clientes', label: 'Clientes', icon: <Users size={20} /> },
     { to: '/plataforma/inteligencia', label: 'Inteligência', icon: <Brain size={20} /> },
     { to: '/plataforma/relatorios', label: 'Relatórios do Mercado', icon: <BarChart3 size={20} /> },
-    { to: '/plataforma/parceiros', label: 'Parceiros Social', icon: <Heart size={20} /> },
+    { to: '/plataforma/parceiros', label: 'Parceiros Sociais', icon: <Heart size={20} /> },
     { to: '/plataforma/doacoes', label: 'Gestão de Doações', icon: <Users size={20} /> },
     { to: '/plataforma/ovos-de-ouro', label: 'Ovos de Ouro 🏆', icon: <Trophy size={20} /> },
   ];

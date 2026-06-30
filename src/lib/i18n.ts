@@ -124,7 +124,7 @@ const resources = {
       home: {
         heroTitle: 'Comida de verdade',
         heroTitleHighlight: 'Zero Taxa abusiva.',
-        heroSubtitle: 'Peça direto dos melhores restaurantes locais e ajude a fortalecer quem produz de verdade.',
+        heroSubtitle: 'O que você quer comer hoje? Pedido direto. Sem comissão. Apoie o restaurante local.',
         searchPlaceholder: 'Busque por restaurante ou prato...',
         featuredRestaurants: 'Restaurantes em destaque',
         howItWorks: 'Como funciona',

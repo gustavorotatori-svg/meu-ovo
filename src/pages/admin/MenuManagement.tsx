@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, MoreVertical, Edit2, Trash2, GripVertical, Check, X, Trash, Clock, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
+import { useState, useEffect, useRef, SVGProps } from 'react';
+import { Plus, Search,  Edit2, Trash2, GripVertical, Check, X, Trash, Clock, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../lib/firebase';
+import { uploadProductImage } from '../../services/storageService';
 import { 
   collection, 
   query, 
@@ -25,6 +26,20 @@ import { Reorder, motion, AnimatePresence } from 'motion/react';
 import AIMenuGenerator from '../../components/admin/AIMenuGenerator';
 import AIProductGenerator from '../../components/admin/AIProductGenerator';
 import AIMenuImport from '../../components/admin/AIMenuImport';
+
+interface Option {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface OptionGroup {
+  id: string;
+  name: string;
+  minSelection: number;
+  maxSelection: number;
+  options: Option[];
+}
 
 export default function MenuManagement() {
   const { t } = useTranslation();
@@ -60,7 +75,7 @@ export default function MenuManagement() {
     notes: '',
     ingredients: '',
     allergens: '',
-    optionGroups: [] as any[],
+    optionGroups: [] as OptionGroup[],
     stock: '',
     minStockAlert: '',
   });
@@ -68,6 +83,9 @@ export default function MenuManagement() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Listen to restaurants and data
   useEffect(() => {
@@ -143,6 +161,7 @@ export default function MenuManagement() {
   };
 
   const handleCreateCategory = async () => {
+    if (!restaurant) return;
     if (!newCatName.trim()) {
       setErrors({ categoryName: 'Nome da categoria é obrigatório' });
       return;
@@ -221,14 +240,14 @@ export default function MenuManagement() {
 
     // Validate Option Groups
     if (newProd.optionGroups && newProd.optionGroups.length > 0) {
-      newProd.optionGroups.forEach((group: any, gIdx: number) => {
+      newProd.optionGroups.forEach((group: OptionGroup, gIdx: number) => {
         if (!group.name.trim()) {
           newErrors[`group_${group.id}`] = 'Nome do grupo é obrigatório';
         }
         if (group.options.length === 0) {
           newErrors[`group_options_${group.id}`] = 'Adicione pelo menos uma opção';
         } else {
-          group.options.forEach((opt: any) => {
+          group.options.forEach((opt: Option) => {
             if (!opt.name.trim()) {
               newErrors[`opt_${opt.id}`] = 'Nome obrigatório';
             }
@@ -243,6 +262,7 @@ export default function MenuManagement() {
 
   const handleCreateProduct = async () => {
     if (!validateProduct()) return;
+    if (!restaurant) return;
 
     const priceNum = parseFloat(newProd.price);
     const prepTimeNum = newProd.estimatedPrepTime ? parseInt(newProd.estimatedPrepTime) : null;
@@ -250,13 +270,47 @@ export default function MenuManagement() {
     const minStockNum = newProd.minStockAlert !== '' ? parseInt(newProd.minStockAlert) : undefined;
 
     try {
-      const productData = {
+      let finalImageUrl = newProd.imageUrl;
+      let productId = editingProduct?.id;
+
+      // For new products, create the doc first to get a real ID for image upload
+      if (!productId) {
+        const docRef = await addDoc(collection(db, 'products'), {
+          restaurantId: restaurant.id,
+          categoryId: newProd.categoryId,
+          name: newProd.name,
+          description: newProd.description,
+          price: priceNum,
+          imageUrl: newProd.imageUrl || '',
+          estimatedPrepTime: prepTimeNum,
+          notes: newProd.notes,
+          ingredients: newProd.ingredients || '',
+          allergens: newProd.allergens || '',
+          isActive: newProd.isActive,
+          isAvailable: newProd.isAvailable,
+          isFeatured: false,
+          optionGroups: newProd.optionGroups,
+          stock: stockNum,
+          minStockAlert: minStockNum,
+        });
+        productId = docRef.id;
+      }
+
+      if (imageFile) {
+        setUploadingImage(true);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        finalImageUrl = await uploadProductImage(restaurant.id, productId, imageFile);
+        setImageFile(null);
+        setUploadingImage(false);
+      }
+
+      await updateDoc(doc(db, 'products', productId), {
         restaurantId: restaurant.id,
         categoryId: newProd.categoryId,
         name: newProd.name,
         description: newProd.description,
         price: priceNum,
-        imageUrl: newProd.imageUrl,
+        imageUrl: finalImageUrl,
         estimatedPrepTime: prepTimeNum,
         notes: newProd.notes,
         ingredients: newProd.ingredients || '',
@@ -267,26 +321,22 @@ export default function MenuManagement() {
         optionGroups: newProd.optionGroups,
         stock: stockNum,
         minStockAlert: minStockNum,
-      };
+      });
 
-      if (editingProduct) {
-        await updateDoc(doc(db, 'products', editingProduct.id), productData);
-        toast.success(t('menu.productUpdated'));
-      } else {
-        await addDoc(collection(db, 'products'), productData);
-        toast.success(t('menu.productCreated'));
-      }
+      toast.success(editingProduct ? t('menu.productUpdated') : t('menu.productCreated'));
       
       setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [], stock: '', minStockAlert: '' });
       setEditingProduct(null);
       setIsProductModalOpen(false);
     } catch (e) {
+      setUploadingImage(false);
       toast.error(t('common.error'));
     }
   };
 
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product);
+    setImageFile(null);
     setNewProd({
       name: product.name,
       description: product.description,
@@ -375,7 +425,7 @@ export default function MenuManagement() {
         if (g.id === groupId) {
           return {
             ...g,
-            options: g.options.filter((o: any) => o.id !== optionId)
+            options: g.options.filter((o: Option) => o.id !== optionId)
           };
         }
         return g;
@@ -383,21 +433,21 @@ export default function MenuManagement() {
     }));
   };
 
-  const updateOptionGroup = (groupId: string, data: any) => {
+  const updateOptionGroup = (groupId: string, data: Partial<OptionGroup>) => {
     setNewProd(prev => ({
       ...prev,
       optionGroups: prev.optionGroups.map(g => g.id === groupId ? { ...g, ...data } : g)
     }));
   };
 
-  const updateOptionInGroup = (groupId: string, optionId: string, data: any) => {
+  const updateOptionInGroup = (groupId: string, optionId: string, data: Partial<Option>) => {
     setNewProd(prev => ({
       ...prev,
       optionGroups: prev.optionGroups.map(g => {
         if (g.id === groupId) {
           return {
             ...g,
-            options: g.options.map((o: any) => o.id === optionId ? { ...o, ...data } : o)
+            options: g.options.map((o: Option) => o.id === optionId ? { ...o, ...data } : o)
           };
         }
         return g;
@@ -417,8 +467,9 @@ export default function MenuManagement() {
 
   const toggleProductAvailability = async (product: Product) => {
     try {
+      const newAvailability = product.isAvailable === undefined ? false : !product.isAvailable;
       await updateDoc(doc(db, 'products', product.id), {
-        isAvailable: product.isAvailable !== undefined ? !product.isAvailable : false
+        isAvailable: newAvailability
       });
     } catch (e) {
       toast.error('Erro ao atualizar disponibilidade');
@@ -511,8 +562,8 @@ export default function MenuManagement() {
   }
 
   useEffect(() => {
-    (window as any).handleImageUpload = (event: any) => {
-      const file = event.target.files?.[0];
+    (window as unknown as { handleImageUpload: (event: Event) => void }).handleImageUpload = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
       if (file) {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -554,6 +605,7 @@ export default function MenuManagement() {
             </Button>
             <Button size="sm" onClick={() => {
               setEditingProduct(null);
+              setImageFile(null);
               setNewProd({ name: '', description: '', price: '', categoryId: selectedCategory || '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
               setIsProductModalOpen(true);
             }} className="h-10 px-6 font-black tracking-widest text-[10px] italic bg-brand-egg text-brand-black border-b-4 border-yellow-600 shadow-md">
@@ -607,6 +659,7 @@ export default function MenuManagement() {
                 <button 
                   onClick={() => setSearchTerm('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  aria-label="Remover filtro"
                 >
                   <X size={12} />
                 </button>
@@ -783,6 +836,7 @@ export default function MenuManagement() {
                           handleEditProduct(product);
                         }}
                         className="p-2 bg-white/95 backdrop-blur rounded-xl shadow-lg text-slate-600 hover:text-brand-black transition-colors"
+                        aria-label="Editar"
                       >
                          <Edit2 size={13} />
                       </button>
@@ -792,6 +846,7 @@ export default function MenuManagement() {
                           confirmDeleteProduct(product);
                         }}
                         className="p-2 bg-white/95 backdrop-blur rounded-xl shadow-lg text-slate-600 hover:text-red-600 transition-colors"
+                        aria-label="Excluir"
                       >
                          <Trash2 size={13} />
                       </button>
@@ -932,6 +987,7 @@ export default function MenuManagement() {
                         handleEditCategory(cat);
                       }}
                       className="p-2 text-slate-400 hover:text-brand-black hover:bg-slate-100 rounded-lg transition-all"
+                      aria-label="Editar"
                     >
                       <Edit2 size={14} />
                     </button>
@@ -941,6 +997,7 @@ export default function MenuManagement() {
                         setCategoryToDelete(cat);
                       }}
                       className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                      aria-label="Excluir"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -963,7 +1020,7 @@ export default function MenuManagement() {
 
       {/* Category Modal */}
       {isCategoryModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Gerenciar categoria" className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-5 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
@@ -973,7 +1030,7 @@ export default function MenuManagement() {
                  setIsCategoryModalOpen(false);
                  setEditingCategory(null);
                  setNewCatName('');
-               }} className="text-slate-400 hover:text-slate-600 transition-colors">
+               }} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
                   <X size={18} />
                </button>
             </div>
@@ -1012,17 +1069,18 @@ export default function MenuManagement() {
 
       {/* Product Modal */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Gerenciar produto" className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
                  {editingProduct ? 'Editar Item' : 'Novo Item do Cardápio'}
                </h3>
-               <button onClick={() => {
-                 setIsProductModalOpen(false);
-                 setEditingProduct(null);
-                 setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
-               }} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <button onClick={() => {
+                  setIsProductModalOpen(false);
+                  setEditingProduct(null);
+                  setImageFile(null);
+                  setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
+                }} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
                   <X size={18} />
                </button>
             </div>
@@ -1046,20 +1104,19 @@ export default function MenuManagement() {
                         }}
                       />
                       <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-md text-xs font-bold cursor-pointer transition-colors flex items-center justify-center shrink-0 border border-slate-200">
-                        UPLOAD
+                        {uploadingImage ? 'ENVIANDO...' : 'UPLOAD'}
                         <input 
                           type="file" 
+                          ref={fileInputRef}
                           className="hidden" 
                           accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              const reader = new FileReader();
-                               reader.onloadend = () => {
-                                setNewProd({...newProd, imageUrl: reader.result as string});
-                                if (errors.imageUrl) setErrors(prev => { const n = {...prev}; delete n.imageUrl; return n; });
-                              };
-                              reader.readAsDataURL(file);
+                              setImageFile(file);
+                              const objectUrl = URL.createObjectURL(file);
+                              setNewProd({...newProd, imageUrl: objectUrl});
+                              if (errors.imageUrl) setErrors(prev => { const n = {...prev}; delete n.imageUrl; return n; });
                             }
                           }}
                         />
@@ -1070,8 +1127,13 @@ export default function MenuManagement() {
                       <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-slate-200 group">
                         <img src={newProd.imageUrl} className="w-full h-full object-cover" alt="Preview" />
                         <button 
-                          onClick={() => setNewProd({...newProd, imageUrl: ''})}
+                          onClick={() => {
+                            if (imageFile) URL.revokeObjectURL(newProd.imageUrl);
+                            setImageFile(null);
+                            setNewProd({...newProd, imageUrl: ''});
+                          }}
                           className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                          aria-label="Remover imagem"
                         >
                           <X size={16} />
                         </button>
@@ -1285,7 +1347,7 @@ export default function MenuManagement() {
                   </div>
 
                   <div className="space-y-4">
-                     {newProd.optionGroups.map((group: any) => (
+                      {newProd.optionGroups.map((group: OptionGroup) => (
                         <div key={group.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-4">
                            <div className="flex items-start justify-between gap-4">
                               <div className="flex-1 space-y-3">
@@ -1329,7 +1391,7 @@ export default function MenuManagement() {
                                     </div>
                                  </div>
                               </div>
-                              <button onClick={() => removeOptionGroup(group.id)} className="text-slate-400 hover:text-red-500 transition-colors pt-5">
+                              <button onClick={() => removeOptionGroup(group.id)} className="text-slate-400 hover:text-red-500 transition-colors pt-5" aria-label="Excluir">
                                  <Trash size={14} />
                               </button>
                            </div>
@@ -1347,7 +1409,7 @@ export default function MenuManagement() {
                               {errors[`group_options_${group.id}`] && <p className="text-red-500 text-[8px] font-black px-1">{errors[`group_options_${group.id}`]}</p>}
                               
                               <div className="space-y-1.5">
-                                 {group.options.map((opt: any) => (
+                                  {group.options.map((opt: Option) => (
                                     <div key={opt.id} className={cn(
                                       "flex items-center gap-2 bg-white p-1.5 rounded border shadow-sm",
                                       errors[`opt_${opt.id}`] ? "border-red-500" : "border-slate-100"
@@ -1375,7 +1437,7 @@ export default function MenuManagement() {
                                              onChange={(e) => updateOptionInGroup(group.id, opt.id, { price: parseFloat(e.target.value) })}
                                           />
                                        </div>
-                                       <button onClick={() => removeOptionFromGroup(group.id, opt.id)} className="text-slate-300 hover:text-red-500 p-1">
+                                       <button onClick={() => removeOptionFromGroup(group.id, opt.id)} className="text-slate-300 hover:text-red-500 p-1" aria-label="Excluir">
                                           <Trash size={12} />
                                        </button>
                                     </div>
@@ -1400,6 +1462,7 @@ export default function MenuManagement() {
               <Button variant="ghost" size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={() => {
                 setIsProductModalOpen(false);
                 setEditingProduct(null);
+                setImageFile(null);
                 setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
               }}>DESCARTAR</Button>
               <Button size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={handleCreateProduct}>
@@ -1441,7 +1504,7 @@ export default function MenuManagement() {
       )}
       {/* Delete Confirmation Modal (Product) */}
       {isDeleteModalOpen && productToDelete && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Confirmar exclusão de produto" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
@@ -1478,7 +1541,7 @@ export default function MenuManagement() {
 
       {/* Delete Confirmation Modal (Category) */}
       {categoryToDelete && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label="Confirmar exclusão de categoria" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
@@ -1513,7 +1576,7 @@ export default function MenuManagement() {
   );
 }
 
-function UtensilsCrossed(props: any) {
+function UtensilsCrossed(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

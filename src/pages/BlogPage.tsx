@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useTheme } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import OptimizedImage from '../components/OptimizedImage';
-import { ArrowRight, Calendar, Newspaper, ExternalLink, Loader2, Sparkles } from 'lucide-react';
+import { Newspaper, ExternalLink, Loader2, Sparkles } from 'lucide-react';
 
 interface NewsItem {
   title: string;
@@ -20,6 +20,32 @@ interface BlogData {
   news: NewsItem[];
 }
 
+const fallbackNews: NewsItem[] = [
+  {
+    title: 'Restaurantes independentes crescem 23% em São Paulo',
+    summary: 'Levantamento aponta que consumidores estão migrando para restaurantes locais em busca de comida artesanal e atendimento personalizado.',
+    url: 'https://abrasel.com.br',
+    source: 'Abrasel SP',
+    imageUrl: 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?w=400&h=300&fit=crop',
+  },
+  {
+    title: 'Comissão de 30%: por que restaurantes estão deixando os grandes apps',
+    summary: 'Taxas abusivas levam donos de restaurantes a buscar alternativas como QR Code e pedidos diretos via WhatsApp.',
+    url: 'https://mercadoeconsumo.com.br',
+    source: 'Mercado & Consumo',
+    imageUrl: 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?w=400&h=300&fit=crop',
+  },
+  {
+    title: 'QR Code nas mesas já é realidade em 78% dos restaurantes',
+    summary: 'A tecnologia que elimina intermediários e dá autonomia ao cliente está transformando o setor de foodservice.',
+    url: 'https://anrbrasil.org.br',
+    source: 'ANR Brasil',
+    imageUrl: 'https://images.pexels.com/photos/5900345/pexels-photo-5900345.jpeg?w=400&h=300&fit=crop',
+  },
+];
+
+const fallbackSummary = 'O setor de foodservice brasileiro segue em expansão, com destaque para restaurantes independentes que investem em atendimento direto ao cliente e cardápios autorais. A tendência de pedidos via WhatsApp e QR Code continua crescendo como alternativa às plataformas tradicionais.';
+
 export default function BlogPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -29,11 +55,16 @@ export default function BlogPage() {
   useEffect(() => {
     async function fetchBlog() {
       try {
-        const response = await fetch('/api/blog/news');
-        const news = await response.json();
-        setData(news);
-      } catch (error) {
-        console.error('Error fetching news:', error);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const response = await fetch('/api/blog/news', { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!response.ok) throw new Error('API error');
+        const json = await response.json();
+        if (!json?.news || !json?.weeklySummary) throw new Error('Invalid shape');
+        setData(json as BlogData);
+      } catch {
+        setData({ weeklySummary: fallbackSummary, news: fallbackNews });
       } finally {
         setLoading(false);
       }
@@ -98,7 +129,7 @@ export default function BlogPage() {
 
             {/* News Grid */}
             <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {data?.news.map((item, index) => (
+              {data?.news?.map((item, index) => (
                 <motion.article
                   key={index}
                   initial={{ opacity: 0, y: 20 }}

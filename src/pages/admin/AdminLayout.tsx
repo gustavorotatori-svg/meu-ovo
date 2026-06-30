@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -63,7 +63,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/garcom', label: t('nav.waiter'), icon: <UtensilsCrossed size={18} /> },
     { to: '/admin/cozinha', label: t('nav.kitchen'), icon: <ChefHat size={18} /> },
     { to: '/admin/delivery', label: 'Delivery', icon: <Truck size={18} /> },
-    { to: '/admin/relatorios', label: t('nav.reports'), icon: <BarChart2 size={18} /> },
+    { to: '/admin/analytics', label: 'Analytics', icon: <BarChart2 size={18} /> },
+    { to: '/admin/relatorios', label: t('nav.reports'), icon: <FileText size={18} /> },
+    { to: '/admin/flash-deals', label: 'Flash Deals ⚡', icon: <Zap size={18} /> },
     { to: '/admin/ovos-de-ouro', label: 'Ovos de Ouro 🏆', icon: <Trophy size={18} /> },
     { to: '/admin/configuracoes', label: t('nav.settings'), icon: <Settings size={18} /> },
   ];
@@ -186,13 +188,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div role="presentation" className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className={`transition-colors border-b ${isDark ? 'bg-[#111111] border-[#2a2a2a]' : 'bg-white border-gray-100'} px-4 py-4 flex items-center gap-4 lg:px-6 sticky top-0 z-30`}>
-          <button className="lg:hidden p-2 hover:bg-gray-100 rounded-xl" onClick={() => setSidebarOpen(!sidebarOpen)}>
+          <button className="lg:hidden p-2 hover:bg-gray-100 rounded-xl" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label={sidebarOpen ? "Fechar menu" : "Abrir menu"}>
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="flex-1">

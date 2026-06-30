@@ -229,7 +229,7 @@ export default function AIProductGenerator({
   };
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
+    <div role="dialog" aria-modal="true" aria-label="Gerar produto com IA" className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
       <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         
         {/* Modal Header */}
@@ -243,7 +243,7 @@ export default function AIProductGenerator({
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Criação automatizada para {categoryName}</p>
              </div>
           </div>
-          <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-xl transition-all text-slate-400 hover:text-white">
+          <button onClick={onClose} aria-label="Fechar" className="p-1.5 hover:bg-white/10 rounded-xl transition-all text-slate-400 hover:text-white">
             <X size={20} />
           </button>
         </div>

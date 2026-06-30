@@ -224,7 +224,7 @@ export default function CouponManagement() {
       return;
     }
 
-    const couponData: Record<string, any> = {
+    const couponData: Record<string, unknown> = {
       restaurantId: restaurant.id,
       code: formData.code.toUpperCase().trim(),
       type: formData.type,
@@ -464,6 +464,7 @@ export default function CouponManagement() {
                                 }}
                                 className="p-2 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-slate-400 hover:text-blue-600 rounded-lg transition-colors"
                                 title="Ver histórico completo"
+                                aria-label="Histórico de uso"
                               >
                                 <History size={18} />
                               </button>
@@ -474,6 +475,7 @@ export default function CouponManagement() {
                                   handleOpenModal(coupon);
                                 }}
                                 className="p-2 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-400 hover:text-orange-600 rounded-lg transition-colors"
+                                aria-label="Editar"
                               >
                                 <Edit2 size={18} />
                               </button>
@@ -484,6 +486,7 @@ export default function CouponManagement() {
                                   handleDelete(coupon.id);
                                 }}
                                 className="p-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                                aria-label="Excluir"
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -636,7 +639,7 @@ export default function CouponManagement() {
 
       {/* Coupon Modal */}
       {isCouponModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Gerenciar cupom">
           <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
               <div>
@@ -648,6 +651,7 @@ export default function CouponManagement() {
               <button 
                 onClick={() => setIsCouponModalOpen(false)}
                 className="p-3 hover:bg-white text-slate-400 hover:text-slate-600 rounded-2xl transition-all shadow-sm"
+                aria-label="Fechar"
               >
                 <X size={20} />
               </button>
@@ -891,7 +895,7 @@ export default function CouponManagement() {
 
       {/* History Modal */}
       {isHistoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Histórico de uso do cupom">
           <div className="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
               <div>
@@ -904,6 +908,7 @@ export default function CouponManagement() {
               <button 
                 onClick={() => setIsHistoryModalOpen(false)}
                 className="p-3 hover:bg-white text-slate-400 hover:text-slate-600 rounded-2xl transition-all shadow-sm"
+                aria-label="Fechar"
               >
                 <X size={20} />
               </button>

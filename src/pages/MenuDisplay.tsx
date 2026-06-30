@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, onSnapshot, orderBy, limit, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { Restaurant, Category, Product, OrderItem, Coupon } from '../types';
+import { Restaurant, Category, Product, OrderItem, Coupon, LoyaltyProfile, Additional } from '../types';
 import { Logo } from '../components/Logo';
 import { WA_NUMBER } from '../services/whatsappService';
 import { 
@@ -55,6 +55,32 @@ interface FirestoreErrorInfo {
   }
 }
 
+interface SelectedOption {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  optionName: string;
+  price: number;
+}
+
+interface RewardRule {
+  id: string;
+  type: 'discount_percent' | 'free_product';
+  value: string | number;
+  pointsRequired: number;
+  description: string;
+}
+
+interface CustomizerGroup {
+  id: string;
+  name: string;
+  type: string;
+  minSelection?: number;
+  maxSelection?: number;
+  options?: Additional[];
+  items?: Additional[];
+}
+
 export default function MenuDisplay() {
   const { slug } = useParams();
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -67,10 +93,10 @@ export default function MenuDisplay() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isLoyaltyOpen, setIsLoyaltyOpen] = useState(false);
-  const [loyaltyProfile, setLoyaltyProfile] = useState<any | null>(null);
+  const [loyaltyProfile, setLoyaltyProfile] = useState<LoyaltyProfile | null>(null);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
-  const [selectedOptions, setSelectedOptions] = useState<any[]>([]);
+  const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
 
   const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
     const errInfo: FirestoreErrorInfo = {
@@ -118,7 +144,7 @@ export default function MenuDisplay() {
   };
 
   // Redemption state
-  const [appliedReward, setAppliedReward] = useState<any | null>(null);
+  const [appliedReward, setAppliedReward] = useState<RewardRule | null>(null);
 
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -216,7 +242,7 @@ export default function MenuDisplay() {
     fetchRestaurant();
   }, [slug]);
 
-  const addToCart = (product: Product, options: any[] = []) => {
+  const addToCart = (product: Product, options: SelectedOption[] = []) => {
     // If product has options and no options provided, open customizer
     const productGroups = product.optionGroups || product.additionalGroups;
     if (productGroups && productGroups.length > 0 && options.length === 0) {
@@ -673,122 +699,125 @@ export default function MenuDisplay() {
                                </span>
                              )}
                            </div>
-                           <button 
-                             onClick={(e) => {
-                               e.stopPropagation();
-                               addToCart(product);
-                             }}
-                             className="bg-slate-50 hover:bg-orange-500 hover:text-white text-slate-400 p-2 rounded-lg transition-all shadow-sm"
-                           >
-                              <Plus size={16} />
-                           </button>
-                        </div>
-                      </div>
-                      {product.imageUrl && (
-                        <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border border-slate-50 relative">
-                           {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice && (
-                             <div className="absolute top-1 left-1 bg-red-500 text-white text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-wider z-10 shadow-sm">
-                               -{Math.round(((product.price - product.promotionPrice) / product.price) * 100)}%
-                             </div>
-                           )}
-                           <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Floating WhatsApp Support Button */}
-      {!isCartOpen && !isCheckoutOpen && !isLoyaltyOpen && (
-        <motion.a
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre o cardápio.')}`}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-6 left-6 z-50 bg-[#25D366] text-white p-3.5 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
-        >
-          <MessageCircle size={24} />
-        </motion.a>
-      )}
-
-      {/* Floating Cart Button */}
-      {cart.length > 0 && !isCartOpen && (
-        <motion.div 
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="fixed bottom-6 left-0 right-0 px-6 z-50 pointer-events-none"
-        >
-          <button 
-            onClick={() => setIsCartOpen(true)}
-            className="w-full max-w-md mx-auto h-14 bg-slate-900 rounded-2xl shadow-2xl flex items-center justify-between px-6 text-white pointer-events-auto hover:bg-slate-800 transition-all active:scale-95 border-t-2 border-slate-700/50"
-          >
-            <div className="flex items-center gap-3">
-               <div className="relative">
-                  <ShoppingBag size={20} className="text-orange-500" />
-                  <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">
-                    {cart.reduce((acc, c) => acc + c.quantity, 0)}
-                  </span>
-               </div>
-               <span className="text-[10px] font-black uppercase tracking-widest">Ver Carrinho</span>
-            </div>
-            <span className="font-black text-sm tracking-tight">{formatCurrency(cartTotal)}</span>
-          </button>
-        </motion.div>
-      )}
-
-      {/* Cart Modal */}
-      <AnimatePresence>
-        {isCartOpen && (
-          <motion.div 
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed inset-0 z-[60] bg-zinc-50 flex flex-col sm:max-w-md sm:mx-auto"
-          >
-            <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-white">
-               <h2 className="text-xl font-black">Seu pedido</h2>
-               <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full">
-                  <X />
-               </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-               {cart.length === 0 ? (
-                 <div className="text-center py-20">
-                    <ShoppingCart className="mx-auto h-16 w-16 text-zinc-100 mb-4" />
-                    <p className="text-zinc-500 font-medium">Seu carrinho está vazio</p>
-                 </div>
-               ) : (
-                 <div className="space-y-4">
-                    {cart.map((item, index) => (
-                      <div key={`${item.productId}-${index}`} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-100">
-                         <div className="flex-1">
-                            <p className="font-bold text-zinc-900">{item.name}</p>
-                            <p className="text-sm text-orange-600 font-bold">{formatCurrency(item.price)}</p>
-                         </div>
-                         <div className="flex items-center gap-3 bg-zinc-100 rounded-lg p-1">
                             <button 
-                              onClick={() => removeFromCart(index)}
-                              className="p-1.5 hover:bg-white rounded-md transition-colors"
-                            >
-                               <Minus size={16} />
-                            </button>
-                            <span className="font-black w-4 text-center">{item.quantity}</span>
-                            <button 
-                              onClick={() => {
-                                const prod = products.find(p => p.id === item.productId);
-                                if (prod) addToCart(prod, item.selectedOptions || []);
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToCart(product);
                               }}
-                              className="p-1.5 hover:bg-white rounded-md transition-colors text-orange-500"
+                              className="bg-slate-50 hover:bg-orange-500 hover:text-white text-slate-400 p-2 rounded-lg transition-all shadow-sm"
+                              aria-label="Adicionar"
                             >
                                <Plus size={16} />
                             </button>
+                         </div>
+                       </div>
+                       {product.imageUrl && (
+                         <div className="w-24 h-24 rounded-lg overflow-hidden shrink-0 border border-slate-50 relative">
+                            {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice && (
+                              <div className="absolute top-1 left-1 bg-red-500 text-white text-[8px] font-black px-1 py-0.5 rounded uppercase tracking-wider z-10 shadow-sm">
+                                -{Math.round(((product.price - product.promotionPrice) / product.price) * 100)}%
+                              </div>
+                            )}
+                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                         </div>
+                       )}
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             );
+           })}
+         </div>
+       </div>
+
+       {/* Floating WhatsApp Support Button */}
+       {!isCartOpen && !isCheckoutOpen && !isLoyaltyOpen && (
+         <motion.a
+           initial={{ scale: 0, opacity: 0 }}
+           animate={{ scale: 1, opacity: 1 }}
+           href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre o cardápio.')}`}
+           target="_blank"
+           rel="noreferrer"
+           className="fixed bottom-6 left-6 z-50 bg-[#25D366] text-white p-3.5 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
+         >
+           <MessageCircle size={24} />
+         </motion.a>
+       )}
+
+       {/* Floating Cart Button */}
+       {cart.length > 0 && !isCartOpen && (
+         <motion.div 
+           initial={{ y: 100, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           className="fixed bottom-6 left-0 right-0 px-6 z-50 pointer-events-none"
+         >
+           <button 
+             onClick={() => setIsCartOpen(true)}
+             className="w-full max-w-md mx-auto h-14 bg-slate-900 rounded-2xl shadow-2xl flex items-center justify-between px-6 text-white pointer-events-auto hover:bg-slate-800 transition-all active:scale-95 border-t-2 border-slate-700/50"
+           >
+             <div className="flex items-center gap-3">
+                <div className="relative">
+                   <ShoppingBag size={20} className="text-orange-500" />
+                   <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">
+                     {cart.reduce((acc, c) => acc + c.quantity, 0)}
+                   </span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Ver Carrinho</span>
+             </div>
+             <span className="font-black text-sm tracking-tight">{formatCurrency(cartTotal)}</span>
+           </button>
+         </motion.div>
+       )}
+
+       {/* Cart Modal */}
+       <AnimatePresence>
+         {isCartOpen && (
+           <motion.div 
+             initial={{ opacity: 0, y: 100 }}
+             animate={{ opacity: 1, y: 0 }}
+             exit={{ opacity: 0, y: 100 }}
+             className="fixed inset-0 z-[60] bg-zinc-50 flex flex-col sm:max-w-md sm:mx-auto"
+           >
+             <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-white">
+                <h2 className="text-xl font-black">Seu pedido</h2>
+                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full" aria-label="Fechar">
+                   <X />
+                </button>
+             </div>
+
+             <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {cart.length === 0 ? (
+                  <div className="text-center py-20">
+                     <ShoppingCart className="mx-auto h-16 w-16 text-zinc-100 mb-4" />
+                     <p className="text-zinc-500 font-medium">Seu carrinho está vazio</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                     {cart.map((item, index) => (
+                       <div key={`${item.productId}-${index}`} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-100">
+                          <div className="flex-1">
+                             <p className="font-bold text-zinc-900">{item.name}</p>
+                             <p className="text-sm text-orange-600 font-bold">{formatCurrency(item.price)}</p>
+                          </div>
+                          <div className="flex items-center gap-3 bg-zinc-100 rounded-lg p-1">
+                             <button 
+                               onClick={() => removeFromCart(index)}
+                               className="p-1.5 hover:bg-white rounded-md transition-colors"
+                               aria-label="Diminuir"
+                             >
+                                <Minus size={16} />
+                             </button>
+                             <span className="font-black w-4 text-center">{item.quantity}</span>
+                             <button 
+                               onClick={() => {
+                                 const prod = products.find(p => p.id === item.productId);
+                                 if (prod) addToCart(prod, item.selectedOptions || []);
+                               }}
+                               className="p-1.5 hover:bg-white rounded-md transition-colors text-orange-500"
+                               aria-label="Adicionar"
+                             >
+                                <Plus size={16} />
+                             </button>
                          </div>
                       </div>
                     ))}
@@ -833,7 +862,7 @@ export default function MenuDisplay() {
                             <Ticket size={14} className="text-orange-500" />
                             <span className="text-[10px] font-black uppercase text-orange-600">{appliedCoupon.code} aplicado!</span>
                           </div>
-                          <button onClick={() => setAppliedCoupon(null)} className="text-orange-400 hover:text-orange-600">
+                          <button onClick={() => setAppliedCoupon(null)} className="text-orange-400 hover:text-orange-600" aria-label="Fechar">
                             <X size={14} />
                           </button>
                         </div>
@@ -925,7 +954,7 @@ export default function MenuDisplay() {
            >
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-black tracking-tighter uppercase italic">Dados do Pedido</h3>
-                <button onClick={() => setIsCheckoutOpen(false)} className="p-2 border border-slate-100 rounded-full hover:bg-slate-50"><X size={20} /></button>
+                <button onClick={() => setIsCheckoutOpen(false)} className="p-2 border border-slate-100 rounded-full hover:bg-slate-50" aria-label="Fechar"><X size={20} /></button>
               </div>
 
               {/* Donation Section Requested */}
@@ -934,8 +963,8 @@ export default function MenuDisplay() {
                     <Heart size={16} className="text-red-500 fill-current" />
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-black">Doe uma refeição</h4>
                  </div>
-                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">Ajude uma pessoa em situação de vulnerabilidade em São Paulo. 100% da sua doação vai para quem precisa.</p>
-                 <div className="grid grid-cols-4 gap-2">
+                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">Ajude uma pessoa em situação de vulnerabilidade na sua cidade. 100% da sua doação vai para quem precisa.</p>
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[0, 5, 10, 15].map(amt => (
                       <button 
                         key={amt}
@@ -1017,7 +1046,7 @@ export default function MenuDisplay() {
 
                  <div className="space-y-1">
                     <label className="text-xs font-black uppercase text-zinc-400">Forma de Pagamento</label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                        {[{id:'pix', icon:<Smartphone size={16}/>, label:'PIX'}, {id:'cartao', icon:<CreditCard size={16}/>, label:'Cartão'}, {id:'dinheiro', icon:<Banknote size={16}/>, label:'Dinheiro'}].map(p => (
                          <button
                           key={p.id}
@@ -1046,7 +1075,7 @@ export default function MenuDisplay() {
       {/* Loyalty Modal */}
       <AnimatePresence>
         {isLoyaltyOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-label="Fidelidade" className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
              <motion.div 
                initial={{ scale: 0.9, opacity: 0 }}
                animate={{ scale: 1, opacity: 1 }}
@@ -1062,11 +1091,12 @@ export default function MenuDisplay() {
                       <h2 className="text-xl font-black text-white uppercase tracking-tight">Clube de Fidelidade</h2>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Acumule pontos em cada pedido</p>
                    </div>
-                   <button 
-                     onClick={() => setIsLoyaltyOpen(false)}
-                     className="absolute top-4 right-4 text-slate-500 hover:text-white"
-                   >
-                      <X size={20} />
+                    <button 
+                      onClick={() => setIsLoyaltyOpen(false)}
+                      className="absolute top-4 right-4 text-slate-500 hover:text-white"
+                      aria-label="Fechar"
+                    >
+                       <X size={20} />
                    </button>
                 </div>
 
@@ -1102,7 +1132,7 @@ export default function MenuDisplay() {
                         <div className="space-y-3">
                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Histórico Recente</h3>
                            <div className="space-y-2">
-                              {loyaltyProfile.history?.slice().reverse().slice(0, 5).map((item: any, i: number) => (
+                              {loyaltyProfile.history?.slice().reverse().slice(0, 5).map((item, i: number) => (
                                 <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 border border-slate-100">
                                    <div className="flex items-center gap-2.5">
                                       <div className={cn(
@@ -1133,7 +1163,7 @@ export default function MenuDisplay() {
                         <div className="space-y-3">
                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resgatar Prêmios</h3>
                            <div className="grid gap-2">
-                              {restaurant.loyaltySettings?.redemptionRules?.map((rule: any) => {
+                              {restaurant.loyaltySettings?.redemptionRules?.map((rule: RewardRule) => {
                                 const canRedeem = loyaltyProfile.pointsBalance >= rule.pointsRequired;
                                 const isApplied = appliedReward?.id === rule.id;
                                 
@@ -1198,7 +1228,7 @@ export default function MenuDisplay() {
       {/* Product Customizer Modal */}
       <AnimatePresence>
         {customizingProduct && (
-          <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-label="Personalizar produto" className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
             <motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -1217,7 +1247,7 @@ export default function MenuDisplay() {
                     <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{formatCurrency(customizingProduct.price)}</p>
                   )}
                 </div>
-                <button onClick={() => setCustomizingProduct(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100">
+                <button onClick={() => setCustomizingProduct(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100" aria-label="Fechar">
                   <X size={20} />
                 </button>
               </div>
@@ -1253,7 +1283,7 @@ export default function MenuDisplay() {
                     </div>
                   </div>
                 )}
-                {(customizingProduct.optionGroups || customizingProduct.additionalGroups)?.map((group: any) => (
+                {(customizingProduct.optionGroups || customizingProduct.additionalGroups)?.map((group: CustomizerGroup) => (
                   <div key={group.id} className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
@@ -1271,7 +1301,7 @@ export default function MenuDisplay() {
                     </div>
 
                     <div className="grid gap-2">
-                      {(group.options || group.items)?.map((option: any) => {
+                      {(group.options || group.items)?.map((option: Additional) => {
                         const isSelected = selectedOptions.some(o => o.optionId === option.id);
                         const groupSelections = selectedOptions.filter(o => o.groupId === group.id);
                         const maxSelection = group.maxSelection || (group.type === 'single' ? 1 : 99);
@@ -1344,7 +1374,7 @@ export default function MenuDisplay() {
                 <Button 
                   className="w-full h-14 text-sm font-black uppercase tracking-widest"
                   disabled={
-                    (customizingProduct.optionGroups || customizingProduct.additionalGroups)?.some((group: any) => {
+                    (customizingProduct.optionGroups || customizingProduct.additionalGroups)?.some((group: CustomizerGroup) => {
                       const count = selectedOptions.filter(o => o.groupId === group.id).length;
                       const min = group.minSelection || (group.type === 'single' ? 1 : 0);
                       return count < min;

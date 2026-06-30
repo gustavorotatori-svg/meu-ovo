@@ -13,10 +13,13 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PageTransition from './components/PageTransition';
 import OvosDeOuroVotePopup from './components/OvosDeOuroVotePopup';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import CookieConsent from './components/CookieConsent';
 
-const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : '/';
+const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : window.location.hostname.includes('vercel.app') ? '/' : '/';
 
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const InstallAppPage = lazy(() => import('./pages/InstallAppPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
 const RestaurantMenuPage = lazy(() => import('./pages/RestaurantMenuPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
@@ -45,7 +48,9 @@ const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
 const CouponManagement = lazy(() => import('./pages/admin/CouponManagement'));
 const LoyaltyManagement = lazy(() => import('./pages/admin/LoyaltyManagement'));
 const StoreSettings = lazy(() => import('./pages/admin/StoreSettings'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const OvosDeOuro = lazy(() => import('./pages/admin/OvosDeOuro'));
+const FlashDealManagement = lazy(() => import('./pages/admin/FlashDealManagement'));
 const OrderStatusPage = lazy(() => import('./pages/OrderStatusPage'));
 
 const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'));
@@ -86,13 +91,14 @@ export default function App() {
                     <Route path="/r/:slug" element={<PageSuspense><RestaurantMenuPage /></PageSuspense>} />
                     <Route path="/carrinho" element={<PageSuspense><CartPage /></PageSuspense>} />
                     <Route path="/checkout" element={<PageSuspense><CheckoutPage /></PageSuspense>} />
-                    <Route path="/login" element={<PageSuspense><LandingPage /></PageSuspense>} />
+                    <Route path="/login" element={<PageSuspense><LoginPage /></PageSuspense>} />
+                    <Route path="/install-app" element={<PageSuspense><InstallAppPage /></PageSuspense>} />
                     <Route path="/cadastro-restaurante" element={<PageSuspense><RestaurantOnboarding /></PageSuspense>} />
                     <Route path="/impacto-social" element={<PageSuspense><SocialImpactPage /></PageSuspense>} />
                     <Route path="/para-restaurantes" element={<PageSuspense><ForRestaurantsPage /></PageSuspense>} />
                     <Route path="/ovos-de-ouro" element={<PageSuspense><OvosDeOuroInfoPage /></PageSuspense>} />
-                    <Route path="/meus-pedidos" element={<PageSuspense><OrderHistoryPage /></PageSuspense>} />
-                    <Route path="/perfil" element={<PageSuspense><CustomerProfilePage /></PageSuspense>} />
+                    <Route path="/meus-pedidos" element={<ProtectedRoute roles={['customer', 'restaurant', 'admin']}><PageSuspense><OrderHistoryPage /></PageSuspense></ProtectedRoute>} />
+                    <Route path="/perfil" element={<ProtectedRoute roles={['customer', 'restaurant', 'admin']}><PageSuspense><CustomerProfilePage /></PageSuspense></ProtectedRoute>} />
                     <Route path="/blog" element={<PageSuspense><BlogPage /></PageSuspense>} />
                     <Route path="/pedido/:id" element={<PageSuspense><OrderStatusPage /></PageSuspense>} />
                     <Route path="/sobre" element={<PageSuspense><AboutPage /></PageSuspense>} />
@@ -155,6 +161,11 @@ export default function App() {
                         <PageSuspense><LoyaltyManagement /></PageSuspense>
                       </ProtectedRoute>
                     } />
+                    <Route path="/admin/analytics" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminAnalytics /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
                     <Route path="/admin/configuracoes" element={
                       <ProtectedRoute roles={['restaurant', 'admin']}>
                         <PageSuspense><StoreSettings /></PageSuspense>
@@ -163,6 +174,11 @@ export default function App() {
                     <Route path="/admin/ovos-de-ouro" element={
                       <ProtectedRoute roles={['restaurant', 'admin']}>
                         <PageSuspense><OvosDeOuro /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/flash-deals" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><FlashDealManagement /></PageSuspense>
                       </ProtectedRoute>
                     } />
 
@@ -215,6 +231,7 @@ export default function App() {
                 <OvosDeOuroVotePopup />
                 <PwaInstallPrompt />
               </ErrorBoundary>
+              <CookieConsent />
               <Toaster position="top-right" />
             </BrowserRouter>
           </CartProvider>

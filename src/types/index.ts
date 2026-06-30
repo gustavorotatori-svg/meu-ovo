@@ -75,6 +75,9 @@ export interface Restaurant {
     satActivationCode?: string;
     satAssinaturaAC?: string;
   };
+  latitude?: number;
+  longitude?: number;
+  geohash?: string;
   loyaltySettings?: {
     enabled: boolean;
     pointsPerReal: number;
@@ -153,7 +156,7 @@ export interface Order {
   tableNumber?: string;
   tableId?: string;
   deliveryAddress?: string;
-  paymentMethod: 'pix' | 'cash' | 'card-on-delivery' | 'on-site';
+  paymentMethod: 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
   changeFor?: number;
   status: 'received' | 'accepted' | 'preparing' | 'ready' | 'out-for-delivery' | 'finished' | 'cancelled';
   paymentStatus?: 'pending' | 'paid' | 'failed';
@@ -304,5 +307,34 @@ export interface CustomerRating {
   rating: number; // 0 to 5
   comment?: string;
   tags?: string[];
+  createdAt: string;
+}
+
+export interface FlashDeal {
+  id: string;
+  restaurantId: string;
+  productId: string;
+  productName: string;
+  discountPercentage: number;
+  originalPrice: number;
+  dealPrice: number;
+  startsAt: string;
+  endsAt: string;
+  maxUnits: number;
+  soldUnits: number;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface SavedAddress {
+  id: string;
+  userId: string;
+  label: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  isDefault?: boolean;
   createdAt: string;
 }

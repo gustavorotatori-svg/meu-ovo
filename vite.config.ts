@@ -79,6 +79,23 @@ export default defineConfig(({mode}) => {
     },
     build: {
       sourcemap: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id: string) {
+            if (id.includes('node_modules/lucide-react')) return 'lucide';
+            if (id.includes('node_modules/motion') || id.includes('node_modules/framer-motion')) return 'motion';
+            if (id.includes('node_modules/firebase/auth')) return 'firebase-auth';
+            if (id.includes('node_modules/firebase/firestore')) return 'firebase-firestore';
+            if (id.includes('node_modules/firebase/messaging')) return 'firebase-messaging';
+            if (id.includes('node_modules/firebase/storage')) return 'firebase-storage';
+            if (id.includes('node_modules/firebase/app')) return 'firebase-app';
+            if (id.includes('node_modules/firebase')) return 'firebase-other';
+            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) return 'react-vendor';
+            if (id.includes('node_modules/react-router')) return 'react-vendor';
+            if (id.includes('node_modules/@sentry')) return 'sentry';
+          },
+        },
+      },
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

@@ -17,17 +17,21 @@ import {
   ChevronRight,
   Sparkles,
   ShoppingBag,
-  Info
+  Info,
+  Zap
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
-import { Product, CartItem, Category } from '../types';
+import { db } from '../lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { Product, CartItem, Category, Additional, FlashDeal } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import ShareModal from '../components/ShareModal';
+import FlashDealTimer from '../components/FlashDealTimer';
 import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { Skeleton } from '../components/Skeleton';
@@ -54,7 +58,7 @@ const getCategoryEmoji = (name: string): string => {
 const getFallbackMenu = (restaurantId: string, cuisineType = '') => {
   const cuisine = cuisineType.toLowerCase();
 
-  const ensureProductType = (item: any): Product => {
+  const ensureProductType = (item: Partial<Product>): Product => {
     return {
       isFeatured: false,
       onPromotion: false,
@@ -362,6 +366,7 @@ export default function RestaurantMenuPage() {
     title: ''
   });
 
+  const [flashDeals, setFlashDeals] = useState<FlashDeal[]>([]);
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Resolve current restaurant based on slug
@@ -380,6 +385,18 @@ export default function RestaurantMenuPage() {
       setTableNumber(tableNumber);
     }
   }, [tableNumber, setTableNumber]);
+
+  useEffect(() => {
+    if (!restaurant) return;
+    const fetchDeals = async () => {
+      try {
+        const q = query(collection(db, 'flash_deals'), where('restaurantId', '==', restaurant.id), where('isActive', '==', true));
+        const snap = await getDocs(q);
+        setFlashDeals(snap.docs.map(d => ({ id: d.id, ...d.data() }) as FlashDeal).filter(d => new Date(d.endsAt) > new Date()));
+      } catch { /* silent fail */ }
+    };
+    fetchDeals();
+  }, [restaurant?.id]);
 
   // Handle scroll detection for dynamic styling
   useEffect(() => {
@@ -493,7 +510,7 @@ export default function RestaurantMenuPage() {
       }
     );
     
-    Object.values(categoryRefs.current).forEach((el: any) => {
+    Object.values(categoryRefs.current).forEach((el: HTMLDivElement | null) => {
       if (el) observer.observe(el);
     });
     
@@ -563,6 +580,7 @@ export default function RestaurantMenuPage() {
                   : "bg-gray-100 border-gray-200 text-black hover:bg-black hover:text-white"
                 : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-[#FFC928] hover:text-black"
             )}
+            aria-label="Voltar"
           >
             <ArrowLeft size={18} strokeWidth={2.5} />
           </button>
@@ -610,6 +628,7 @@ export default function RestaurantMenuPage() {
                   : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-black/60"
             )}
             title={isFavorited ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
+            aria-label="Favoritar restaurante"
           >
             <Heart size={18} fill={isFavorited ? "currentColor" : "none"} strokeWidth={2.5} />
           </button>
@@ -623,6 +642,7 @@ export default function RestaurantMenuPage() {
                   : "bg-gray-100 border-gray-200 text-black hover:bg-gray-200"
                 : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-black/60"
             )}
+            aria-label="Compartilhar restaurante"
           >
             <Share2 size={18} strokeWidth={2.5} />
           </button>
@@ -974,7 +994,7 @@ export default function RestaurantMenuPage() {
                           </div>
                         ))}
                         {restaurantProducts.filter(p => !p.bestSeller).slice(0, 1).map(p => (
-                          <div key={p.id} className={cn(
+                          <div key={p.id} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedProduct(p); } }} className={cn(
                             "p-4 rounded-3xl border-2 flex gap-4 cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500/60 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/10",
                             isDark ? "bg-[#111218] border-white/5" : "bg-white border-gray-100 shadow-sm"
                           )} onClick={() => setSelectedProduct(p)}>
@@ -994,7 +1014,7 @@ export default function RestaurantMenuPage() {
                         ))}
                         {restaurantProducts.filter(p => p.bestSeller).length === 0 && restaurantProducts[0] && (
                           <div className="md:col-span-2">
-                            <div className={cn(
+                            <div role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedProduct(restaurantProducts[0]); } }} className={cn(
                               "p-5 rounded-3xl border-2 flex gap-4 cursor-pointer hover:border-[#FFC928] dark:hover:border-[#FFC928]/60 transition-all duration-300 hover:shadow-xl hover:shadow-[#FFC928]/10",
                               isDark ? "bg-[#111218] border-white/5" : "bg-white border-gray-100 shadow-sm"
                             )} onClick={() => setSelectedProduct(restaurantProducts[0])}>
@@ -1039,6 +1059,7 @@ export default function RestaurantMenuPage() {
                               product={product}
                               isDark={isDark}
                               onSelect={() => setSelectedProduct(product)}
+                              flashDeal={flashDeals.find(d => d.productId === product.id)}
                             />
                           ))}
                         </div>
@@ -1126,9 +1147,10 @@ interface ProductCardProps {
   product: Product;
   isDark: boolean;
   onSelect: () => void;
+  flashDeal?: FlashDeal;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, flashDeal }) => {
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -1145,13 +1167,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect }) 
         <div>
           {/* Card Badges Section */}
           <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-            {product.bestSeller && (
+            {flashDeal && (
+              <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm animate-pulse">
+                <Zap size={8} className="text-yellow-300" />
+                OFERTA RELÂMPAGO
+              </span>
+            )}
+            {product.bestSeller && !flashDeal && (
               <span className="bg-[#FFC928] text-black text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
                 <Star size={8} className="fill-[#111] text-[#111]" />
                 MAIS PEDIDO
               </span>
             )}
-            {product.onPromotion && (
+            {product.onPromotion && !flashDeal && (
               <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
                 OFERTA
               </span>
@@ -1162,7 +1190,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect }) 
                 {product.estimatedPrepTime} MIN
               </span>
             )}
+            {flashDeal && (
+              <span className="bg-black text-[#FFC928] text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                -{flashDeal.discountPercentage}%
+              </span>
+            )}
           </div>
+          {flashDeal && (
+            <div className="mb-2">
+              <FlashDealTimer endsAt={flashDeal.endsAt} className="text-orange-500" />
+            </div>
+          )}
 
           <h3 className={`font-display font-black text-lg md:text-xl leading-tight tracking-tight uppercase italic group-hover/card:text-[#FFC928] transition-colors duration-300 ${isDark ? 'text-white' : 'text-black'}`}>
             {product.name}
@@ -1175,7 +1213,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect }) 
         {/* Price and Add button bar */}
         <div className={`flex items-end justify-between mt-5 pt-3 border-t border-dashed ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
           <div className="flex flex-col">
-            {product.onPromotion && product.promotionPrice ? (
+            {flashDeal ? (
+              <div className="space-y-0.5">
+                <p className="text-[10px] text-red-500 font-extrabold uppercase tracking-widest line-through">
+                  R$ {flashDeal.originalPrice.toFixed(2)}
+                </p>
+                <p className="font-display font-black italic text-xl leading-none text-red-500">
+                  R$ {flashDeal.dealPrice.toFixed(2)}
+                </p>
+                <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest">
+                  Restam {flashDeal.maxUnits - flashDeal.soldUnits} un.
+                </p>
+              </div>
+            ) : product.onPromotion && product.promotionPrice ? (
               <div className="space-y-0.5">
                 <p className="text-[10px] text-red-500 font-extrabold uppercase tracking-widest line-through">
                   R$ {product.price.toFixed(2)}
@@ -1217,6 +1267,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect }) 
 /* =======================================================
    BEAUTIFUL INTERACTIVE OPTIONS & ADDITIONALS DRAWER MODAL
    ======================================================= */
+interface OptionGroupField {
+  id: string;
+  name: string;
+  type: string;
+  maxSelection?: number;
+  items?: Additional[];
+  options?: Additional[];
+}
+
 interface ProductModalProps {
   product: Product;
   isDark: boolean;
@@ -1262,7 +1321,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+      <div role="dialog" aria-modal="true" aria-label="Detalhes do produto" className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
         {/* Blur overlay */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -1298,6 +1357,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
             <button
               onClick={onClose}
               className="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2.5 rounded-full hover:bg-black/60 text-white transition-all border border-white/10 active:scale-95"
+              aria-label="Fechar"
             >
               <X size={18} strokeWidth={3} />
             </button>
@@ -1371,7 +1431,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
 
             {/* Additionals Option Groups builder */}
             {(product.additionalGroups || product.optionGroups) && 
-              (product.additionalGroups || product.optionGroups).map((group: any) => (
+              (product.additionalGroups || product.optionGroups).map((group: OptionGroupField) => (
               <div key={group.id} className="space-y-3">
                 <div className={cn(
                   "rounded-2xl p-3 border",
@@ -1386,7 +1446,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                 </div>
                 
                 <div className="space-y-2.5">
-                  {(group.items || group.options || []).map((item: any) => {
+                   {(group.items || group.options || []).map((item: Additional) => {
                     const selected = selectedAdditionals.some(a => a.additionalId === item.id);
                     return (
                       <button
@@ -1464,6 +1524,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               <button
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
                 className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors shadow-sm active:scale-90"
+                aria-label="Diminuir quantidade"
               >
                 <Minus size={14} strokeWidth={2.5} />
               </button>
@@ -1473,6 +1534,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               <button
                 onClick={() => setQuantity(q => q + 1)}
                 className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors shadow-sm active:scale-95"
+                aria-label="Aumentar quantidade"
               >
                 <Plus size={14} strokeWidth={2.5} />
               </button>

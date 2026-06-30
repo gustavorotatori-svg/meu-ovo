@@ -28,7 +28,7 @@ export default function Breadcrumbs() {
     plataforma: 'Plataforma Master',
     restaurantes: 'Restaurantes',
     inteligencia: 'Inteligência',
-    parceiros: 'Parceiros Social',
+    parceiros: 'Parceiros Sociais',
     doacoes: 'Gestão de Doações',
   };
 

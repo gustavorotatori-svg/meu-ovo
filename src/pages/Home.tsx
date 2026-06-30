@@ -24,6 +24,7 @@ import OptimizedImage from '../components/OptimizedImage';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
+import { Restaurant } from '../types';
 import { rankRestaurants } from '../lib/recommendations';
 
 export default function Home() {
@@ -44,7 +45,7 @@ export default function Home() {
     title: ''
   });
 
-  const handleShare = (e: React.MouseEvent, restaurant: any) => {
+  const handleShare = (e: React.MouseEvent, restaurant: Restaurant) => {
     e.preventDefault();
     e.stopPropagation();
     const url = `${window.location.origin}/r/restaurante-exemplo`; // In a real app we'd use the real slug
@@ -66,7 +67,7 @@ export default function Home() {
     <div className={`min-h-screen font-sans transition-colors overflow-x-hidden ${isDark ? 'bg-black text-white' : 'bg-white text-[#111]'}`}>
       <SEO 
         title="Delivery Direto e Social"
-        description="Peça comida dos melhores restaurantes de São Paulo com impacto social. Zero taxas abusivas para os estabelecimentos."
+        description="Peça comida dos melhores restaurantes com impacto social. Zero taxas abusivas para os estabelecimentos."
       />
       <Navbar />
       
@@ -98,7 +99,7 @@ export default function Home() {
                      : 'bg-gray-100 border-gray-200 focus:border-[#FFC928] focus:bg-white text-black'
                  }`}
                  value={searchTerm}
-                 onKeyDown={(e: any) => {
+                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                    if (e.key === 'Enter') {
                      if (searchTerm.trim()) {
                        navigate(`/busca?search=${encodeURIComponent(searchTerm.trim())}`);
@@ -173,6 +174,7 @@ export default function Home() {
                         <button 
                            onClick={(e) => handleShare(e, res)}
                            className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-black transition-all"
+                           aria-label="Compartilhar restaurante"
                         >
                            <Share2 size={16} />
                         </button>
@@ -188,6 +190,7 @@ export default function Home() {
                                : 'bg-black/20 text-white hover:bg-red-500 hover:text-white'
                            }`}
                            title={favorites.includes(res.id) ? "Remover dos favoritos" : "Favoritar"}
+                           aria-label="Favoritar restaurante"
                         >
                            <Heart size={16} className={favorites.includes(res.id) ? "fill-white text-white" : ""} />
                         </button>
@@ -244,7 +247,7 @@ export default function Home() {
                  Comer bem <br/><span className="text-white">faz o bem.</span>
                </h2>
                <p className="text-black/60 text-lg lg:text-xl font-display font-semibold leading-relaxed tracking-tight max-w-lg mx-auto lg:mx-0">
-                 Ao pedir pelo Meu Ovo, você pode arredondar sua conta e ajudar a combater a fome em São Paulo. 100% transparente.
+                 Ao pedir pelo Meu Ovo, você pode arredondar sua conta e ajudar a combater a fome na sua cidade. 100% transparente.
                </p>
                <button className="bg-black text-white font-black px-10 py-5 rounded-3xl text-sm uppercase tracking-widest hover:scale-105 transition-all active:scale-95 shadow-2xl">
                  Ver impacto real

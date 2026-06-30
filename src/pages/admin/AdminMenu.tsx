@@ -225,7 +225,7 @@ export default function AdminMenu() {
             placeholder="Nova categoria..."
             className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#FFC928]"
           />
-          <button onClick={addCat} className="bg-[#FFC928] text-[#111] font-bold px-4 py-2 rounded-xl hover:bg-[#e6b520]">
+          <button onClick={addCat} aria-label="Adicionar" className="bg-[#FFC928] text-[#111] font-bold px-4 py-2 rounded-xl hover:bg-[#e6b520]">
             <Plus size={18} />
           </button>
         </div>
@@ -278,12 +278,12 @@ export default function AdminMenu() {
 
       {/* Product modal */}
       {(isNew || editingProduct) && (
-        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
-          <div className="absolute inset-0 bg-black/60" onClick={closeModal} />
+        <div role="dialog" aria-modal="true" aria-label="Gerenciar item do cardápio" className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+          <div role="presentation" className="absolute inset-0 bg-black/60" onClick={closeModal} />
           <div className="relative bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-3xl">
               <h3 className="font-black text-[#111] text-lg">{isNew ? 'Novo produto' : 'Editar produto'}</h3>
-              <button onClick={closeModal} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
+              <button onClick={closeModal} aria-label="Fechar" className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
             </div>
 
             <div className="p-6 space-y-4">
@@ -459,11 +459,11 @@ const SortableCategoryItem: React.FC<{ cat: Category; onDelete: () => void }> = 
       style={style}
       className={`flex items-center gap-1 bg-[#F5F5F5] rounded-full px-3 py-1.5 border ${isDragging ? 'border-[#FFC928]' : 'border-transparent'}`}
     >
-      <button {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
+      <button {...attributes} {...listeners} aria-label="Reordenar" className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
         <GripVertical size={14} />
       </button>
       <span className="text-sm font-medium text-[#111]">{cat.name}</span>
-      <button onClick={onDelete} className="text-gray-400 hover:text-red-500 ml-1">
+      <button onClick={onDelete} aria-label="Remover" className="text-gray-400 hover:text-red-500 ml-1">
         <X size={14} />
       </button>
     </div>
@@ -498,7 +498,7 @@ const SortableProductItem: React.FC<{
       style={style}
       className={`bg-white rounded-2xl p-4 flex gap-4 border-2 transition-colors ${isDragging ? 'border-[#FFC928] ring-4 ring-[#FFC928]/10' : !product.isAvailable ? 'border-gray-200 opacity-60' : 'border-transparent'}`}
     >
-      <button {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing px-1">
+      <button {...attributes} {...listeners} aria-label="Reordenar" className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing px-1">
         <GripVertical size={20} />
       </button>
 
@@ -515,13 +515,13 @@ const SortableProductItem: React.FC<{
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={onToggleAvailable} className={product.isAvailable ? 'text-green-500' : 'text-gray-400'}>
+        <button onClick={onToggleAvailable} aria-label="Alternar disponibilidade" className={product.isAvailable ? 'text-green-500' : 'text-gray-400'}>
           {product.isAvailable ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
         </button>
-        <button onClick={onEdit} className="p-2 text-gray-400 hover:text-[#111] hover:bg-gray-100 rounded-lg transition-colors">
+        <button onClick={onEdit} aria-label="Editar" className="p-2 text-gray-400 hover:text-[#111] hover:bg-gray-100 rounded-lg transition-colors">
           <Edit2 size={16} />
         </button>
-        <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+        <button onClick={onDelete} aria-label="Excluir" className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
           <Trash2 size={16} />
         </button>
       </div>

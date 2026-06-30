@@ -1,669 +1,376 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Truck, ChefHat, Eye, Clock, Sparkles, Ticket, Gift, MessageCircle, Bike, Package, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Eye, Sparkles, Wallet, X, Clock, ChefHat, Package, Bike, CheckCircle, XCircle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
-import { WA_NUMBER } from '../../services/whatsappService';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { db } from '../../lib/firebase';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { Order, Product } from '../../types';
 import { motion } from 'motion/react';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  AreaChart, 
-  Area,
-  Legend
-} from 'recharts';
+import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
+import { toast } from 'react-hot-toast';
+
+const COLORS = ['#FFC928', '#111111', '#FF7A00'];
+const STATUS_COLORS: Record<string, string> = {
+  received: 'bg-blue-100 text-blue-700', preparing: 'bg-yellow-100 text-yellow-700',
+  ready: 'bg-emerald-100 text-emerald-700', 'out-for-delivery': 'bg-purple-100 text-purple-700',
+  finished: 'bg-gray-100 text-gray-600', cancelled: 'bg-red-100 text-red-700',
+};
+const STATUS_ICONS: Record<string, React.ReactNode> = {
+  received: <Clock size={12} />, preparing: <ChefHat size={12} />, ready: <Package size={12} />,
+  'out-for-delivery': <Bike size={12} />, finished: <CheckCircle size={12} />, cancelled: <XCircle size={12} />,
+};
+const STATUS_LABELS: Record<string, string> = {
+  received: 'Recebido', preparing: 'Em preparo', ready: 'Pronto',
+  'out-for-delivery': 'Saiu p/ entrega', finished: 'Finalizado', cancelled: 'Cancelado',
+};
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const { currentRestaurant, activeSession } = useRestaurant();
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  // Chart Data preparation
-  const salesData = React.useMemo(() => {
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (6 - i));
-      return d.toLocaleDateString('pt-BR', { weekday: 'short' });
-    });
-
-    const dataMap: Record<string, number> = {};
-    last7Days.forEach(day => { dataMap[day] = 0; });
-
-    orders.forEach(order => {
-      const date = order.createdAt ? new Date(order.createdAt) : new Date();
-      const day = date.toLocaleDateString('pt-BR', { weekday: 'short' });
-      if (dataMap.hasOwnProperty(day)) {
-        dataMap[day] += order.total || 0;
-      }
-    });
-
-    return Object.entries(dataMap).map(([name, value]) => ({ name, value }));
-  }, [orders]);
-
-  const orderTypeData = React.useMemo(() => {
-    const types: Record<string, number> = { 'Delivery': 0, 'Mesa': 0, 'Retirada': 0 };
-    orders.forEach(o => {
-      if (o.type === 'delivery') types['Delivery']++;
-      else if (o.type === 'dine-in') types['Mesa']++;
-      else if (o.type === 'pickup') types['Retirada']++;
-    });
-    return Object.entries(types).map(([name, value]) => ({ name, value }));
-  }, [orders]);
-
-  const orderStatusData = React.useMemo(() => {
-    const statusCount: Record<string, number> = { 'Recebidos': 0, 'Em Preparo': 0, 'Finalizados': 0 };
-    orders.forEach(o => {
-      if (['received', 'pending'].includes(o.status)) {
-        statusCount['Recebidos']++;
-      } else if (['preparing', 'ready', 'out-for-delivery', 'out_for_delivery'].includes(o.status)) {
-        statusCount['Em Preparo']++;
-      } else if (['finished', 'completed'].includes(o.status)) {
-        statusCount['Finalizados']++;
-      }
-    });
-    return Object.entries(statusCount).map(([name, value]) => ({ name, value }));
-  }, [orders]);
-
-  const stockAlerts = React.useMemo(() => {
-    const salesMap: Record<string, number> = {};
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    orders.forEach(order => {
-      const orderDate = order.createdAt ? new Date(order.createdAt) : new Date();
-      if (orderDate >= sevenDaysAgo) {
-        order.items.forEach(item => {
-          salesMap[item.productId] = (salesMap[item.productId] || 0) + item.quantity;
-        });
-      }
-    });
-
-    const alerts: {
-      product: Product;
-      stock: number;
-      minAlert: number;
-      recentSales: number;
-      severity: 'critical' | 'warning';
-      message: string;
-    }[] = [];
-
-    products.forEach(product => {
-      const recentSales = salesMap[product.id] || 0;
-      const stock = product.stock;
-      const minAlert = product.minStockAlert !== undefined ? product.minStockAlert : 5;
-
-      if (product.isActive && product.isAvailable) {
-        if (stock !== undefined) {
-          const isBelowThreshold = stock <= minAlert;
-          const isHighVelocityRisk = stock <= recentSales && recentSales > 0;
-
-          if (stock === 0) {
-            alerts.push({
-              product,
-              stock,
-              minAlert,
-              recentSales,
-              severity: 'critical',
-              message: `Produto esgotado! Teve ${recentSales} vendas nos últimos 7 dias. Previsão de perda financeira se não reabastecido.`,
-            });
-          } else if (isBelowThreshold) {
-            alerts.push({
-              product,
-              stock,
-              minAlert,
-              recentSales,
-              severity: 'critical',
-              message: `Estoque crítico (${stock} un.). Limite de alerta é ${minAlert}. Teve ${recentSales} vendas nos últimos 7 dias.`,
-            });
-          } else if (isHighVelocityRisk) {
-            alerts.push({
-              product,
-              stock,
-              minAlert,
-              recentSales,
-              severity: 'warning',
-              message: `Risco de ruptura! Estoque atual (${stock} un.) está abaixo do volume de vendas recente (${recentSales} vendas na semana).`,
-            });
-          }
-        } else if (recentSales >= 10) {
-          alerts.push({
-            product,
-            stock: 999,
-            minAlert: 0,
-            recentSales,
-            severity: 'warning',
-            message: `Alta procura (${recentSales} vendas)! Não há controle de estoque configurado para este item. Recomendamos ativar o limite.`,
-          });
-        }
-      }
-    });
-
-    return alerts.sort((a, b) => {
-      if (a.severity === 'critical' && b.severity !== 'critical') return -1;
-      if (a.severity !== 'critical' && b.severity === 'critical') return 1;
-      return b.recentSales - a.recentSales;
-    });
-  }, [orders, products]);
-
-  const COLORS = ['#FFC928', '#111111', '#FF7A00'];
-  const STATUS_COLORS = ['#3B82F6', '#F59E0B', '#10B981']; // azul, amarelo-laranja, verde
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [showCloseModal, setShowCloseModal] = useState(false);
+  const [amount, setAmount] = useState('');
 
   useEffect(() => {
     if (!currentRestaurant) return;
-
-    const qOrders = query(collection(db, 'orders'), where('restaurantId', '==', currentRestaurant.id));
-    const unsubscribeOrders = onSnapshot(qOrders, (snapshot) => {
-      const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
-      setOrders(ordersData);
-    });
-
+    const qOrders = query(collection(db, 'orders'), where('restaurantId', '==', currentRestaurant.id), orderBy('createdAt', 'desc'), limit(50));
+    const unsubOrders = onSnapshot(qOrders, snap => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() } as Order))), (error) => { if (error.code !== 'permission-denied') console.error('AdminDashboard orders:', error); });
     const qProducts = query(collection(db, 'products'), where('restaurantId', '==', currentRestaurant.id));
-    const unsubscribeProducts = onSnapshot(qProducts, (snapshot) => {
-      const productsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
-      setProducts(productsData);
-      setLoading(false);
-    });
-
-    return () => {
-      unsubscribeOrders();
-      unsubscribeProducts();
-    };
+    const unsubProducts = onSnapshot(qProducts, snap => setProducts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Product))), (error) => { if (error.code !== 'permission-denied') console.error('AdminDashboard products:', error); });
+    return () => { unsubOrders(); unsubProducts(); };
   }, [currentRestaurant]);
 
-  const today = new Date().toDateString();
-  const todayOrders = orders.filter(o => {
-    const d = o.createdAt ? new Date(o.createdAt) : new Date();
-    return d.toDateString() === today;
-  });
+  // Cashier calculations (always computed from orders)
+  const sessionOrders = useMemo(() => {
+    if (!activeSession) return [];
+    return orders.filter(o => o.status === 'finished' && o.createdAt && new Date(o.createdAt) > new Date(activeSession.openedAt));
+  }, [orders, activeSession]);
+
+  const sessionSales = useMemo(() => sessionOrders.reduce((s, o) => s + (o.total || 0), 0), [sessionOrders]);
+
+  const salesByMethod = useMemo(() => {
+    const map = new Map<string, number>();
+    sessionOrders.forEach(o => {
+      const method = o.paymentMethod || 'pix';
+      map.set(method, (map.get(method) || 0) + (o.total || 0));
+    });
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+  }, [sessionOrders]);
+
+  const sessionBalance = useMemo(() => {
+    if (!activeSession) return 0;
+    const adds = (activeSession.additions || []).reduce((s, a) => s + a.amount, 0);
+    const withdrawals = (activeSession.withdrawals || []).reduce((s, w) => s + w.amount, 0);
+    return (activeSession.openingAmount || 0) + sessionSales + adds - withdrawals;
+  }, [activeSession, sessionSales]);
+
+  // Today stats
+  const todayStr = new Date().toDateString();
+  const todayOrders = orders.filter(o => o.createdAt && new Date(o.createdAt).toDateString() === todayStr);
   const todayRevenue = todayOrders.reduce((s, o) => s + (o.total || 0), 0);
   const avgTicket = todayOrders.length > 0 ? todayRevenue / todayOrders.length : 0;
   const inProgress = orders.filter(o => ['received', 'preparing', 'ready', 'out-for-delivery'].includes(o.status));
 
-  const statusColors: Record<string, string> = {
-    received: 'bg-blue-100 text-blue-700',
-    preparing: 'bg-yellow-100 text-yellow-700',
-    ready: 'bg-emerald-100 text-emerald-700 font-bold',
-    'out-for-delivery': 'bg-purple-100 text-purple-700 font-bold',
-    'out_for_delivery': 'bg-purple-100 text-purple-700 font-bold',
-    finished: 'bg-gray-100 text-gray-600',
-    completed: 'bg-gray-100 text-gray-600',
-    cancelled: 'bg-red-100 text-red-700 font-bold',
+  // Chart data
+  const salesTrend = useMemo(() => {
+    const days = [...Array(7)].map((_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (6 - i));
+      return d.toLocaleDateString('pt-BR', { weekday: 'short' });
+    });
+    const map: Record<string, number> = {};
+    days.forEach(d => map[d] = 0);
+    orders.forEach(o => {
+      if (!o.createdAt) return;
+      const day = new Date(o.createdAt).toLocaleDateString('pt-BR', { weekday: 'short' });
+      if (day in map) map[day] += o.total || 0;
+    });
+    return days.map(name => ({ name, value: map[name] }));
+  }, [orders]);
+
+  const channelData = useMemo(() => {
+    const types: Record<string, number> = { Delivery: 0, Mesa: 0, Retirada: 0 };
+    orders.forEach(o => { if (o.type === 'delivery') types.Delivery++; else if (o.type === 'dine-in') types.Mesa++; else if (o.type === 'pickup') types.Retirada++; });
+    return Object.entries(types).map(([name, value]) => ({ name, value }));
+  }, [orders]);
+
+  // Cashier actions
+  const handleOpenCashier = async () => {
+    if (!amount || parseFloat(amount) <= 0) return toast.error('Informe um valor de abertura válido');
+    try {
+      await addDoc(collection(db, 'cashier_sessions'), {
+        restaurantId: currentRestaurant?.id,
+        openedAt: new Date().toISOString(),
+        openedBy: 'Admin',
+        openingAmount: parseFloat(amount),
+        totalSales: 0,
+        status: 'open',
+        withdrawals: [],
+        additions: [],
+      });
+      toast.success('Caixa aberto com sucesso!');
+      setAmount('');
+      setShowOpenModal(false);
+    } catch { toast.error('Erro ao abrir caixa'); }
   };
 
-  const statusIcons: Record<string, React.ReactNode> = {
-    received: <Clock size={12} />,
-    preparing: <ChefHat size={12} />,
-    ready: <Package size={12} />,
-    'out-for-delivery': <Bike size={12} />,
-    'out_for_delivery': <Bike size={12} />,
-    finished: <CheckCircle size={12} />,
-    completed: <CheckCircle size={12} />,
-    cancelled: <XCircle size={12} />,
+  const handleCloseCashier = async () => {
+    if (!activeSession) return;
+    if (!amount || parseFloat(amount) < 0) return toast.error('Informe o valor de fechamento');
+    try {
+      await updateDoc(doc(db, 'cashier_sessions', activeSession.id), {
+        closedAt: new Date().toISOString(),
+        closingAmount: parseFloat(amount),
+        totalSales: sessionSales,
+        status: 'closed',
+      });
+      toast.success('Caixa fechado com sucesso!');
+      setAmount('');
+      setShowCloseModal(false);
+    } catch { toast.error('Erro ao fechar caixa'); }
   };
 
-  const statusLabels: Record<string, string> = {
-    received: 'Recebido',
-    preparing: 'Em preparo',
-    ready: 'Pronto',
-    'out-for-delivery': 'Saiu para entrega',
-    'out_for_delivery': 'Saiu para entrega',
-    finished: 'Finalizado',
-    completed: 'Finalizado',
-    cancelled: 'Cancelado',
-  };
+  const Modal = ({ title, children, onClose }: { title: string; children: React.ReactNode; onClose: () => void }) => (
+    <div role="dialog" aria-modal="true" aria-label="Fechar caixa" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-zinc-900 rounded-[2rem] p-8 max-w-md w-full mx-4 border border-zinc-700 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-black uppercase tracking-tight text-white">{title}</h3>
+           <button onClick={onClose} aria-label="Fechar" className="text-gray-400 hover:text-white transition-colors"><X size={20} /></button>
+        </div>
+        {children}
+      </motion.div>
+    </div>
+  );
 
   return (
     <AdminLayout>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-          <h2 className="font-black text-2xl text-[#111]">Bom dia! 👋</h2>
-          <p className="text-gray-500">{currentRestaurant?.name} — Hoje, {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-        </div>
-        <div 
-          onClick={() => navigate('/admin/caixa')}
-          className={`px-4 py-2 rounded-xl border-2 flex items-center gap-3 cursor-pointer transition-all ${activeSession ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}
-        >
-          <div className={`w-2 h-2 rounded-full ${activeSession ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
-          <span className={`text-[10px] font-black uppercase tracking-widest ${activeSession ? 'text-green-600' : 'text-red-600'}`}>
-            Caixa {activeSession ? 'Aberto' : 'Fechado'}
-          </span>
-        </div>
-      </div>
-
-      {/* Alertas de Estoque baseados em Vendas */}
-      {stockAlerts.length > 0 && (
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-[2rem] p-6 border-2 border-orange-100 shadow-md mb-8"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="p-1.5 bg-orange-100 rounded-lg text-orange-600 shadow-sm animate-pulse font-sans">
-              <AlertTriangle size={16} />
-            </div>
-            <div>
-              <h3 className="font-black text-[#111] text-xs uppercase tracking-widest leading-none">Alertas de Estoque</h3>
-              <p className="text-gray-400 text-[10px] font-bold mt-1">Produtos com nível crítico de disponibilidade baseado nas vendas recentes</p>
-            </div>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-white">Painel</h1>
+            <p className="text-sm text-gray-400">{currentRestaurant?.name} — {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[300px] overflow-y-auto pr-2">
-            {stockAlerts.map(({ product, stock, minAlert, recentSales, severity, message }, idx) => (
-              <div 
-                key={product.id}
-                className={`p-4 rounded-xl border flex flex-col justify-between transition-all ${
-                  severity === 'critical' 
-                    ? 'bg-red-50/50 border-red-100/80 hover:bg-red-50' 
-                    : 'bg-yellow-50/50 border-yellow-105/80 hover:bg-yellow-50'
-                }`}
-              >
+        {/* ─── CASHIER BAR ─── */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`rounded-[2rem] p-6 border ${activeSession ? 'bg-emerald-900/20 border-emerald-700/30' : 'bg-zinc-900/50 border-zinc-700/30'}`}>
+          {!activeSession ? (
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><Wallet size={20} className="text-red-400" /></div>
                 <div>
-                  <div className="flex items-center justify-between mb-2 gap-2">
-                    <span className="font-black text-xs text-[#111] uppercase tracking-wide truncate">{product.name}</span>
-                    <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${
-                      severity === 'critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-101 text-yellow-800 bg-yellow-100'
-                    }`}>
-                      {severity === 'critical' ? 'Estoque Crítico' : 'Alerta de Procura'}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-xs font-semibold leading-relaxed mb-3">{message}</p>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 mt-2 gap-2">
-                  <div className="flex items-center gap-3">
-                    <div className="text-[10px] text-slate-400 font-bold">
-                      Estoque: <span className="font-mono text-slate-700 font-black">{stock === 999 ? 'N/A' : stock}</span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-bold">
-                      Vendas (7d): <span className="font-mono text-slate-700 font-black">{recentSales}</span>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => navigate('/admin/cardapio?add_product=true')}
-                    className={`text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg transition-all ${
-                      severity === 'critical'
-                        ? 'bg-red-600 text-white hover:bg-red-700 shadow-sm shadow-red-600/10'
-                        : 'bg-yellow-500 text-neutral-900 hover:bg-yellow-600 shadow-sm shadow-yellow-500/10'
-                    }`}
-                  >
-                    Reabastecer
-                  </button>
+                  <p className="text-xs font-black uppercase tracking-widest text-red-400">Caixa Fechado</p>
+                  <p className="text-sm text-gray-400">Abra o caixa para começar a registrar as vendas do dia</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </motion.div>
-      )}
-
-      {/* Vitórias do Movimento Meu Ovo */}
-      {(() => {
-        const completedOrders = orders.filter(o => o.status !== 'cancelled');
-        const totalRevenueAllTime = completedOrders.reduce((acc, o) => acc + (o.total || 0), 0);
-        const totalCommissionsSaved = totalRevenueAllTime * 0.25;
-
-        const phoneCounts: Record<string, number> = {};
-        completedOrders.forEach(o => {
-          const cleanPhone = o.phone ? o.phone.replace(/\D/g, '') : null;
-          if (cleanPhone) {
-            phoneCounts[cleanPhone] = (phoneCounts[cleanPhone] || 0) + 1;
-          }
-        });
-        const totalSupportersCount = Object.keys(phoneCounts).length;
-        const recurringCustomersCount = Object.values(phoneCounts).filter(count => count > 1).length;
-        const recurrenceRate = totalSupportersCount > 0 ? (recurringCustomersCount / totalSupportersCount) * 100 : 0;
-
-        return (
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-emerald-500/5 p-6 rounded-[2.5rem] border border-emerald-500/10 mb-8 select-none"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
-              <div>
-                <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest leading-none">Vitórias do Movimento Meu Ovo</span>
-                <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 mt-1 flex items-center gap-2">🛡️ Resgate de Soberania Financeira</h3>
-              </div>
-              <div className="bg-emerald-500 text-white text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-wider self-start sm:self-center">
-                Comissão 0%
-              </div>
+              <button onClick={() => setShowOpenModal(true)} className="bg-[#FFC928] text-black font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all">
+                Abrir Caixa
+              </button>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1">Comissões Poupadas</span>
-                <p className="font-display font-black italic text-3xl text-emerald-600 leading-none">R$ {totalCommissionsSaved.toFixed(2)}</p>
-                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
-                  Dinheiro vivo economizado que ficaria retido nos intermediários corporativos de grandes apps.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1">Clientes Apoiadores</span>
-                <p className="font-display font-black italic text-3xl text-slate-800 leading-none">{totalSupportersCount}</p>
-                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
-                  Moradores locais em sua lista direta de contatos. Sem taxas nem filtros de visibilidade.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-3xl p-5 border border-emerald-100 shadow-sm">
-                <span className="text-[9px] font-black uppercase tracking-widest text-[#FF7A00] block mb-1 font-sans">Recorrência do Bairro</span>
-                <p className="font-display font-black italic text-3xl text-slate-800 bg-[#FFC928]/10 px-2.5 py-0.5 rounded-xl inline-block leading-none">{recurrenceRate.toFixed(0)}%</p>
-                <p className="text-[10px] font-semibold text-gray-450 mt-2.5 leading-normal">
-                  {recurringCustomersCount} clientes pediram mais de uma vez direto da sua chapa nesta semana!
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        );
-      })()}
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Pedidos hoje', value: todayOrders.length.toString(), icon: <ShoppingBag size={24} className="text-[#FFC928]" />, sub: `${inProgress.length} em andamento` },
-          { label: 'Vendido hoje', value: `R$ ${todayRevenue.toFixed(2)}`, icon: <DollarSign size={24} className="text-green-500" />, sub: 'Sem contar entrega' },
-          { label: 'Ticket médio', value: `R$ ${avgTicket.toFixed(2)}`, icon: <TrendingUp size={24} className="text-blue-500" />, sub: 'Hoje' },
-          { label: 'Produtos ativos', value: products.filter(p => p.isActive).length.toString(), icon: <Users size={24} className="text-[#FF7A00]" />, sub: `${products.length} total` },
-        ].map((stat, i) => (
-          <motion.div 
-            key={i} 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            whileHover={{ y: -5, boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
-            className="bg-white rounded-3xl p-6 shadow-sm border border-slate-50 transition-all hover:bg-[#FFC928]/5 group"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-[#FFC928] group-hover:text-white transition-colors">
-                {stat.icon}
-              </div>
-            </div>
-            <div className="font-display font-black text-3xl text-[#111] mb-1">{stat.value}</div>
-            <div className="text-gray-400 text-xs font-black uppercase tracking-widest">{stat.label}</div>
-            <div className="text-gray-400 text-[10px] mt-1 font-bold italic">{stat.sub}</div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Gerar com IA', icon: <Sparkles size={22} className="text-orange-500" />, onClick: () => navigate('/admin/cardapio?generate=true'), color: 'bg-white text-[#111] border-2 border-slate-100 ring-orange-400' },
-          { label: 'Novo produto', icon: <Plus size={22} />, onClick: () => navigate('/admin/cardapio?add_product=true'), color: 'bg-[#FFC928] text-[#111] ring-[#FFC928]' },
-          { label: 'Ver cardápio', icon: <Eye size={22} />, onClick: () => navigate(`/r/${currentRestaurant?.slug}`), color: 'bg-[#111111] text-white ring-gray-700' },
-          { label: 'Gerar QR Code', icon: <QrCode size={22} />, onClick: () => navigate('/admin/garcom'), color: 'bg-blue-600 text-white ring-blue-400' },
-          { label: 'Modo cozinha', icon: <ChefHat size={22} />, onClick: () => navigate('/admin/cozinha'), color: 'bg-[#FF7A00] text-white ring-orange-500' },
-        ].map((action, i) => (
-          <motion.button 
-            key={i} 
-            onClick={action.onClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 + (i * 0.05) }}
-            className={`${action.color} rounded-2xl p-4 flex flex-col items-center gap-2 font-bold text-sm transition-all shadow-sm hover:shadow-lg ring-offset-2 hover:ring-2`}
-          >
-            {action.icon}
-            {action.label}
-          </motion.button>
-        ))}
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50"
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="font-black text-[#111] text-lg leading-tight uppercase tracking-widest">Faturamento</h3>
-              <p className="text-gray-400 text-xs font-bold mt-1">Vendas nos últimos 7 dias</p>
-            </div>
-            <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">
-              Relatório Semanal
-            </div>
-          </div>
-          
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={salesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FFC928" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#FFC928" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis 
-                  dataKey="name" 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} 
-                  dy={10}
-                />
-                <YAxis 
-                  axisLine={false} 
-                  tickLine={false} 
-                  tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} 
-                />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-                  itemStyle={{ color: '#111' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#FFC928" 
-                  strokeWidth={4} 
-                  fillOpacity={1} 
-                  fill="url(#colorValue)" 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50"
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="font-black text-[#111] text-lg leading-tight uppercase tracking-widest">Canais de Venda</h3>
-              <p className="text-gray-400 text-xs font-bold mt-1">Distribuição por tipo de pedido</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="h-[220px] w-full md:w-1/2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={orderTypeData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={8}
-                    dataKey="value"
-                  >
-                    {orderTypeData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="w-full md:w-1/2 space-y-4">
-              {orderTypeData.map((type, i) => (
-                <div key={type.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                    <span className="text-xs font-black text-[#111] uppercase tracking-widest">{type.name}</span>
+          ) : (
+            <>
+              <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center"><Wallet size={20} className="text-emerald-400" /></div>
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-widest text-emerald-400 flex items-center gap-2">
+                      Caixa Aberto <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    </p>
+                    <p className="text-xs text-gray-400">Abertura: R$ {(activeSession.openingAmount || 0).toFixed(2)} — {new Date(activeSession.openedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
-                  <span className="text-sm font-bold text-gray-500">{type.value} pedidos</span>
+                </div>
+                <button onClick={() => setShowCloseModal(true)} className="bg-red-500/10 text-red-400 hover:bg-red-500/20 font-black px-5 py-3 rounded-xl text-[10px] uppercase tracking-widest border border-red-500/20 transition-all">
+                  Fechar Caixa
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Abertura', value: `R$ ${(activeSession.openingAmount || 0).toFixed(2)}`, color: 'text-blue-400' },
+                  { label: 'Vendas', value: `R$ ${sessionSales.toFixed(2)}`, color: 'text-emerald-400' },
+                  { label: 'Saldo', value: `R$ ${sessionBalance.toFixed(2)}`, color: 'text-white font-black text-base' },
+                ].map((s, i) => (
+                  <div key={i} className={`rounded-xl p-3 ${i === 2 ? 'bg-zinc-800 border border-zinc-700' : 'bg-zinc-800/50'}`}>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">{s.label}</p>
+                    <p className={`text-lg font-black ${s.color}`}>{s.value}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </motion.div>
+
+        {/* ─── CASHIER MODALS ─── */}
+        {showOpenModal && (
+          <Modal title="Abrir Caixa" onClose={() => setShowOpenModal(false)}>
+            <p className="text-sm text-gray-400 mb-4">Qual o valor em dinheiro disponível para abertura?</p>
+            <input type="number" step="0.01" placeholder="0,00" value={amount} onChange={e => setAmount(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-lg font-black mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFC928]" autoFocus />
+            <div className="flex gap-3">
+              <button onClick={() => setShowOpenModal(false)} className="flex-1 bg-zinc-800 text-gray-400 font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-zinc-700 transition-all">Cancelar</button>
+              <button onClick={handleOpenCashier} className="flex-1 bg-[#FFC928] text-black font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all">Abrir</button>
+            </div>
+          </Modal>
+        )}
+
+        {showCloseModal && (
+          <Modal title="Fechar Caixa" onClose={() => setShowCloseModal(false)}>
+            <div className="space-y-2 mb-6">
+              {[
+                { label: 'Vendas (Meu OVO)', value: sessionSales },
+                { label: 'Saldo esperado', value: sessionBalance, highlight: true },
+              ].map((s, i) => (
+                <div key={i} className={`flex justify-between ${i === 1 ? 'pt-3 border-t border-zinc-700' : ''}`}>
+                  <span className="text-sm text-gray-400">{s.label}</span>
+                  <span className={`text-sm font-black ${s.highlight ? 'text-[#FFC928] text-lg' : 'text-white'}`}>R$ {s.value.toFixed(2)}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-50 flex flex-col justify-between"
-        >
-          <div>
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h3 className="font-black text-[#111] text-lg leading-tight uppercase tracking-widest">Status dos Pedidos</h3>
-                <p className="text-gray-400 text-xs font-bold mt-1">Divisão por etapa operacional</p>
-              </div>
-            </div>
-
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="h-[220px] w-full md:w-1/2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={orderStatusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={8}
-                      dataKey="value"
-                    >
-                      {orderStatusData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={STATUS_COLORS[index % STATUS_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="w-full md:w-1/2 space-y-4">
-                {orderStatusData.map((statusItem, i) => (
-                  <div key={statusItem.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: STATUS_COLORS[i % STATUS_COLORS.length] }} />
-                      <span className="text-xs font-black text-[#111] uppercase tracking-widest">{statusItem.name}</span>
+            {salesByMethod.length > 0 && (
+              <div className="mb-6 p-3 bg-zinc-800/50 rounded-xl">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Por forma de pagamento</p>
+                <div className="space-y-1.5">
+                  {salesByMethod.map(([method, total]) => (
+                    <div key={method} className="flex justify-between text-xs">
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">
+                        {method === 'pix' ? 'PIX' :
+                         method === 'cash' ? 'Dinheiro' :
+                         method === 'credit' ? 'Crédito' :
+                         method === 'debit' ? 'Débito' :
+                         method === 'card-on-delivery' ? 'Cartão na entrega' :
+                         method === 'voucher' ? 'Voucher' :
+                         method === 'on-site' ? 'No local' : method}
+                      </span>
+                      <span className="text-white font-black">R$ {total.toFixed(2)}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-500">{statusItem.value} pedidos</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-gray-400 mb-4">Valor em caixa para fechamento:</p>
+            <input type="number" step="0.01" placeholder="0,00" value={amount} onChange={e => setAmount(e.target.value)} className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-white text-lg font-black mb-4 focus:outline-none focus:ring-2 focus:ring-[#FFC928]" autoFocus />
+            <div className="flex gap-3">
+              <button onClick={() => setShowCloseModal(false)} className="flex-1 bg-zinc-800 text-gray-400 font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-zinc-700 transition-all">Cancelar</button>
+              <button onClick={handleCloseCashier} className="flex-1 bg-red-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-red-600 transition-all">Fechar</button>
+            </div>
+          </Modal>
+        )}
+
+        {/* ─── KPIs ─── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: 'Pedidos hoje', value: todayOrders.length.toString(), icon: <ShoppingBag size={20} className="text-[#FFC928]" />, sub: `${inProgress.length} em andamento` },
+            { label: 'Faturamento hoje', value: `R$ ${todayRevenue.toFixed(2)}`, icon: <DollarSign size={20} className="text-emerald-400" />, sub: `${todayOrders.length} pedidos` },
+            { label: 'Ticket médio', value: `R$ ${avgTicket.toFixed(2)}`, icon: <TrendingUp size={20} className="text-blue-400" />, sub: 'Média do dia' },
+            { label: 'Produtos ativos', value: products.filter(p => p.isActive).length.toString(), icon: <Package size={20} className="text-[#FF7A00]" />, sub: `${products.length} total` },
+          ].map((k, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">{k.icon}</div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{k.label}</span>
+              </div>
+              <p className="text-2xl font-black text-white">{k.value}</p>
+              <p className="text-[10px] text-gray-500 mt-1">{k.sub}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ─── QUICK ACTIONS ─── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: 'Novo produto', icon: <Plus size={18} />, onClick: () => navigate('/admin/cardapio?add_product=true'), color: 'bg-[#FFC928] text-black' },
+            { label: 'Gerar com IA', icon: <Sparkles size={18} />, onClick: () => navigate('/admin/cardapio?generate=true'), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
+            { label: 'Ver cardápio', icon: <Eye size={18} />, onClick: () => navigate(`/r/${currentRestaurant?.slug}`), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
+            { label: 'QR Code', icon: <QrCode size={18} />, onClick: () => navigate('/admin/mesas'), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
+          ].map((a, i) => (
+            <motion.button key={i} onClick={a.onClick} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              className={`${a.color} rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all`}
+            >
+              {a.icon} {a.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* ─── CHARTS ─── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-6">Faturamento — Últimos 7 dias</h3>
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={salesTrend}>
+                <defs><linearGradient id="salesGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#FFC928" stopOpacity={0.3}/><stop offset="95%" stopColor="#FFC928" stopOpacity={0}/></linearGradient></defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#27272a" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 700 }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 700 }} />
+                <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12, fontSize: 12 }} />
+                <Area type="monotone" dataKey="value" stroke="#FFC928" strokeWidth={3} fill="url(#salesGradient)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-6">Canais de Venda</h3>
+            <div className="flex items-center gap-6">
+              <ResponsiveContainer width="50%" height={180}>
+                <PieChart>
+                  <Pie data={channelData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={6} dataKey="value">
+                    {channelData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="space-y-3">
+                {channelData.map((t, i) => (
+                  <div key={t.name} className="flex items-center gap-3">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{t.name}</span>
+                    <span className="text-xs font-bold text-white">{t.value}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
-        </motion.div>
-      </div>
-
-      {/* Promo & Loyalty Suggestion */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-[2.5rem] p-8 text-white relative overflow-hidden group border border-orange-400Shadow shadow-xl shadow-orange-500/20">
-          <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-              <Ticket className="text-white" size={24} />
-            </div>
-            <h3 className="text-2xl font-display font-black italic uppercase tracking-tighter mb-2 leading-none">Aumente suas vendas</h3>
-            <p className="text-orange-100 text-sm font-medium mb-6 leading-relaxed">
-              Crie cupons de desconto (fixo ou %) com limite de uso e data de validade para atrair novos clientes hoje mesmo.
-            </p>
-            <button 
-              onClick={() => navigate('/admin/cupons')}
-              className="bg-white text-orange-600 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
-            >
-              Criar cupom agora
-            </button>
-          </div>
-          <Ticket className="absolute -right-8 -bottom-8 text-white/10 rotate-12 group-hover:rotate-0 transition-transform duration-700" size={200} />
         </div>
 
-        <div className="bg-gradient-to-br from-[#25D366] to-[#128C7E] rounded-[2.5rem] p-8 text-white relative overflow-hidden group shadow-xl">
-          <div className="relative z-10">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-6">
-              <MessageCircle className="text-white" size={24} />
-            </div>
-            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-2 leading-none">Gestão WhatsApp</h3>
-            <p className="text-emerald-50 text-sm font-medium mb-6 leading-relaxed">
-              Abra seu WhatsApp Web para responder clientes e gerenciar suporte. Configurado para: {currentRestaurant?.whatsapp}
-            </p>
-            <a 
-              href={`https://web.whatsapp.com/send?phone=${WA_NUMBER}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-block bg-white text-[#128C7E] font-black px-6 py-3 rounded-xl text-xs uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg"
-            >
-              Abrir conversas
-            </a>
+        {/* ─── ACTIVE ORDERS ─── */}
+        <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <ShoppingBag size={14} /> Pedidos Ativos ({inProgress.length})
+            </h3>
+            <button onClick={() => navigate('/admin/pedidos')} className="text-[10px] font-black uppercase tracking-widest text-[#FFC928] hover:opacity-80 transition-opacity">Ver Todos</button>
           </div>
-          <MessageCircle className="absolute -right-8 -bottom-8 text-white/10 rotate-12 group-hover:rotate-0 transition-transform duration-700" size={200} />
-        </div>
-      </div>
-
-      {/* Active orders */}
-      <div className="bg-white rounded-2xl p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-black text-[#111] text-lg">Pedidos ativos</h3>
-          <button onClick={() => navigate('/admin/pedidos')} className="text-[#FFC928] font-bold text-sm hover:underline">Ver todos</button>
-        </div>
-
-        {inProgress.length === 0 ? (
-          <div className="text-center py-8">
-            <ShoppingBag size={40} className="text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500 text-sm">Nenhum pedido em andamento</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {inProgress.map(order => (
-              <div key={order.id} className="bg-[#F5F5F5] rounded-xl p-4 flex items-center gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-bold text-[#111] text-sm">#{order.id.slice(-6).toUpperCase()}</span>
-                    <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg flex items-center gap-1.5 ${statusColors[order.status]}`}>
-                      {statusIcons[order.status]}
-                      {statusLabels[order.status]}
-                    </span>
+          {inProgress.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 text-sm">Nenhum pedido em andamento</div>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {inProgress.map(order => (
+                <div key={order.id} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate('/admin/pedidos'); } }} className="bg-zinc-800/50 rounded-xl p-4 flex items-center gap-4 hover:bg-zinc-800 transition-colors cursor-pointer" onClick={() => navigate('/admin/pedidos')}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-bold text-white">#{order.id.slice(-6).toUpperCase()}</span>
+                      <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-lg flex items-center gap-1 ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
+                        {STATUS_ICONS[order.status]} {STATUS_LABELS[order.status] || order.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 truncate">{order.customerName} — {order.items?.length || 0} {order.items?.length === 1 ? 'item' : 'itens'}</p>
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      {order.createdAt ? new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      {order.type === 'dine-in' ? ` • Mesa ${order.tableNumber || ''}` : ` • ${order.type === 'delivery' ? 'Delivery' : 'Retirada'}`}
+                    </p>
                   </div>
-                  <p className="text-gray-600 text-sm">{order.customerName} — {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}</p>
-                  <div className="flex items-center gap-1 text-gray-400 text-xs mt-1">
-                    <Clock size={12} />
-                    {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    <span className="mx-1">•</span>
-                    {order.type === 'dine-in' ? `Mesa ${order.tableNumber}` : order.type === 'delivery' ? 'Delivery' : 'Retirada'}
+                  <div className="text-right shrink-0">
+                    <p className="text-base font-black text-white">R$ {order.total?.toFixed(2)}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="font-black text-[#111]">R$ {order.total.toFixed(2)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </AdminLayout>
   );

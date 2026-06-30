@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MapPin, UtensilsCrossed, Package, Heart, Check, CreditCard, Banknote, Smartphone, Store, Ticket, Gift, AlertTriangle } from 'lucide-react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { ArrowLeft, MapPin, UtensilsCrossed, Package, Heart, Check, CreditCard, Banknote, Smartphone, Store, Ticket, Gift, AlertTriangle, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/SEO';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
-import { Order, Coupon } from '../types';
+import { Order, Coupon, LoyaltyProfile, SavedAddress } from '../types';
 import { toast } from 'react-hot-toast';
 import { formatCurrency, cn } from '../lib/utils';
 import { WA_NUMBER } from '../services/whatsappService';
 import { motion, AnimatePresence } from 'motion/react';
+import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '../lib/pix';
-import { getCustomerStats, checkCouponTargeting } from '../services/customerRatingService';
+import { getCustomerStats, checkCouponTargeting, CustomerStats } from '../services/customerRatingService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
@@ -27,6 +29,8 @@ export default function CheckoutPage() {
 
   const restaurantId = items[0]?.product.restaurantId;
   const restaurant = restaurants.find(r => r.id === restaurantId);
+
+  const [isExpress, setIsExpress] = useState(false);
 
   const [name, setName] = useState('');
   const [nameError, setNameError] = useState('');
@@ -92,12 +96,12 @@ export default function CheckoutPage() {
   const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
   // Loyalty state
-  const [loyaltyProfile, setLoyaltyProfile] = useState<any | null>(null);
-  const [selectedReward, setSelectedReward] = useState<any | null>(null);
+  const [loyaltyProfile, setLoyaltyProfile] = useState<LoyaltyProfile | null>(null);
+  const [selectedReward, setSelectedReward] = useState<{ type: string; value: string | number; pointsRequired: number; description: string } | null>(null);
   const [isCheckingLoyalty, setIsCheckingLoyalty] = useState(false);
 
   // Customer Reputation Stats state
-  const [customerStats, setCustomerStats] = useState<any | null>(null);
+  const [customerStats, setCustomerStats] = useState<CustomerStats | null>(null);
   const [isCheckingReputation, setIsCheckingReputation] = useState(false);
 
   // Scheduled order state
@@ -140,6 +144,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const checkLoyalty = async () => {
+      if (!restaurant) return;
       if (!phone || phone.replace(/\D/g, '').length < 10) {
         setLoyaltyProfile(null);
         return;
@@ -176,6 +181,7 @@ export default function CheckoutPage() {
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
+    if (!restaurant) return;
     setIsValidatingCoupon(true);
 
     try {
@@ -261,11 +267,11 @@ export default function CheckoutPage() {
     if (matched) return matched.fee;
     
     // Fallback to restaurant's default fee or context's deliverySettings
-    return restaurant.deliverySettings?.fee ?? deliverySettings.fee ?? 0;
+    return restaurant.deliverySettings?.fee ?? deliverySettings?.fee ?? 0;
   };
 
   const deliveryFee = getDeliveryFee();
-  const total = Math.max(0, subtotal + deliveryFee + tipAmount - discountValue);
+  const total = Math.max(0, subtotal + deliveryFee + tipAmount + caixinhaAmount + donationAmount - discountValue);
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -339,7 +345,7 @@ export default function CheckoutPage() {
       restaurantId: restaurant.id,
       userId: user?.id,
       customerName: name,
-      customerPhone: phone,
+      customerPhone: phone.replace(/\D/g, ''),
       type: orderType,
       tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
       deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
@@ -362,7 +368,13 @@ export default function CheckoutPage() {
       origin: 'marketplace',
     };
 
-    await addOrder(order);
+    try {
+      await addOrder(order);
+    } catch {
+      toast.error('Erro ao salvar pedido. Seu carrinho foi preservado.');
+      setSubmitting(false);
+      return;
+    }
     setOrderId(id);
 
     // Update loyalty profile if reward was used
@@ -452,7 +464,7 @@ export default function CheckoutPage() {
                 `*Acompanhe seu pedido:* ${window.location.origin}/pedido/${id}\n\n` +
                 `✅ Enviado via *MEU OVO*`;
 
-    const cleanRestaurantPhone = WA_NUMBER;
+    const cleanRestaurantPhone = restaurant?.whatsapp || WA_NUMBER;
     if (cleanRestaurantPhone) {
       const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
       window.open(whatsappUrl, '_blank');
@@ -519,54 +531,51 @@ export default function CheckoutPage() {
                 className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-8 text-center"
               >
                 <div className="flex flex-col items-center gap-4">
-                  <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative group">
-                    <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
-                      {[
-                        [1,1,1,1,1,1],[1,0,0,0,1,1],[1,0,1,0,0,1],[1,1,0,0,0,1],[1,0,0,1,0,1],[1,1,1,1,1,1]
-                      ].flat().map((v, i) => (
-                        <div key={i} className={v ? 'bg-slate-800' : 'bg-transparent'} />
-                      ))}
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center bg-white/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-800">QR Code</p>
-                    </div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                      <Smartphone size={20} className="text-[#FFC928]" />
-                    </div>
-                  </div>
-
-                  {(() => {
-                    const dynamicPixCode = restaurant?.pixKey 
-                      ? generatePixPayload({
-                          key: restaurant.pixKey,
-                          name: restaurant.name || 'MEU OVO',
-                          amount: total,
-                          txid: orderId ? orderId.replace(/[^a-zA-Z0-9]/g, 'X').slice(-25).toUpperCase() : '***'
-                        })
-                      : `00020126580014br.gov.bcb.pix0136${restaurant?.id}-order-${orderId}520400005303986540${total.toFixed(2)}5802BR5913MEU OVO6009SAO PAULO62070503***6304`;
-
-                    return (
-                      <div className="w-full space-y-3">
-                        <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative group overflow-hidden">
-                          <div className="truncate pr-8">
-                            {dynamicPixCode}
+                  {restaurant?.pixKey ? (
+                    (() => {
+                      const pixCode = generatePixPayload({
+                        key: restaurant.pixKey!,
+                        name: restaurant.name || 'MEU OVO',
+                        amount: total,
+                        txid: orderId ? orderId.replace(/[^a-zA-Z0-9]/g, 'X').slice(-25).toUpperCase() : '***'
+                      });
+                      return (
+                        <>
+      <QRCodeSVG
+        value={pixCode}
+        size={180}
+        level="M"
+        className="rounded-2xl border border-slate-100 shadow-sm"
+      />
+                          <div className="w-full space-y-3">
+                            <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative group overflow-hidden">
+                              <div className="truncate pr-8">
+                                {pixCode}
+                              </div>
+                              <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  navigator.clipboard.writeText(pixCode).catch(() => {});
+                                  toast.success(t('checkout.pixSuccess') || 'PIX copiado!');
+                                }}
+                                title={t('checkout.pixCopy') || 'Copiar'}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FFC928] text-black rounded-lg shadow-sm"
+                              >
+                                <Ticket size={14} />
+                              </motion.button>
+                            </div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('checkout.pixInstructions')}</p>
                           </div>
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => {
-                              navigator.clipboard.writeText(dynamicPixCode).catch(() => {});
-                              toast.success(t('checkout.pixSuccess') || 'PIX copiado!');
-                            }}
-                            title={t('checkout.pixCopy') || 'Copiar'}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FFC928] text-black rounded-lg shadow-sm"
-                          >
-                            <Ticket size={14} />
-                          </motion.button>
-                        </div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('checkout.pixInstructions')}</p>
-                      </div>
-                    );
-                  })()}
+                        </>
+                      );
+                    })()
+                  ) : (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
+                      <AlertTriangle size={24} className="mx-auto mb-2 text-yellow-600" />
+                      <p className="text-sm font-bold text-yellow-800">Restaurante não configurou chave PIX</p>
+                      <p className="text-xs text-yellow-700 mt-1">Selecione outra forma de pagamento ou aguarde a configuração.</p>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -613,7 +622,7 @@ export default function CheckoutPage() {
               Acompanhar pedido em tempo real
             </button>
             <button
-              onClick={() => navigate(`/r/${restaurant.slug}`)}
+              onClick={() => navigate(`/r/${restaurant?.slug || ''}`)}
               className="w-full bg-[#111111] text-white font-black py-5 rounded-2xl hover:bg-[#222] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/10"
             >
               Voltar ao cardápio
@@ -624,11 +633,16 @@ export default function CheckoutPage() {
     );
   }
 
+  if (!restaurant) {
+    return <Navigate to="/carrinho" replace />;
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
+      <SEO title="Finalizar Pedido" description="Revise seu carrinho e finalize seu pedido no MEU OVO. Pagamento por PIX, cartão ou dinheiro." url="/checkout" />
       <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <button onClick={() => navigate(-1)} aria-label="Voltar" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-black text-[#111] text-xl">{t('checkout.title')}</h1>
@@ -649,6 +663,31 @@ export default function CheckoutPage() {
         }}
         className="max-w-2xl mx-auto px-4 py-6 space-y-4"
       >
+        {/* Express checkout toggle */}
+        <motion.div 
+          variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
+          className="bg-white rounded-2xl p-3 shadow-sm flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-[#FFC928] rounded-xl flex items-center justify-center">
+              <Zap size={16} className="text-[#111]" />
+            </div>
+            <div>
+              <p className="text-sm font-black text-[#111] uppercase tracking-tight">Checkout Express</p>
+              <p className="text-[9px] text-gray-400 font-bold">Apenas o essencial para pedir mais rápido</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsExpress(!isExpress)}
+            className={`relative w-12 h-6 rounded-full transition-colors ${isExpress ? 'bg-[#FFC928]' : 'bg-gray-200'}`}
+          >
+            <motion.div 
+              animate={{ x: isExpress ? 24 : 2 }}
+              className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+            />
+          </button>
+        </motion.div>
+
         {/* Personal data */}
         <motion.div 
           variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
@@ -815,6 +854,20 @@ export default function CheckoutPage() {
                 )}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Endereço completo *</label>
+                  {(() => {
+                    try { const saved: SavedAddress[] = JSON.parse(localStorage.getItem('meuovo_addresses') || '[]'); if (saved.length > 0) return saved; return []; } catch { return []; }
+                  })().length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(() => { try { return JSON.parse(localStorage.getItem('meuovo_addresses') || '[]') as SavedAddress[]; } catch { return []; } })().map(addr => (
+                        <button key={addr.id} type="button"
+                          onClick={() => setDeliveryAddress(`${addr.street}, ${addr.number}${addr.complement ? ` - ${addr.complement}` : ''} - ${addr.neighborhood}, ${addr.city}`)}
+                          className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${deliveryAddress.includes(addr.street) ? 'bg-[#FFC928] border-[#FFC928] text-black' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-[#FFC928]'}`}
+                        >
+                          {addr.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <input
                     type="text"
                     value={deliveryAddress}
@@ -828,7 +881,8 @@ export default function CheckoutPage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Scheduled order */}
+        {!isExpress && (
+        /* Scheduled order */
         <motion.div 
           variants={{ hidden: { y: 20, opacity: 0 }, show: { y: 0, opacity: 1 } }}
           className="bg-white rounded-2xl p-5 shadow-sm"
@@ -855,6 +909,7 @@ export default function CheckoutPage() {
             )}
           </div>
         </motion.div>
+        )}
 
         {/* Payment */}
         <motion.div 
@@ -964,6 +1019,82 @@ export default function CheckoutPage() {
             </p>
           </div>
 
+          {!isExpress && (<>
+          {/* Loyalty Progress Bar + Reward Selection */}
+          {loyaltyProfile && restaurant?.loyaltySettings?.enabled && (
+            <div className="mb-4 p-4 bg-orange-50 rounded-2xl border border-orange-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest flex items-center gap-1.5">
+                  <Gift size={14} /> Fidelidade {restaurant.name}
+                </span>
+                <span className="text-xs font-black text-orange-600">{loyaltyProfile.pointsBalance} pts</span>
+              </div>
+              {(() => {
+                const rules = restaurant.loyaltySettings?.redemptionRules || [];
+                const nextReward = rules.filter(r => r.pointsRequired > (loyaltyProfile?.pointsBalance || 0))
+                  .sort((a, b) => a.pointsRequired - b.pointsRequired)[0];
+                if (!nextReward) return null;
+                const progress = Math.min(100, ((loyaltyProfile?.pointsBalance || 0) / nextReward.pointsRequired) * 100);
+                return (
+                  <div className="mb-3">
+                    <div className="w-full h-2 bg-orange-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+                    </div>
+                    <p className="text-[9px] font-bold text-orange-600 mt-1">
+                      Faltam {nextReward.pointsRequired - (loyaltyProfile?.pointsBalance || 0)} pts para: {nextReward.description}
+                    </p>
+                  </div>
+                );
+              })()}
+              {(() => {
+                const rules = restaurant.loyaltySettings?.redemptionRules || [];
+                const available = rules.filter(r => r.pointsRequired <= (loyaltyProfile?.pointsBalance || 0));
+                if (available.length === 0) return null;
+                return (
+                  <div>
+                    <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-2">
+                      Recompensas disponíveis:
+                    </p>
+                    <div className="flex flex-col gap-1.5">
+                      {available.map(rule => {
+                        const isSelected = selectedReward?.description === rule.description;
+                        return (
+                          <button
+                            key={rule.id}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedReward(null);
+                              } else {
+                                setSelectedReward({
+                                  type: rule.type,
+                                  value: rule.value,
+                                  pointsRequired: rule.pointsRequired,
+                                  description: rule.description,
+                                });
+                              }
+                            }}
+                            className={cn(
+                              "text-left px-3 py-2 rounded-xl text-[10px] font-bold transition-all border-2",
+                              isSelected
+                                ? "border-orange-500 bg-orange-100 text-orange-800"
+                                : "border-orange-200 bg-white text-orange-700 hover:border-orange-300"
+                            )}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span>{rule.description}</span>
+                              <span className="text-orange-500">{rule.pointsRequired} pts</span>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Tip */}
           <div className="mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">
@@ -994,13 +1125,16 @@ export default function CheckoutPage() {
           </div>
 
           {/* Caixinha Meu OVO */}
-          <div className="mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
+          <div className="group mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
             <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
               🐣 Caixinha Meu OVO
+              <span className="relative">
+                <span className="text-[9px] text-amber-500 cursor-help border border-amber-300 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center">?</span>
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-amber-900 text-white text-[8px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Fortalece a plataforma e mantém o app gratuito pra todo mundo
+                </span>
+              </span>
             </label>
-            <p className="text-[9px] font-bold text-amber-600 mb-3 leading-relaxed">
-              Ajude a fortalecer o MEU OVO e manter a plataforma gratuita para os restaurantes!
-            </p>
             <div className="flex gap-2">
               {caixinhaOptions.map(val => (
                 <button
@@ -1021,13 +1155,16 @@ export default function CheckoutPage() {
           </div>
 
           {/* Social cause */}
-          <div className="mb-4 p-4 bg-rose-50 rounded-2xl border border-rose-200">
+          <div className="group mb-4 p-4 bg-rose-50 rounded-2xl border border-rose-200">
             <label className="text-[10px] font-black text-rose-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
               ❤️ Ajude uma Causa Social
+              <span className="relative">
+                <span className="text-[9px] text-rose-500 cursor-help border border-rose-300 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center">?</span>
+                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-rose-900 text-white text-[8px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                  Doação para projetos sociais de comunidades parceiras
+                </span>
+              </span>
             </label>
-            <p className="text-[9px] font-bold text-rose-600 mb-3 leading-relaxed">
-              Sua contribuição vai para projetos sociais do bairro!
-            </p>
             <div className="flex gap-2">
               {donationOptions.map(val => (
                 <button
@@ -1046,6 +1183,7 @@ export default function CheckoutPage() {
               ))}
             </div>
           </div>
+          </>)}
 
           <div className="space-y-3">
             <div className="flex justify-between text-sm">

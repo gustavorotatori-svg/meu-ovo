@@ -21,7 +21,17 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
 
   const startListening = () => {
     setError(null);
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    type SpeechRecognitionConstructor = new () => {
+      lang: string;
+      interimResults: boolean;
+      maxAlternatives: number;
+      start(): void;
+      onstart: (() => void) | null;
+      onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } } } }) => void) | null;
+      onerror: ((event: { error: string; message: string }) => void) | null;
+      onend: (() => void) | null;
+    };
+    const SpeechRecognition = (window as Window & { SpeechRecognition?: SpeechRecognitionConstructor; webkitSpeechRecognition?: SpeechRecognitionConstructor }).SpeechRecognition || (window as Window & { webkitSpeechRecognition?: SpeechRecognitionConstructor }).webkitSpeechRecognition!;
     const recognition = new SpeechRecognition();
 
     recognition.lang = 'pt-BR';
@@ -32,13 +42,13 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
       setIsListening(true);
     };
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: { results: { [index: number]: { [index: number]: { transcript: string } } } }) => {
       const transcript = event.results[0][0].transcript;
       onTranscript(transcript);
       setIsListening(false);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: { error: string; message: string }) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed') {
         setError('Permissão negada');
@@ -68,6 +78,7 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
         type="button"
         onClick={startListening}
         disabled={isListening}
+        aria-label="Pesquisar por voz"
         className={cn(
           "p-3 rounded-xl transition-all flex items-center justify-center relative",
           isListening 
@@ -85,7 +96,7 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
       {error && (
         <div className="absolute top-full mt-2 left-0 right-0 bg-red-100 text-red-600 text-[10px] font-bold uppercase py-1 px-2 rounded flex items-center justify-between z-50">
           <span>{error}</span>
-          <button onClick={() => setError(null)}><X size={10} /></button>
+          <button onClick={() => setError(null)} aria-label="Fechar"><X size={10} /></button>
         </div>
       )}
 

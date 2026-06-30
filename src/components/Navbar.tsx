@@ -23,7 +23,7 @@ export default function Navbar() {
   const isDark = theme === 'dark';
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors overflow-x-hidden ${isDark ? 'bg-black/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'} border-b ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors ${isDark ? 'bg-black/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'} border-b ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center h-20 lg:h-24">
 
         {/* Logo (sempre à esquerda) */}
@@ -46,7 +46,7 @@ export default function Navbar() {
               {t('nav.my_orders')}
             </Link>
             <Link to="/impacto-social" className={`text-[9px] xl:text-[11px] font-display font-black uppercase tracking-[0.06em] xl:tracking-[0.15em] whitespace-nowrap transition-all hover:scale-105 shrink-0 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
-              {t('nav.social_impact')}
+              SOCIAL
             </Link>
             <Link to="/para-restaurantes" className={`text-[9px] xl:text-[11px] font-display font-black uppercase tracking-[0.06em] xl:tracking-[0.15em] whitespace-nowrap transition-all hover:scale-105 shrink-0 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-black'}`}>
               {t('nav.for_restaurants')}
@@ -54,7 +54,7 @@ export default function Navbar() {
           </div>
 
           {/* Ícones */}
-          <button onClick={() => navigate('/carrinho')} className={`relative p-2 rounded-xl transition-all shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
+          <button onClick={() => navigate('/carrinho')} className={`relative p-2.5 rounded-xl transition-all shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
             <ShoppingBag size={20} />
             {itemCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-[#FFC928] text-[#111111] text-[10px] font-black rounded-lg px-1.5 py-0.5 min-w-[20px] flex items-center justify-center shadow-lg shadow-[#FFC928]/20 border-2 border-white">
@@ -63,16 +63,17 @@ export default function Navbar() {
             )}
           </button>
 
-          <button onClick={toggleTheme} className={`hidden xl:flex p-2 rounded-xl transition-colors shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
+          <button onClick={toggleTheme} aria-label="Alternar tema" className={`hidden xl:flex p-2.5 rounded-xl transition-colors shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
             {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
 
-          <div className="hidden xl:block shrink-0"><LanguageSwitcher /></div>
+          <LanguageSwitcher isDark={isDark} />
+
 
           {!user ? (
-            <button onClick={() => navigate('/perfil')} className={`flex items-center gap-1 px-1.5 sm:px-2 lg:px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider border-2 transition-all shrink-0 ${isDark ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'}`}>
+            <button onClick={() => navigate('/login')} className={`flex items-center gap-1 px-2 sm:px-3 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-wider border-2 transition-all shrink-0 ${isDark ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'}`}>
               <User size={12} />
-              <span className="hidden xl:inline">Entrar</span>
+              <span className="inline">Cliente</span>
             </button>
           ) : (
             <button onClick={() => navigate('/perfil')} className={`flex items-center gap-2 p-2 rounded-xl transition-all shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
@@ -82,14 +83,14 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* Botão Cadastrar Restaurante (sempre visível em lg+) */}
+          {/* Botão Cadastrar Restaurante (apenas desktop) */}
           <Link to="/cadastro-restaurante" className="hidden lg:flex bg-[#FFC928] text-[#111] font-display font-black px-2 lg:px-3 py-2 rounded-xl text-[9px] uppercase tracking-[0.08em] hover:bg-[#e6b520] transition-all shadow-xl shadow-[#FFC928]/10 whitespace-nowrap shrink-0 items-center">
             <span className="xl:hidden">Cadastrar</span>
             <span className="hidden xl:inline">{t('nav.register_restaurant')}</span>
           </Link>
 
           {/* Hamburguer (mobile) */}
-          <button className={`lg:hidden p-2 rounded-xl transition-colors shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)}>
+          <button className={`lg:hidden p-2.5 rounded-xl transition-colors shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
@@ -103,7 +104,7 @@ export default function Navbar() {
               <MobileLink to="/sobre" isDark={isDark} onClick={() => setMenuOpen(false)} label="Por que existimos? 🍳" />
               <MobileLink to="/busca" isDark={isDark} onClick={() => setMenuOpen(false)} label={t('nav.order_food')} />
               <MobileLink to="/meus-pedidos" isDark={isDark} onClick={() => setMenuOpen(false)} label={t('nav.my_orders')} />
-              <MobileLink to="/impacto-social" isDark={isDark} onClick={() => setMenuOpen(false)} label={t('nav.social_impact')} />
+              <MobileLink to="/impacto-social" isDark={isDark} onClick={() => setMenuOpen(false)} label="SOCIAL" />
               <MobileLink to="/para-restaurantes" isDark={isDark} onClick={() => setMenuOpen(false)} label={t('nav.for_restaurants')} />
               <MobileLink to="/perfil" isDark={isDark} onClick={() => setMenuOpen(false)} label={user ? 'Meu Perfil' : 'Entrar / Cadastrar'} icon={<User size={20} className="text-[#FFC928]" />} />
               <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} whileTap={{ scale: 0.95 }} className="mt-4">

@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Logo } from './Logo';
 import { Instagram, Twitter, Facebook, Youtube, ExternalLink, Mail, Phone, MapPin, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -34,8 +36,15 @@ export default function Footer() {
         toast.error(t('footer.subscribeError') || 'Erro ao se inscrever. Tente novamente.');
       }
     } catch (error) {
-      console.error('Newsletter error:', error);
-      toast.error('Erro de conexão.');
+      // Fallback: save to Firestore directly
+      try {
+        await addDoc(collection(db, 'newsletter_subscribers'), { email, subscribedAt: new Date().toISOString() });
+        setSubscribed(true);
+        toast.success(t('footer.subscribeSuccess') || 'Inscrito com sucesso!');
+      } catch (fbError) {
+        console.error('Newsletter error:', error, 'Firestore fallback:', fbError);
+        toast.error('Erro de conexão.');
+      }
     } finally {
       setLoading(false);
     }
@@ -110,9 +119,9 @@ export default function Footer() {
 
             <div className="flex gap-4">
               {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${isDark ? 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white' : 'bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-black'}`}>
+                <span key={i} className={`w-10 h-10 rounded-full flex items-center justify-center cursor-default ${isDark ? 'bg-white/5 text-gray-500' : 'bg-gray-50 text-gray-400'}`}>
                   <Icon size={18} />
-                </a>
+                </span>
               ))}
             </div>
           </div>
@@ -233,9 +242,10 @@ export default function Footer() {
                         : 'border-slate-200 focus:border-[#FF7A00] text-neutral-900'
                     }`}
                   />
-                  <button 
+                  <button
                     type="submit"
                     disabled={loading}
+                    aria-label="Assinar newsletter"
                     className={`p-2 rounded-xl transition-all ${
                       loading
                         ? 'opacity-50'

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { QrCode, Smartphone, Users, ChevronRight, Printer, Share2, Plus, X, Edit2, Trash2, ToggleLeft, ToggleRight, Check } from 'lucide-react';
+import { QRCodeCanvas } from 'qrcode.react';
 import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -105,28 +106,28 @@ export default function AdminWaiter() {
                   <button 
                     onClick={() => updateTable({ ...table, active: !table.active, status: !table.active ? 'free' : 'occupied' })}
                     className={`p-2 transition-colors ${table.active ? 'text-green-500' : 'text-gray-400'}`}
-                    title={table.active ? 'Marcar como Ocupada' : 'Marcar como Livre'}
+                    aria-label="Alternar disponibilidade"
                   >
                     {table.active ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                   </button>
                   <button 
                     onClick={() => setShowQrModal(table)}
                     className="p-2 text-gray-400 hover:text-[#111] transition-colors"
-                    title="Ver QR Code"
+                    aria-label="Exibir QR Code"
                   >
                     <QrCode size={18} />
                   </button>
                   <button 
                     onClick={() => openEdit(table)}
                     className="p-2 text-gray-400 hover:text-blue-500 transition-colors"
-                    title="Editar"
+                    aria-label="Editar"
                   >
                     <Edit2 size={18} />
                   </button>
                   <button 
                     onClick={() => handleDelete(table.id)}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    title="Excluir"
+                    aria-label="Excluir"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -170,14 +171,21 @@ export default function AdminWaiter() {
 
       {/* QR Modal */}
       {showQrModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowQrModal(null)} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="QR Code da mesa">
+          <div role="presentation" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowQrModal(null)} />
           <div className={`relative rounded-3xl w-full max-w-sm p-8 text-center shadow-2xl ${isDark ? 'bg-[#1a1a1a] border border-gray-800' : 'bg-white'}`}>
-            <button onClick={() => setShowQrModal(null)} className={`absolute top-4 right-4 p-2 rounded-full ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}><X size={20} /></button>
+            <button onClick={() => setShowQrModal(null)} aria-label="Fechar" className={`absolute top-4 right-4 p-2 rounded-full ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-100'}`}><X size={20} /></button>
             <h3 className={`font-black text-2xl mb-2 ${isDark ? 'text-white' : 'text-[#111]'}`}>Mesa {showQrModal.number}</h3>
             <p className="text-gray-500 text-sm mb-6">Imprima este QR Code e coloque na mesa para os clientes fazerem pedidos diretos.</p>
-            <div className={`w-48 h-48 rounded-3xl mx-auto mb-8 p-4 flex items-center justify-center ${isDark ? 'bg-white' : 'bg-white border-4 border-[#F5F5F5]'}`}>
-              <QrCode size={120} className="text-[#111]" />
+            <div className={`rounded-3xl mx-auto mb-8 p-4 flex items-center justify-center ${isDark ? 'bg-white' : 'bg-white border-4 border-[#F5F5F5]'}`}>
+              <QRCodeCanvas
+                id={`waiter-qr-${showQrModal.number}`}
+                value={showQrModal.qrCodeUrl || `${window.location.origin}/r/${currentRestaurant?.slug}?mesa=${showQrModal.number}`}
+                size={180}
+                bgColor="#FFFFFF"
+                fgColor="#111111"
+                level="M"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <button 
@@ -197,8 +205,8 @@ export default function AdminWaiter() {
 
       {/* Add/Edit Modal */}
       {(isAdding || isEditing) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setIsAdding(false); setIsEditing(null); }} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Adicionar ou editar item">
+          <div role="presentation" className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setIsAdding(false); setIsEditing(null); }} />
           <div className={`relative rounded-3xl w-full max-w-md p-8 shadow-2xl ${isDark ? 'bg-[#1a1a1a] border border-gray-800' : 'bg-white'}`}>
             <h3 className={`font-black text-2xl mb-6 ${isDark ? 'text-white' : 'text-[#111]'}`}>{isAdding ? 'Nova Mesa' : 'Editar Mesa'}</h3>
             

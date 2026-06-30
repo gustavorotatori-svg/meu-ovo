@@ -2,6 +2,7 @@ import { Heart, CheckCircle, TrendingUp, ArrowRight, Sparkles } from 'lucide-rea
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import ScrollReveal from '../components/ScrollReveal';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
@@ -108,6 +109,7 @@ export default function SocialImpactPage() {
       {/* Hero Header Banner with Live Stats */}
       <div className="pt-20 bg-[#FFC928]">
         <div className="max-w-7xl mx-auto px-4 py-10">
+          <ScrollReveal direction="up" delay={0}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:divide-x-2 md:divide-black/10">
             <div className="px-4">
               <div className="text-3xl lg:text-5xl font-black text-black">
@@ -128,23 +130,26 @@ export default function SocialImpactPage() {
               <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Gratuito para sempre</div>
             </div>
           </div>
+          </ScrollReveal>
         </div>
       </div>
 
       {/* Main Content */}
       <section className="py-24 max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
-          <div className="space-y-8">
-            <div className="inline-flex items-center gap-1.5 bg-red-100 text-red-600 text-[10px] font-black px-4 py-1.5 rounded-lg uppercase tracking-widest">
-              <Sparkles size={12} className="animate-pulse" />
-              <span>Real-Time Impact Tracker</span>
+          <ScrollReveal direction="up" delay={0} className="space-y-8">
+            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest relative group">
+              <Sparkles size={16} className="text-red-500 animate-sparkle" />
+              <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent animate-gradient-shift">Impacto em Tempo Real</span>
+              <span className="absolute -bottom-1.5 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/60 via-red-400/40 to-red-500/60 animate-gradient-shift rounded-full" />
+              <span className="absolute -inset-x-2 -inset-y-1 bg-red-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <h1 className={`text-5xl md:text-7xl font-black leading-[1.1] tracking-tight transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
               Comida de verdade<br />
               <span className="text-[#FF7A00]">também faz o bem.</span>
             </h1>
             <p className={`text-xl font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              No checkout, o cliente pode escolher doar uma refeição para pessoas em situação de vulnerabilidade. As doações serão direcionadas a um projeto social parceiro na cidade de São Paulo.
+              No checkout, o cliente pode escolher doar uma refeição para pessoas em situação de vulnerabilidade. As doações serão direcionadas a um projeto social parceiro na sua cidade.
             </p>
 
             <div className={`rounded-3xl p-8 border mt-12 relative overflow-hidden group transition-all ${
@@ -165,14 +170,20 @@ export default function SocialImpactPage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#FFC928] opacity-5 rounded-full blur-3xl -translate-x-12 -translate-y-12" />
             </div>
 
-            <button className={`font-black px-10 py-5 rounded-3xl text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 mt-8 shadow-xl ${
-              isDark ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black/90'
-            }`}>
+            <a
+              href="https://www.cozinhasolidaria.org.br"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`font-black px-10 py-5 rounded-3xl text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 mt-8 shadow-xl cursor-pointer ${
+                isDark ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black/90'
+              }`}
+            >
               Quero apoiar essa causa <ArrowRight size={24} />
-            </button>
-          </div>
+            </a>
+          </ScrollReveal>
 
           {/* Dynamic real-time statistics widget container */}
+          <ScrollReveal direction="left" delay={100}>
           <div className={`rounded-[3rem] p-10 md:p-16 shadow-2xl relative overflow-hidden transition-all ${
             isDark ? 'bg-[#0a0a0a] border border-white/5' : 'bg-[#111]'
           }`}>
@@ -216,6 +227,7 @@ export default function SocialImpactPage() {
               <span>* Dashboard sincronizado com dados do banco em tempo real</span>
             </p>
           </div>
+          </ScrollReveal>
         </div>
       </section>
 

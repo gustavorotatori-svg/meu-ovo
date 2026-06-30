@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
@@ -193,7 +193,7 @@ export default function OrderTracking() {
                    <p className="text-sm font-black uppercase italic tracking-tight">LOGGI / MOTO PRÓPRIO</p>
                 </div>
              </div>
-             <button className="p-3 bg-brand-egg text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all">
+             <button className="p-3 bg-brand-egg text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all" aria-label="Ligar para o restaurante">
                 <Phone size={16} />
              </button>
           </div>
@@ -241,7 +241,7 @@ export default function OrderTracking() {
                    <div className="flex gap-3">
                       <span className="text-[10px] font-black text-brand-black bg-brand-egg/30 w-6 h-6 rounded-lg flex items-center justify-center shrink-0">{item.quantity}</span>
                       <div>
-                        <p className="text-[12px] text-slate-800 font-black uppercase italic tracking-tight">{item.productName || (item as any).name}</p>
+                         <p className="text-[12px] text-slate-800 font-black uppercase italic tracking-tight">{item.productName || (item as { name: string }).name}</p>
                         {item.additionals?.length > 0 && (
                           <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">+ {item.additionals.map(a => a.name).join(', ')}</p>
                         )}
@@ -295,7 +295,7 @@ export default function OrderTracking() {
       {/* Problem Report Modal */}
       <AnimatePresence>
         {isProblemModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div role="dialog" aria-modal="true" aria-label="Reportar problema" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
              <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
@@ -315,8 +315,8 @@ export default function OrderTracking() {
                       <h3 className="text-2xl font-black text-brand-black tracking-tighter uppercase italic leading-none">DEU RUIM?</h3>
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 italic">A gente resolve, não estressa.</p>
                    </div>
-                   <button onClick={() => setIsProblemModalOpen(false)} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-black">
-                      <X size={20} />
+                    <button onClick={() => setIsProblemModalOpen(false)} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-black" aria-label="Fechar">
+                       <X size={20} />
                    </button>
                 </div>
 
@@ -332,7 +332,7 @@ export default function OrderTracking() {
                          ].map(type => (
                            <button 
                              key={type.id}
-                             onClick={() => setProblemType(type.id as any)}
+                              onClick={() => setProblemType(type.id as Order['problemReport']['type'])}
                              className={cn(
                                "flex items-center gap-3 p-4 rounded-2xl border-2 font-black text-xs uppercase tracking-tight transition-all text-left",
                                problemType === type.id ? "border-red-500 bg-red-50 text-red-600 shadow-lg shadow-red-100" : "border-slate-100 text-slate-500"
@@ -380,7 +380,7 @@ export default function OrderTracking() {
   );
 }
 
-function Button({ children, className, onClick }: any) {
+function Button({ children, className, onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
     return (
       <button onClick={onClick} className={cn("px-6 py-2 bg-[#FFC928] text-black rounded-lg font-black uppercase tracking-tight shadow-lg shadow-yellow-100", className)}>
         {children}

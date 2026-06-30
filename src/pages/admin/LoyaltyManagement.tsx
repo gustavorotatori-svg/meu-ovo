@@ -129,7 +129,7 @@ export default function LoyaltyManagement() {
     }));
   };
 
-  const updateRule = (id: string, updates: any) => {
+  const updateRule = (id: string, updates: Record<string, unknown>) => {
     setSettings(prev => ({
       ...prev,
       redemptionRules: prev.redemptionRules.map(r => r.id === id ? { ...r, ...updates } : r)
@@ -196,8 +196,8 @@ export default function LoyaltyManagement() {
       await addDoc(collection(db, 'coupons'), {
         restaurantId: restaurant.id,
         code: finalCode,
-        discountType: 'percentage',
-        discountValue: discount,
+        type: 'percent',
+        value: discount,
         minimumOrder: 30,
         isActive: true,
         expiryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
@@ -365,13 +365,14 @@ export default function LoyaltyManagement() {
                </div>
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {settings.redemptionRules.map((rule: any) => (
+                   {settings.redemptionRules.map((rule: { id: string; type: string; value: string | number; pointsRequired: number; description: string }) => (
                     <div key={rule.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-4 relative group">
-                       <button 
-                         onClick={() => removeRule(rule.id)}
-                         className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                       >
-                          <Trash2 size={14} />
+                        <button 
+                          onClick={() => removeRule(rule.id)}
+                          className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Excluir"
+                        >
+                           <Trash2 size={14} />
                        </button>
 
                        <div className="space-y-3">
@@ -545,7 +546,7 @@ export default function LoyaltyManagement() {
           const productCounts: Record<string, { count: number; name: string }> = {};
           customerOrders.forEach(o => {
             if (o.items && Array.isArray(o.items)) {
-              o.items.forEach((it: any) => {
+               o.items.forEach((it: { productId?: string; productName?: string; quantity?: number }) => {
                 const key = it.productId || it.productName;
                 if (key) {
                   if (!productCounts[key]) {
@@ -618,7 +619,7 @@ export default function LoyaltyManagement() {
           };
 
           return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto font-sans">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto font-sans" role="dialog" aria-modal="true" aria-label="Perfil do cliente">
               <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between text-left">
                   <div>
@@ -631,6 +632,7 @@ export default function LoyaltyManagement() {
                       setGeneratedCouponCode('');
                     }}
                     className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100"
+                    aria-label="Fechar"
                   >
                     <Plus size={20} className="rotate-45" />
                   </button>
@@ -679,7 +681,7 @@ export default function LoyaltyManagement() {
                         <div className="space-y-2">
                           <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Movimentações Recentes</h4>
                           <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
-                            {selectedProfileHistory.history?.slice().reverse().map((item: any, i: number) => (
+                             {selectedProfileHistory.history?.slice().reverse().map((item: { type: string; description: string; createdAt: string; points: number }, i: number) => (
                               <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 bg-slate-50/50">
                                 <div className="flex items-center gap-2.5 min-w-0">
                                   <div className={cn(
@@ -875,7 +877,7 @@ export default function LoyaltyManagement() {
 
                             {/* Ordered Items list */}
                             <div className="space-y-1 bg-white p-2.5 rounded-xl border border-slate-100 mb-2">
-                              {order.items?.map((item: any, idx: number) => (
+                               {order.items?.map((item: { quantity: number; productName: string; additionals?: (string | { name: string })[]; unitPrice?: number }, idx: number) => (
                                 <div key={idx} className="flex items-start justify-between text-xs">
                                   <div className="min-w-0">
                                     <p className="font-bold text-slate-800 leading-tight">
@@ -883,7 +885,7 @@ export default function LoyaltyManagement() {
                                     </p>
                                     {item.additionals && item.additionals.length > 0 && (
                                       <p className="text-[9px] text-slate-400 font-bold uppercase truncate pl-4">
-                                        + {item.additionals.map((add: any) => typeof add === 'string' ? add : add.name).join(', ')}
+                                         + {item.additionals.map((add: string | { name: string }) => typeof add === 'string' ? add : add.name).join(', ')}
                                       </p>
                                     )}
                                   </div>

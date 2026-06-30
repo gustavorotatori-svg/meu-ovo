@@ -17,6 +17,12 @@ window.addEventListener('unhandledrejection', (event) => {
   console.error('[Global] Unhandled promise rejection:', event.reason);
 });
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/firebase-messaging-sw.js')
+    .then(() => console.log('[FCM SW] Registered'))
+    .catch(() => {});
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <HelmetProvider>

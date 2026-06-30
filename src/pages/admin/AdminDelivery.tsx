@@ -18,7 +18,7 @@ export default function AdminDelivery() {
     }
   }, [deliverySettings]);
 
-  const update = (field: string, value: any) => setSettings(s => ({ ...s, [field]: value }));
+  const update = (field: string, value: unknown) => setSettings(s => ({ ...s, [field]: value }));
 
   const addNeighborhood = () => {
     if (!newNeighborhood.neighborhood) {
@@ -221,6 +221,7 @@ export default function AdminDelivery() {
                       <button 
                         onClick={() => removeNeighborhood(i)}
                         className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                        aria-label="Excluir"
                       >
                         <Trash2 size={16} />
                       </button>

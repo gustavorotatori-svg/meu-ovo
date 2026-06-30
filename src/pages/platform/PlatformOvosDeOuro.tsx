@@ -39,6 +39,7 @@ interface DishRanking {
   dishName: string;
   restaurantName: string;
   restaurantBairro: string;
+  restaurantCidade: string;
   restaurantCuisine: string;
   avgRating: number;
   count: number;
@@ -60,10 +61,11 @@ export default function PlatformOvosDeOuro() {
   const [dishRankings, setDishRankings] = useState<DishRanking[]>([]);
   const [loadingRanking, setLoadingRanking] = useState(false);
   const [selectedYear, setSelectedYear] = useState(YEARS[0]);
-  const [rankingView, setRankingView] = useState<'geral' | 'bairro' | 'cozinha'>('geral');
+  const [rankingView, setRankingView] = useState<'geral' | 'bairro' | 'cozinha' | 'cidade'>('geral');
   const [selectedFilter, setSelectedFilter] = useState('');
   const [bairros, setBairros] = useState<string[]>([]);
   const [cuisines, setCuisines] = useState<string[]>([]);
+  const [cidades, setCidades] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchOvosPlatformData = async () => {
@@ -113,21 +115,26 @@ export default function PlatformOvosDeOuro() {
         // Fetch cuisine types
         const restSnap = await getDocs(collection(db, 'restaurants'));
         const restCuisine: Record<string, string> = {};
+        const restCity: Record<string, string> = {};
         const cuisineSet = new Set<string>();
+        const citySet = new Set<string>();
         restSnap.forEach(d => {
           const data = d.data();
           restCuisine[d.id] = data.cuisineType || '';
+          restCity[d.id] = data.city || '';
           if (data.cuisineType) cuisineSet.add(data.cuisineType);
+          if (data.city) citySet.add(data.city);
         });
         setCuisines(Array.from(cuisineSet).sort());
+        setCidades(Array.from(citySet).sort());
 
         const bairroSet = new Set<string>();
-        const agg: Record<string, { sum: number; count: number; dishName: string; restaurantName: string; restaurantBairro: string; restaurantCuisine: string }> = {};
+        const agg: Record<string, { sum: number; count: number; dishName: string; restaurantName: string; restaurantBairro: string; restaurantCidade: string; restaurantCuisine: string }> = {};
 
         ratings.forEach(r => {
           if (r.restaurantBairro) bairroSet.add(r.restaurantBairro);
           if (!agg[r.dishId]) {
-            agg[r.dishId] = { sum: 0, count: 0, dishName: r.dishName, restaurantName: r.restaurantName, restaurantBairro: r.restaurantBairro, restaurantCuisine: restCuisine[r.restaurantId] || '' };
+            agg[r.dishId] = { sum: 0, count: 0, dishName: r.dishName, restaurantName: r.restaurantName, restaurantBairro: r.restaurantBairro, restaurantCidade: restCity[r.restaurantId] || '', restaurantCuisine: restCuisine[r.restaurantId] || '' };
           }
           agg[r.dishId].sum += r.rating;
           agg[r.dishId].count += 1;
@@ -139,6 +146,7 @@ export default function PlatformOvosDeOuro() {
             dishName: v.dishName,
             restaurantName: v.restaurantName,
             restaurantBairro: v.restaurantBairro,
+            restaurantCidade: v.restaurantCidade,
             restaurantCuisine: v.restaurantCuisine,
             avgRating: Number((v.sum / v.count).toFixed(2)),
             count: v.count,
@@ -164,7 +172,7 @@ export default function PlatformOvosDeOuro() {
     { to: '/plataforma/restaurantes', label: 'Restaurantes', icon: <Store size={20} /> },
     { to: '/plataforma/inteligencia', label: 'Inteligência', icon: <Brain size={20} /> },
     { to: '/plataforma/relatorios', label: 'Relatórios do Mercado', icon: <BarChart3 size={20} /> },
-    { to: '/plataforma/parceiros', label: 'Parceiros Social', icon: <Heart size={20} /> },
+    { to: '/plataforma/parceiros', label: 'Parceiros Sociais', icon: <Heart size={20} /> },
     { to: '/plataforma/doacoes', label: 'Gestão de Doações', icon: <Users size={20} /> },
     { to: '/plataforma/ovos-de-ouro', label: 'Ovos de Ouro 🏆', icon: <Trophy size={20} /> },
   ];
@@ -530,8 +538,8 @@ export default function PlatformOvosDeOuro() {
                       Ranking de Pratos
                     </h3>
                     <p className="text-xs text-gray-400 mt-1">
-                      Avaliações dos clientes sobre os pratos (até 48h após o pedido). Visível apenas para o dono do Meu Ovo.<br />
-                      Período: <strong>1º de janeiro a 15 de dezembro</strong>. Divulgação do Top 3 por bairro e geral. Zera todo ano.
+                      Avaliações dos clientes sobre os pratos (até 48h após o pedido). Visível apenas para o admin do Meu Ovo.<br />
+                      Período: <strong>1º de janeiro a 15 de dezembro</strong>. Divulgação do Top 3 por cidade, bairro e tipo de cozinha. Zera todo ano.
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -579,6 +587,16 @@ export default function PlatformOvosDeOuro() {
                     }`}
                   >
                     Por Tipo de Cozinha
+                  </button>
+                  <button
+                    onClick={() => { setRankingView('cidade'); setSelectedFilter(''); }}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${
+                      rankingView === 'cidade'
+                        ? 'bg-[#FFC928] text-[#111]'
+                        : 'bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    Por Cidade
                   </button>
                 </div>
 
@@ -638,6 +656,34 @@ export default function PlatformOvosDeOuro() {
                   </div>
                 )}
 
+                {rankingView === 'cidade' && cidades.length > 0 && (
+                  <div className="flex gap-2 mb-6 flex-wrap">
+                    <button
+                      onClick={() => setSelectedFilter('')}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                        !selectedFilter
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200'
+                      }`}
+                    >
+                      Todas as Cidades
+                    </button>
+                    {cidades.map(c => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedFilter(c)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${
+                          selectedFilter === c
+                            ? 'bg-amber-500 text-white'
+                            : 'bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {loadingRanking ? (
                   <div className="flex flex-col items-center justify-center py-16">
                     <RefreshCw className="animate-spin text-amber-500 mb-2" size={24} />
@@ -649,6 +695,8 @@ export default function PlatformOvosDeOuro() {
                     filtered = filtered.filter(d => d.restaurantBairro === selectedFilter);
                   } else if (rankingView === 'cozinha' && selectedFilter) {
                     filtered = filtered.filter(d => d.restaurantCuisine === selectedFilter);
+                  } else if (rankingView === 'cidade' && selectedFilter) {
+                    filtered = filtered.filter(d => d.restaurantCidade === selectedFilter);
                   }
 
                   if (filtered.length === 0) {
@@ -674,6 +722,7 @@ export default function PlatformOvosDeOuro() {
                             <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Restaurante</th>
                             {rankingView === 'bairro' && <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Bairro</th>}
                             {rankingView === 'cozinha' && <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Tipo</th>}
+                            {rankingView === 'cidade' && <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Cidade</th>}
                             <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Média</th>
                             <th className="pb-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">Avaliações</th>
                           </tr>
@@ -700,6 +749,11 @@ export default function PlatformOvosDeOuro() {
                                 {rankingView === 'cozinha' && (
                                   <td className="py-4">
                                     <span className="text-[10px] font-bold text-gray-400">{dish.restaurantCuisine}</span>
+                                  </td>
+                                )}
+                                {rankingView === 'cidade' && (
+                                  <td className="py-4">
+                                    <span className="text-[10px] font-bold text-gray-400">{dish.restaurantCidade}</span>
                                   </td>
                                 )}
                                 <td className="py-4">

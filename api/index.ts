@@ -1,6 +1,7 @@
 import express from "express";
 import path from "path";
 import dotenv from "dotenv";
+import cors from "cors";
 
 dotenv.config();
 
@@ -8,7 +9,34 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const app = express();
 
+app.use(cors({
+  origin: process.env.APP_URL || 'http://localhost:3000',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+}));
 app.use(express.json());
+
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function rateLimit(maxRequests: number, windowMs: number) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const key = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    const now = Date.now();
+    const entry = rateLimitMap.get(key);
+    if (!entry || now > entry.resetAt) {
+      rateLimitMap.set(key, { count: 1, resetAt: now + windowMs });
+      return next();
+    }
+    if (entry.count >= maxRequests) {
+      return res.status(429).json({ error: 'Too many requests. Try again later.' });
+    }
+    entry.count++;
+    next();
+  };
+}
+
+// Apply rate limiting to all /api routes
+app.use('/api', rateLimit(30, 60000)); // 30 requests per minute per IP
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
