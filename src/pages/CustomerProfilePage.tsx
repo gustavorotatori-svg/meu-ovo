@@ -1,28 +1,33 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield, Plus, Trash2, Check, Home } from 'lucide-react';
+import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield, Plus, Trash2, Check, Home, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Order, SavedAddress } from '../types';
+import { Order, SavedAddress, Product, CartItem } from '../types';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
-import { Link } from 'react-router-dom';
+import { useCart } from '../context/CartContext';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getCustomerStats } from '../services/customerRatingService';
+import { getStreak, getNextMilestone } from '../services/streakService';
 
 type Tab = 'orders' | 'favorites' | 'addresses';
 
 export default function CustomerProfilePage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, signOut, signIn, signUp } = useAuth();
   const { favorites, toggleFavorite, restaurants } = useRestaurant();
+  const { addItem } = useCart();
   const [orders, setOrders] = useState<Order[]>([]);
   const [customerStats, setCustomerStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(() => {
     try { return JSON.parse(localStorage.getItem('meuovo_addresses') || '[]'); } catch { return []; }
@@ -81,7 +86,53 @@ export default function CustomerProfilePage() {
     }
 
     fetchOrders();
+    if (user?.id) {
+      getStreak(user.id).then(s => setStreak(s)).catch(() => {});
+    }
   }, [user]);
+
+  const handleReorder = async (order: Order) => {
+    const restaurant = restaurants.find(r => r.id === order.restaurantId);
+    if (!restaurant) {
+      toast.error('Restaurante não encontrado');
+      return;
+    }
+    try {
+      const q = query(collection(db, 'products'), where('restaurantId', '==', order.restaurantId));
+      const snap = await getDocs(q);
+      const products = snap.docs.map(d => ({ id: d.id, ...d.data() } as Product));
+
+      let addedCount = 0;
+      for (const orderItem of order.items) {
+        const product = products.find(p => p.id === orderItem.productId);
+        if (!product || !product.isAvailable) continue;
+
+        const cartItem: CartItem = {
+          product,
+          quantity: orderItem.quantity,
+          selectedAdditionals: (orderItem.additionals || []).map(a => ({
+            groupId: '',
+            additionalId: '',
+            name: a.name,
+            price: a.price,
+          })),
+          observations: orderItem.observations || '',
+        };
+        addItem(cartItem);
+        addedCount++;
+      }
+
+      if (addedCount === 0) {
+        toast.error('Nenhum item disponível para reordenar');
+        return;
+      }
+      toast.success(`${addedCount} item(ns) adicionado(s) ao carrinho!`);
+      navigate('/carrinho');
+    } catch (err) {
+      console.error('Error reordering:', err);
+      toast.error('Erro ao reordenar. Tente novamente.');
+    }
+  };
 
   const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -316,6 +367,72 @@ export default function CustomerProfilePage() {
                   </div>
                 )}
 
+                {/* Streak Section */}
+                {streak && streak.currentStreak > 0 && (
+                  <div className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border border-orange-500/20 text-left w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🔥</span>
+                        <div>
+                          <p className="text-xs font-black text-orange-700 uppercase tracking-wider">
+                            {streak.currentStreak} {streak.currentStreak === 1 ? 'dia' : 'dias'} seguidos
+                          </p>
+                          {(() => {
+                            const next = getNextMilestone(streak.currentStreak);
+                            if (!next) return <p className="text-[8px] font-bold text-orange-400 uppercase tracking-widest mt-0.5">Streak máximo atingido! 👑</p>;
+                            const progress = (streak.currentStreak / next.days) * 100;
+                            return (
+                              <>
+                                <p className="text-[8px] font-bold text-orange-400 uppercase tracking-widest mt-0.5">
+                                  Faltam {next.days - streak.currentStreak} dias para: {next.reward}
+                                </p>
+                                <div className="w-full h-1.5 bg-orange-200/30 rounded-full mt-1.5 overflow-hidden">
+                                  <div className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Medal Progress Bar */}
+                <div className="mt-5 p-4 rounded-2xl bg-slate-100 border border-slate-200 text-left w-full">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Star size={12} className="text-[#FFC928]" />
+                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Progresso para próxima medalha</span>
+                  </div>
+                  {(() => {
+                    const tiers = [
+                      { min: 0, max: 1, label: '🌱 Amigo do Bairro', next: '🥉 Apoiador Bronze', needed: 1 },
+                      { min: 1, max: 4, label: '🥉 Apoiador Bronze', next: '🥈 Apoiador Prata', needed: 4 },
+                      { min: 4, max: 8, label: '🥈 Apoiador Prata', next: '🥇 Parceiro de Ouro', needed: 8 },
+                      { min: 8, max: Infinity, label: '🥇 Parceiro de Ouro 👑', next: null, needed: 8 },
+                    ];
+                    const current = tiers.find(t => orders.length >= t.min && orders.length < t.max) || tiers[tiers.length - 1];
+                    const progress = current.next ? (orders.length / current.needed) * 100 : 100;
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-600 mb-1">
+                          <span>{current.label}</span>
+                          {current.next && <span className="text-[#FFC928]">{current.next}</span>}
+                        </div>
+                        <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#FFC928] to-yellow-500 rounded-full transition-all"
+                            style={{ width: `${Math.min(progress, 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-[8px] font-bold text-slate-400 mt-1">
+                          {current.next ? `${orders.length}/${current.needed} pedidos` : 'Nível máximo!'}
+                        </p>
+                      </div>
+                    );
+                  })()}
+                </div>
+
                 {/* Supporter Badge Section */}
                 <div className="mt-5 p-4 rounded-2xl bg-slate-900 border border-slate-800 text-left w-full text-white select-none relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-32 h-32 blur-[80px] rounded-full bg-[#FFC928]/20 -z-0" />
@@ -463,9 +580,17 @@ export default function CustomerProfilePage() {
                         <div className="text-right">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Pago</p>
                           <p className="text-2xl font-display font-black text-[#111]">R$ {order.total.toFixed(2)}</p>
-                          <button className="text-[#FFC928] text-[9px] font-black uppercase tracking-widest mt-2 flex items-center justify-end gap-1 hover:gap-2 transition-all">
-                            Ver Detalhes <ChevronRight size={12} />
-                          </button>
+                          <div className="flex items-center justify-end gap-2 mt-2">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleReorder(order); }}
+                              className="bg-[#FFC928] text-black text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl flex items-center gap-1 hover:bg-yellow-400 transition-all"
+                            >
+                              <RotateCcw size={10} /> Repetir
+                            </button>
+                            <button className="text-[#FFC928] text-[9px] font-black uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all">
+                              Ver Detalhes <ChevronRight size={12} />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </motion.div>

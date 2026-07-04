@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '../lib/pix';
 import { getCustomerStats, checkCouponTargeting, CustomerStats } from '../services/customerRatingService';
+import { updateStreak } from '../services/streakService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
@@ -473,6 +474,13 @@ export default function CheckoutPage() {
     }
 
     localStorage.setItem('customerPhone', phone);
+    if (user?.id) {
+      updateStreak(user.id).then(result => {
+        if (result.milestone) {
+          setTimeout(() => toast.success(`🎉 ${result.milestone.label} — ${result.milestone.reward}`), 2000);
+        }
+      }).catch(() => {});
+    }
     clearCart();
     setSubmitted(true);
     setSubmitting(false);

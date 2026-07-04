@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Heart, 
@@ -24,8 +24,10 @@ import OptimizedImage from '../components/OptimizedImage';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
+import { useAuth } from '../context/AuthContext';
 import { Restaurant } from '../types';
 import { rankRestaurants } from '../lib/recommendations';
+import { getStreak, getNextMilestone } from '../services/streakService';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -33,7 +35,15 @@ export default function Home() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { restaurants, orders, favorites, toggleFavorite } = useRestaurant();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [streak, setStreak] = useState<{ currentStreak: number } | null>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      getStreak(user.id).then(s => setStreak(s)).catch(() => {});
+    }
+  }, [user?.id]);
   
   const rankedRestaurants = useMemo(() => {
     return rankRestaurants(restaurants, orders);
@@ -152,6 +162,97 @@ export default function Home() {
             })}
            </div>
         </div>
+      </section>
+
+      {/* Streak + Daily Suggestion Section */}
+      <section className="pb-4 px-6 max-w-7xl mx-auto">
+        {streak && streak.currentStreak > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`p-4 rounded-3xl border mb-6 ${
+              isDark ? 'bg-white/5 border-white/5' : 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🔥</span>
+                <div>
+                  <p className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                    {streak.currentStreak} {streak.currentStreak === 1 ? 'dia' : 'dias'} seguidos pedindo!
+                  </p>
+                  {(() => {
+                    const next = getNextMilestone(streak.currentStreak);
+                    if (!next) return <p className="text-[10px] font-bold text-orange-500">Streak máximo! 👑</p>;
+                    return (
+                      <p className="text-[10px] font-bold text-orange-500">
+                        Faltam {next.days - streak.currentStreak} dias para {next.reward}
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+              <Link
+                to="/busca"
+                className="text-[10px] font-black text-[#FFC928] uppercase tracking-widest hover:underline"
+              >
+                Pedir agora →
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
+        {rankedRestaurants.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`p-6 rounded-3xl border overflow-hidden ${
+              isDark ? 'bg-white/5 border-white/5' : 'bg-white border-gray-100 shadow-sm'
+            }`}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">🍽️</span>
+              <div>
+                <p className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                  Sugestão do dia
+                </p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                  {(() => {
+                    const today = new Date().getDay();
+                    const cuisines = ['Pizza', 'Hamburguer', 'Comida Brasileira', 'Japonês', 'Italiano', 'Mexicano', 'Árabe'];
+                    return `${cuisines[today]} — ideal para hoje`;
+                  })()}
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {(() => {
+                const today = new Date().getDay();
+                const cuisines = ['Pizza', 'Hamburguer', 'Brasileira', 'Japonês', 'Italiano', 'Mexicano', 'Árabe'];
+                const suggestedCuisine = cuisines[today];
+                const suggestions = rankedRestaurants
+                  .filter(r => r.cuisineType?.toLowerCase().includes(suggestedCuisine.toLowerCase()))
+                  .slice(0, 4);
+                if (suggestions.length === 0) {
+                  return <p className="text-xs text-gray-400 col-span-full">Nenhum restaurante encontrado para esta sugestão</p>;
+                }
+                return suggestions.map(r => (
+                  <Link
+                    key={r.id}
+                    to={`/r/${r.slug}`}
+                    className={`p-3 rounded-2xl border transition-all hover:border-[#FFC928] ${
+                      isDark ? 'border-white/5 hover:bg-white/5' : 'border-gray-100 hover:bg-gray-50'
+                    }`}
+                  >
+                    <p className={`font-black text-xs uppercase tracking-tight truncate ${isDark ? 'text-white' : 'text-[#111]'}`}>{r.name}</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider mt-0.5">{r.cuisineType} • {r.neighborhood}</p>
+                  </Link>
+                ));
+              })()}
+            </div>
+          </motion.div>
+        )}
       </section>
 
       {/* Featured Section */}

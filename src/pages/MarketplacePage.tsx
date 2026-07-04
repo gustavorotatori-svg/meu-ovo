@@ -14,6 +14,7 @@ import { cuisineTypes, cuisineEmojis } from '../data/mockData';
 import { Restaurant } from '../types';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { rankRestaurants } from '../lib/recommendations';
 import { encodeGeohash, getGeohashRange } from '../lib/geohash';
 import { db } from '../lib/firebase';
@@ -37,6 +38,7 @@ const priceLabels = { low: 'R$', medium: 'R$ R$', high: 'R$ R$ R$' };
 export default function MarketplacePage() {
   const { restaurants: contextRestaurants, orders, products } = useRestaurant();
   const { user } = useAuth();
+  const { items: cartItems } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get('search') || searchParams.get('q') || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -622,6 +624,31 @@ export default function MarketplacePage() {
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-800 text-xs font-medium">
             {pageError}
           </div>
+        )}
+
+        {/* Abandoned cart banner */}
+        {cartItems.length > 0 && (
+          <Link
+            to="/carrinho"
+            className="block mb-6 p-4 rounded-2xl bg-gradient-to-r from-brand-egg/20 to-yellow-400/20 border border-brand-egg/30 hover:from-brand-egg/30 hover:to-yellow-400/30 transition-all group"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🛒</span>
+                <div>
+                  <p className="font-black text-sm text-[#111] uppercase tracking-tight">
+                    Você tem {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'} no carrinho
+                  </p>
+                  <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
+                    Finalize seu pedido agora
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-black text-brand-egg group-hover:translate-x-1 transition-transform">
+                Ir para o carrinho →
+              </span>
+            </div>
+          </Link>
         )}
 
         {/* Personalized shelf */}
