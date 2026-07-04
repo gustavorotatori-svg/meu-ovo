@@ -97,14 +97,35 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       const stored = localStorage.getItem('meuovo_favorites');
       return stored ? JSON.parse(stored) : [];
     } catch (e) {
-      console.error("Error reading favorites from localStorage:", e);
       return [];
     }
   });
 
+  // Sync favorites to Firestore on auth state
   useEffect(() => {
-    try { localStorage.setItem('meuovo_favorites', JSON.stringify(favorites)); } catch (e) {}
-  }, [favorites]);
+    if (user?.id) {
+      import('firebase/firestore').then(({ getDoc, doc }) => {
+        getDoc(doc(db, 'users', user.id)).then(snap => {
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.favorites && Array.isArray(data.favorites) && data.favorites.length > 0) {
+              setFavorites(data.favorites);
+              try { localStorage.setItem('meuovo_favorites', JSON.stringify(data.favorites)); } catch {}
+            }
+          }
+        }).catch(() => {});
+      });
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    try { localStorage.setItem('meuovo_favorites', JSON.stringify(favorites)); } catch {}
+    if (user?.id) {
+      import('firebase/firestore').then(({ updateDoc, doc }) => {
+        updateDoc(doc(db, 'users', user.id), { favorites }).catch(() => {});
+      });
+    }
+  }, [favorites, user?.id]);
 
   const toggleFavorite = (restaurantId: string) => {
     setFavorites(prev => {

@@ -17,6 +17,8 @@ import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '../lib/pix';
 import { getCustomerStats, checkCouponTargeting, CustomerStats } from '../services/customerRatingService';
 import { updateStreak } from '../services/streakService';
+import { awardPlatformPoints } from '../services/platformLoyaltyService';
+import { checkAndAwardAchievements, getAllAchievements } from '../services/achievementService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
@@ -478,6 +480,27 @@ export default function CheckoutPage() {
       updateStreak(user.id).then(result => {
         if (result.milestone) {
           setTimeout(() => toast.success(`🎉 ${result.milestone.label} — ${result.milestone.reward}`), 2000);
+        }
+      }).catch(() => {});
+      awardPlatformPoints(user.id, total).then(result => {
+        if (result) {
+          setTimeout(() => toast.success(`🏆 +${result.earned} pontos MEU OVO! Total: ${result.total} pts`), 3000);
+        }
+      }).catch(() => {});
+      checkAndAwardAchievements(user.id, {
+        orderCount: 0,
+        streakDays: 0,
+        totalDonated: donationAmount,
+        totalSpent: total,
+        favoriteCount: 0,
+        hasPix: paymentMethod === 'pix',
+      }).then(newly => {
+        if (newly.length > 0) {
+          const all = getAllAchievements();
+          newly.forEach(id => {
+            const ach = all.find(a => a.id === id);
+            if (ach) setTimeout(() => toast.success(`🏅 ${ach.icon} ${ach.label}: ${ach.description}`), 4000);
+          });
         }
       }).catch(() => {});
     }

@@ -787,8 +787,9 @@ const RestaurantCard: React.FC<{
   featured?: boolean;
   onShare: (e: React.MouseEvent) => void;
 }> = ({ restaurant: r, featured, onShare }) => {
-  const { favorites, toggleFavorite } = useRestaurant();
+  const { favorites, toggleFavorite, products } = useRestaurant();
   const isFav = favorites.includes(r.id);
+  const hasPromo = products.some(p => p.restaurantId === r.id && p.onPromotion && p.promotionPrice && p.price > p.promotionPrice);
 
   return (
     <Link to={`/r/${r.slug}`} onClick={() => trackRestaurantView(r.id, r.cuisineType)} className="group block">
@@ -815,6 +816,11 @@ const RestaurantCard: React.FC<{
             ) : (
               <span className="bg-gray-500/80 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
                 Fechado
+              </span>
+            )}
+            {hasPromo && (
+              <span className="bg-red-500/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1 animate-pulse">
+                🔥 Promo
               </span>
             )}
           </div>

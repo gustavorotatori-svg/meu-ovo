@@ -97,6 +97,7 @@ export default function MenuDisplay() {
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [customizingProduct, setCustomizingProduct] = useState<Product | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<SelectedOption[]>([]);
+  const [menuSearch, setMenuSearch] = useState('');
 
   const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
     const errInfo: FirestoreErrorInfo = {
@@ -617,7 +618,82 @@ export default function MenuDisplay() {
            ))}
         </div>
 
+        {/* Search within menu */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input
+            type="text"
+            value={menuSearch}
+            onChange={e => setMenuSearch(e.target.value)}
+            placeholder="Buscar no cardápio..."
+            className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-egg/30 focus:border-brand-egg transition-all placeholder:text-slate-300"
+          />
+          {menuSearch && (
+            <button
+              onClick={() => setMenuSearch('')}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              aria-label="Limpar busca"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+
         {/* Product List */}
+        {(() => {
+          if (menuSearch) {
+            const searchResults = products.filter(p =>
+              p.name.toLowerCase().includes(menuSearch.toLowerCase()) ||
+              (p.description || '').toLowerCase().includes(menuSearch.toLowerCase())
+            );
+            if (searchResults.length === 0) {
+              return (
+                <div className="text-center py-16">
+                  <Search size={40} className="mx-auto text-slate-300 mb-4" />
+                  <p className="font-black text-slate-400 text-sm uppercase tracking-widest">Nenhum produto encontrado</p>
+                  <p className="text-xs text-slate-300 mt-1">Tente buscar por outro termo</p>
+                </div>
+              );
+            }
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-px bg-slate-200 flex-1" />
+                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Resultados ({searchResults.length})</h2>
+                  <div className="h-px bg-slate-200 flex-1" />
+                </div>
+                <div className="grid gap-3">
+                  {searchResults.map(product => (
+                    <div 
+                      key={product.id} 
+                      onClick={() => { setSelectedOptions([]); setCustomizingProduct(product); }}
+                      className="bg-white rounded-xl p-3 border border-slate-100 flex gap-4 hover:border-slate-200 transition-all group hover:shadow-md cursor-pointer text-left"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">{product.name}</h3>
+                        {product.description && <p className="text-[11px] text-slate-500 leading-relaxed">{product.description}</p>}
+                        {product.estimatedPrepTime && (
+                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1"><Clock size={12} /> {product.estimatedPrepTime} min</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="font-black text-slate-900 text-sm">
+                            {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice ? (
+                              <>{formatCurrency(product.promotionPrice)} <span className="line-through text-slate-300 text-[10px]">{formatCurrency(product.price)}</span></>
+                            ) : formatCurrency(product.price)}
+                          </span>
+                          <span className="text-[10px] font-black text-brand-egg uppercase tracking-widest">Adicionar +</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+          return null;
+        })()}
+
+        {!menuSearch && (
         <div className="space-y-10">
           {categories.map(category => {
             const catProducts = products.filter(p => p.categoryId === category.id);
@@ -727,10 +803,11 @@ export default function MenuDisplay() {
                </div>
              );
            })}
-         </div>
+          </div>
+        )}
        </div>
 
-       {/* Floating WhatsApp Support Button */}
+        {/* Floating WhatsApp Support Button */}
        {!isCartOpen && !isCheckoutOpen && !isLoyaltyOpen && (
          <motion.a
            initial={{ scale: 0, opacity: 0 }}

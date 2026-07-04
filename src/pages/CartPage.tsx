@@ -19,12 +19,11 @@ export default function CartPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Mock delivery fee for now
-  const deliveryFee = 6.00;
-  const deliveryMethod = 'delivery'; 
-
   const restaurantId = items[0]?.product.restaurantId;
   const restaurant = restaurants.find(r => r.id === restaurantId);
+
+  const deliveryFee = restaurant?.deliverySettings?.fee ?? restaurant?.deliveryFee ?? 6;
+  const deliveryMethod = 'delivery'; 
 
   const handleRemove = (index: number, name: string) => {
     removeItem(index);

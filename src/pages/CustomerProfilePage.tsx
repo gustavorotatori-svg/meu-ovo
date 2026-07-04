@@ -15,6 +15,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { getCustomerStats } from '../services/customerRatingService';
 import { getStreak, getNextMilestone } from '../services/streakService';
+import { getPlatformPoints, pointsToDiscount } from '../services/platformLoyaltyService';
+import { getAchievements, getAllAchievements, type AchievementState } from '../services/achievementService';
 
 type Tab = 'orders' | 'favorites' | 'addresses';
 
@@ -28,6 +30,8 @@ export default function CustomerProfilePage() {
   const [customerStats, setCustomerStats] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [streak, setStreak] = useState<{ currentStreak: number; longestStreak: number } | null>(null);
+  const [platformPoints, setPlatformPoints] = useState<{ totalPoints: number } | null>(null);
+  const [achievements, setAchievements] = useState<AchievementState | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>('orders');
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>(() => {
     try { return JSON.parse(localStorage.getItem('meuovo_addresses') || '[]'); } catch { return []; }
@@ -88,6 +92,8 @@ export default function CustomerProfilePage() {
     fetchOrders();
     if (user?.id) {
       getStreak(user.id).then(s => setStreak(s)).catch(() => {});
+      getPlatformPoints(user.id).then(p => setPlatformPoints(p)).catch(() => {});
+      getAchievements(user.id).then(a => setAchievements(a)).catch(() => {});
     }
   }, [user]);
 
@@ -394,6 +400,51 @@ export default function CustomerProfilePage() {
                           })()}
                         </div>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Platform Points */}
+                {platformPoints && platformPoints.totalPoints > 0 && (
+                  <div className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200/50 text-left w-full">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🏆</span>
+                        <div>
+                          <p className="text-xs font-black text-purple-800 uppercase tracking-wider">
+                            {platformPoints.totalPoints} pontos MEU OVO
+                          </p>
+                          <p className="text-[8px] font-bold text-purple-500 uppercase tracking-widest mt-0.5">
+                            {pointsToDiscount(platformPoints.totalPoints) >= 1
+                              ? `R$ ${pointsToDiscount(platformPoints.totalPoints).toFixed(2)} em descontos disponíveis`
+                              : `Faltam ${100 - platformPoints.totalPoints} pts para R$ 5 de desconto`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-2xl">💎</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Achievements */}
+                {achievements && achievements.unlocked.length > 0 && (
+                  <div className="mt-5 p-4 rounded-2xl bg-white border border-slate-200 text-left w-full">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="text-sm">🏅</span>
+                      <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Conquistas ({achievements.unlocked.length}/{getAllAchievements().length})</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {getAllAchievements().filter(a => achievements.unlocked.includes(a.id)).map(a => (
+                        <span key={a.id} className="px-2 py-1 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 text-[9px] font-bold text-amber-800 flex items-center gap-1" title={a.description}>
+                          {a.icon} {a.label}
+                        </span>
+                      ))}
+                      {getAllAchievements().filter(a => !achievements.unlocked.includes(a.id)).slice(0, 3).map(a => (
+                        <span key={a.id} className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-200 text-[9px] font-bold text-slate-300 flex items-center gap-1" title={a.description}>
+                          🔒 {a.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 )}
