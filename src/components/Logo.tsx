@@ -1,13 +1,16 @@
 import React from 'react';
 import { cn } from '../lib/utils';
+import { motion } from 'motion/react';
+import { yolkPulse } from '../lib/motion';
 
 interface LogoProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   variant?: 'black' | 'white' | 'colored' | 'dark-colored';
+  animated?: boolean;
 }
 
-export function Logo({ className, size = 'md', variant = 'black' }: LogoProps) {
+export function Logo({ className, size = 'md', variant = 'black', animated = false }: LogoProps) {
   const sizes = {
     sm: 'h-8',
     md: 'h-12',
@@ -67,8 +70,9 @@ export function Logo({ className, size = 'md', variant = 'black' }: LogoProps) {
           />
           
           {/* Heart Yolk - Distinctive bean-heart shape from logo */}
-          <path 
-            d="M65 92C50 86 40 75 40 60C40 48 52 42 63 55C74 42 86 48 86 60C86 75 78 86 65 92Z" 
+          <motion.path
+            animate={animated ? yolkPulse : undefined}
+            d="M65 92C50 86 40 75 40 60C40 48 52 42 63 55C74 42 86 48 86 60C86 75 78 86 65 92Z"
             fill={yolkYellow}
           />
 

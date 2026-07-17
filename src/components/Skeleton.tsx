@@ -1,22 +1,29 @@
-import React from 'react';
+import type { HTMLAttributes } from 'react';
 import { cn } from '../lib/utils';
 
-interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
-  key?: React.Key;
+  variant?: 'default' | 'golden';
 }
 
-export function Skeleton({ className, ...props }: SkeletonProps) {
+export function Skeleton({ className, variant = 'default', ...props }: SkeletonProps) {
   return (
-    <div className={cn("animate-pulse bg-slate-200 rounded-md", className)} {...props} />
+    <div
+      className={cn(
+        variant === 'default' ? 'animate-pulse bg-slate-200 dark:bg-slate-800' : 'shimmer-golden bg-slate-100 dark:bg-slate-800',
+        'rounded-md',
+        className
+      )}
+      {...props}
+    />
   );
 }
 
 export function CardSkeleton() {
   return (
-    <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+    <div className="bg-white dark:bg-dark-card p-6 rounded-3xl border border-slate-100 dark:border-dark-border shadow-sm space-y-4">
       <div className="flex justify-between items-start">
-        <Skeleton className="w-12 h-12 rounded-2xl" />
+        <Skeleton className="w-12 h-12 rounded-2xl" variant="golden" />
         <Skeleton className="w-16 h-4 rounded-full" />
       </div>
       <div className="space-y-2">

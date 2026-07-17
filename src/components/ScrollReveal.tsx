@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 type RevealDirection = 'up' | 'down' | 'left' | 'right' | 'fade' | 'zoom';
 
@@ -61,7 +61,7 @@ export default function ScrollReveal({
       style={{
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'none' : transformMap[direction],
-        transition: `opacity ${duration}ms cubic-bezier(0.16, 1, 0.3, 1), transform ${duration}ms cubic-bezier(0.16, 1, 0.3, 1)`,
+        transition: `opacity ${duration}ms var(--ease-smooth, cubic-bezier(0.16, 1, 0.3, 1)), transform ${duration}ms var(--ease-smooth, cubic-bezier(0.16, 1, 0.3, 1))`,
         transitionDelay: `${delay}ms`,
         willChange: 'opacity, transform',
       }}

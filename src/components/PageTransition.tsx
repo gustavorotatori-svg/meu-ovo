@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, type ReactNode } from 'react';
+import { pageTransition, pageTransitionConfig } from '../lib/motion';
 
 const flameStyle = `
 @keyframes flame-flicker {
@@ -105,10 +106,11 @@ export default function PageTransition({ children }: { children: ReactNode }) {
       <AnimatePresence>
         <motion.div
           key={location.pathname}
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12, scale: 0.98 }}
-          transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          variants={pageTransition}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          transition={pageTransitionConfig}
         >
           {showFlame && (
             <motion.div

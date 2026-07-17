@@ -10,6 +10,7 @@ import { WA_NUMBER } from '../services/whatsappService';
 import SEO from '../components/SEO';
 import OptimizedImage from '../components/OptimizedImage';
 import { toast } from 'react-hot-toast';
+import { fadeInScale, buttonHover, buttonTap, badgePop, durations, easings, springSnap, spring } from '../lib/motion';
 
 export default function CartPage() {
   const { t } = useTranslation();
@@ -36,8 +37,9 @@ export default function CartPage() {
     return (
       <div className={cn("min-h-screen flex items-center justify-center p-4", isDark ? 'bg-[#1a1a1a]' : 'bg-[#F5F5F5]')}>
         <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          variants={fadeInScale}
+          initial="hidden"
+          animate="visible"
           className="text-center p-8 bg-white dark:bg-[#111] rounded-3xl shadow-xl max-w-sm w-full"
         >
           <motion.div
@@ -50,8 +52,8 @@ export default function CartPage() {
           <h2 className={cn("font-black text-2xl mb-2", isDark ? 'text-white' : 'text-[#111]')}>{t('cart.empty')}</h2>
           <p className="text-gray-500 mb-6">{t('cart.emptySubtitle')}</p>
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={buttonHover}
+            whileTap={buttonTap}
             onClick={() => navigate('/busca')}
             className="bg-[#FFC928] text-[#111] font-black px-8 py-4 rounded-full shadow-lg shadow-yellow-200"
           >
@@ -93,17 +95,17 @@ export default function CartPage() {
           <div className="space-y-6">
             <AnimatePresence mode="popLayout">
               {items.map((item, index) => {
-                const additionalsTotal = item.selectedAdditionals.reduce((s, a) => s + a.price, 0);
-                const basePrice = item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price;
+                const additionalsTotal = (item.selectedAdditionals || []).reduce((s, a) => s + (a.price || 0), 0);
+                const basePrice = (item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price) || 0;
                 const itemTotal = (basePrice + additionalsTotal) * item.quantity;
 
                 return (
-                  <motion.div 
+                  <motion.div
                     key={`${item.product.id}-${index}`}
                     layout
                     initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1, transition: { duration: durations.base, ease: easings.smooth } }}
+                    exit={{ x: 20, opacity: 0, transition: { duration: durations.fast, ease: easings.smooth } }}
                     className="relative group pb-6 last:pb-0 border-b last:border-b-0 border-gray-50 dark:border-gray-800"
                   >
                     <div className="flex gap-4">
@@ -122,9 +124,9 @@ export default function CartPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className={cn("font-black text-sm pr-6", isDark ? 'text-white' : 'text-[#111]')}>{item.product.name}</h3>
+                            <h3 className={cn("font-black text-sm truncate pr-6", isDark ? 'text-white' : 'text-[#111]')}>{item.product.name}</h3>
                             {item.selectedAdditionals.length > 0 && (
-                              <div className="text-gray-400 text-[10px] mt-1 font-bold uppercase tracking-tight">
+                              <div className="text-gray-400 text-[10px] mt-1 font-bold uppercase tracking-tight line-clamp-2">
                                 + {item.selectedAdditionals.map(a => a.name).join(', ')}
                               </div>
                             )}
@@ -135,7 +137,7 @@ export default function CartPage() {
                           <button
                             onClick={() => handleRemove(index, item.product.name)}
                             aria-label={`Remover ${item.product.name}`}
-                            className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
+                            className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -144,11 +146,11 @@ export default function CartPage() {
                         <div className="flex items-center justify-between mt-3">
                           <div className={cn("flex items-center gap-1 rounded-2xl p-1 bg-slate-100/80 dark:bg-white/5 backdrop-blur-sm shadow-inner", isDark ? '' : '')}>
                             <motion.button
-                              whileHover={{ scale: 1.1, backgroundColor: isDark ? '#333' : '#fff' }}
-                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.1, transition: spring }}
+                              whileTap={{ scale: 0.9, transition: springSnap }}
                               onClick={() => updateQuantity(index, Math.max(0, item.quantity - 1))}
                               className={cn(
-                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm border border-transparent",
+                                "w-11 h-11 rounded-xl flex items-center justify-center shadow-sm border border-transparent",
                                 isDark ? "bg-[#2a2a2a] text-white hover:border-white/10" : "bg-white text-[#111] hover:border-gray-200"
                               )}
                             >
@@ -157,19 +159,20 @@ export default function CartPage() {
                             
                             <motion.span 
                               key={item.quantity}
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 1, opacity: 1 }}
+                              variants={badgePop}
+                              initial="hidden"
+                              animate="visible"
                               className={cn("font-black w-8 text-center text-sm", isDark ? 'text-white' : 'text-[#111]')}
                             >
                               {item.quantity}
                             </motion.span>
                             
                             <motion.button
-                              whileHover={{ scale: 1.1, backgroundColor: isDark ? '#333' : '#fff' }}
-                              whileTap={{ scale: 0.9 }}
+                              whileHover={{ scale: 1.1, transition: spring }}
+                              whileTap={{ scale: 0.9, transition: springSnap }}
                               onClick={() => updateQuantity(index, item.quantity + 1)}
                               className={cn(
-                                "w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm border border-transparent",
+                                "w-11 h-11 rounded-xl flex items-center justify-center shadow-sm border border-transparent",
                                 isDark ? "bg-[#2a2a2a] text-white hover:border-white/10" : "bg-white text-[#111] hover:border-gray-200"
                               )}
                             >
@@ -191,7 +194,7 @@ export default function CartPage() {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.1 }}
+          transition={{ duration: durations.base, ease: easings.smooth, delay: 0.1 }}
           className={cn("rounded-3xl p-6 shadow-sm", isDark ? 'bg-[#111111]' : 'bg-white')}
         >
           <h2 className={cn("font-black text-sm uppercase tracking-widest mb-4", isDark ? 'text-white' : 'text-slate-400')}>{t('cart.summary')}</h2>
@@ -223,9 +226,9 @@ export default function CartPage() {
           <motion.button
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            transition={{ duration: durations.base, ease: easings.smooth, delay: 0.2 }}
+            whileHover={buttonHover}
+            whileTap={buttonTap}
             onClick={() => navigate('/checkout')}
             className="w-full font-black py-6 rounded-3xl text-lg flex items-center justify-between px-8 transition-all bg-[#111] text-white hover:bg-black shadow-2xl shadow-black/10 group"
           >
@@ -239,9 +242,9 @@ export default function CartPage() {
           <motion.button
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            transition={{ duration: durations.base, ease: easings.smooth, delay: 0.2 }}
+            whileHover={buttonHover}
+            whileTap={buttonTap}
             onClick={() => {
               if (!restaurant) return;
               const itemsText = items.map(item => `${item.quantity}x ${item.product.name} - R$ ${((item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price) * item.quantity).toFixed(2)}`).join('\n');
@@ -250,7 +253,8 @@ export default function CartPage() {
                           `*ITENS:*\n${itemsText}\n\n` +
                           `*SUBTOTAL: R$ ${subtotal.toFixed(2)}*\n\n` +
                           `Gostaria de combinar a entrega/retirada por aqui!`;
-              const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+              const whatsAppNumber = restaurant?.whatsapp || WA_NUMBER;
+              const url = `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(msg)}`;
               window.open(url, '_blank');
             }}
             className="w-full font-black py-4 rounded-2xl text-xs flex items-center justify-center gap-3 transition-all bg-[#25D366] text-white hover:opacity-90 shadow-lg shadow-green-200 uppercase tracking-widest"

@@ -2,6 +2,7 @@ import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { cn } from '../lib/utils';
 import { Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
+import { spring, springSnap } from '../lib/motion';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -11,8 +12,9 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
-    const variants = {
-      primary: 'bg-brand-egg text-brand-black hover:bg-yellow-400 focus:ring-brand-egg shadow-[0_2px_0_0_#D97706]',
+    const styleVariants = {
+      primary:
+        'bg-brand-egg text-brand-black hover:bg-yellow-400 focus:ring-brand-egg shadow-[0_2px_0_0_#D97706]',
       secondary: 'bg-brand-black text-white hover:bg-zinc-800 focus:ring-brand-black shadow-sm',
       outline: 'border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm',
       ghost: 'bg-transparent hover:bg-slate-100 text-slate-600',
@@ -29,13 +31,14 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <motion.button
         ref={ref as React.Ref<HTMLButtonElement>}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileHover={{ scale: 1.03, transition: spring }}
+        whileTap={{ scale: 0.97, transition: springSnap }}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center rounded-md font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed',
+          'inline-flex items-center justify-center rounded-md font-medium transition-colors duration-[var(--duration-fast)] focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed',
+          variant === 'primary' && 'hover:shadow-[var(--glow-golden-soft)]',
           isLoading && "animate-pulse",
-          variants[variant],
+          styleVariants[variant],
           sizes[size],
           className
         )}
