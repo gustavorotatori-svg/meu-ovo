@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://meu-ovo-pi.vercel.app/sitemap.xml
+
+# Disallow admin and platform routes from crawling
+Disallow: /admin/
+Disallow: /plataforma/
+Disallow: /api/

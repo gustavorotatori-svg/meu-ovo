@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap, Sticker } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -57,6 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/caixa', label: 'Caixa', icon: <Wallet size={18} /> },
     { to: '/admin/pedidos', label: t('nav.orders'), icon: <ShoppingBag size={18} /> },
     { to: '/admin/cardapio', label: t('nav.menu'), icon: <Package size={18} /> },
+    { to: '/admin/etiquetas', label: 'Etiquetas', icon: <Sticker size={18} /> },
     { to: '/admin/cupons', label: 'Cupons', icon: <Ticket size={18} /> },
     { to: '/admin/fidelidade', label: 'Fidelidade', icon: <Gift size={18} /> },
     { to: '/admin/mesas', label: 'Mesas & QR Codes', icon: <QrCode size={18} /> },

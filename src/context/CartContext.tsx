@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { CartItem } from '../types';
 
 interface CartContextType {
@@ -48,7 +48,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [items, restaurantId]);
 
-  const addItem = (item: CartItem) => {
+  const addItem = useCallback((item: CartItem) => {
     if (restaurantId && restaurantId !== item.product.restaurantId) {
       setItems([item]);
       setRestaurantId(item.product.restaurantId);
@@ -62,7 +62,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
     setRestaurantId(item.product.restaurantId);
 
-    // Merge with existing item if same product + same additionals
     setItems(prev => {
       const existingIdx = prev.findIndex(existing =>
         existing.product.id === item.product.id &&
@@ -76,9 +75,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, item];
     });
-  };
+  }, [restaurantId]);
 
-  const removeItem = (index: number) => {
+  const removeItem = useCallback((index: number) => {
     setItems(prev => {
       const next = prev.filter((_, i) => i !== index);
       if (next.length === 0) {
@@ -87,29 +86,33 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return next;
     });
-  };
+  }, []);
 
-  const updateQuantity = (index: number, quantity: number) => {
+  const updateQuantity = useCallback((index: number, quantity: number) => {
     if (quantity <= 0) { removeItem(index); return; }
     setItems(prev => prev.map((item, i) => i === index ? { ...item, quantity } : item));
-  };
+  }, [removeItem]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setItems([]);
     setRestaurantId(null);
     setTableNumber(null);
-  };
+  }, []);
 
-  const subtotal = items.reduce((sum, item) => {
+  const subtotal = useMemo(() => items.reduce((sum, item) => {
     const additionalsTotal = (item.selectedAdditionals || []).reduce((s, a) => s + a.price, 0);
     const basePrice = item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price;
     return sum + (basePrice + additionalsTotal) * item.quantity;
-  }, 0);
+  }, 0), [items]);
 
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const itemCount = useMemo(() => items.reduce((sum, item) => sum + item.quantity, 0), [items]);
+
+  const value = useMemo(() => ({ items, restaurantId, tableNumber, setTableNumber, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount }), [
+    items, restaurantId, tableNumber, setTableNumber, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount
+  ]);
 
   return (
-    <CartContext.Provider value={{ items, restaurantId, tableNumber, setTableNumber, addItem, removeItem, updateQuantity, clearCart, subtotal, itemCount }}>
+    <CartContext.Provider value={value}>
       {children}
     </CartContext.Provider>
   );

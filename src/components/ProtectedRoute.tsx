@@ -1,6 +1,7 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-hot-toast';
 
 type AllowedRole = 'customer' | 'restaurant' | 'admin';
 
@@ -26,8 +27,13 @@ export default function ProtectedRoute({
   }
 
   if (roles && !roles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    return <RedirectWithToast to="/" message="Acesso não autorizado para este perfil" />;
   }
 
   return <>{children}</>;
+}
+
+function RedirectWithToast({ to, message }: { to: string; message: string }) {
+  useEffect(() => { toast.error(message); }, [message]);
+  return <Navigate to={to} replace />;
 }

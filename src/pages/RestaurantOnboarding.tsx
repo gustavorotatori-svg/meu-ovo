@@ -6,6 +6,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { useTheme } from '../context/ThemeContext';
 import { cuisineTypes } from '../data/mockData';
 import { Logo } from '../components/Logo';
+import BackButton from '../components/BackButton';
 import { useAuth } from '../context/AuthContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { toast } from 'react-hot-toast';
@@ -23,10 +24,10 @@ export default function RestaurantOnboarding() {
     if (!isAuthenticated) {
       navigate('/login?redirect=/cadastro-restaurante', { replace: true });
     } else if (user?.role === 'restaurant') {
+      // Already has a restaurant — redirect to admin
       navigate('/admin', { replace: true });
-    } else if (user?.role !== 'admin') {
-      navigate('/busca', { replace: true });
     }
+    // 'customer' (post-signup, awaiting onboarding) and 'admin' (creating for others) allowed through
   }, [isAuthenticated, user?.role, navigate]);
   
   const STEPS = [
@@ -37,13 +38,26 @@ export default function RestaurantOnboarding() {
     t('onboarding.step5')
   ];
 
-  const [step, setStep] = useState(0);
+  const STORAGE_KEY = 'meuovo_onboarding_progress';
+
+  const loadSavedProgress = () => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  };
+
+  const savedProgress = loadSavedProgress();
+
+  const [step, setStep] = useState(savedProgress?.step ?? 0);
   const [loading, setLoading] = useState(false);
-  const [logoBase64, setLogoBase64] = useState<string>('');
+  const [logoBase64, setLogoBase64] = useState<string>(savedProgress?.logoBase64 ?? '');
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(savedProgress?.form ?? {
     name: '', responsible: '', whatsapp: '', email: '',
     cep: '', address: '', neighborhood: '', city: '', cuisineType: 'Pizza',
     hours: '', primaryColor: '#FFC928',
@@ -51,12 +65,25 @@ export default function RestaurantOnboarding() {
     deliveryFee: '', minOrder: '', estimatedTime: '',
     deliveryRadius: '', deliveryObs: '', cnpj: '',
   });
-  const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(null);
+  const [latLng, setLatLng] = useState<{ lat: number; lng: number } | null>(savedProgress?.latLng ?? null);
   const [geoLoading, setGeoLoading] = useState(false);
-  const [lgpdConsent, setLgpdConsent] = useState(false);
-  const [categories, setCategories] = useState<string[]>(['Mais Vendidos', 'Bebidas']);
+  const [lgpdConsent, setLgpdConsent] = useState(savedProgress?.lgpdConsent ?? false);
+  const [categories, setCategories] = useState<string[]>(savedProgress?.categories ?? ['Mais Vendidos', 'Bebidas']);
   const [newCat, setNewCat] = useState('');
-  const [products, setProducts] = useState([{ name: '', price: '', category: '', image: '' }]);
+  const [products, setProducts] = useState(savedProgress?.products ?? [{ name: '', price: '', category: '', image: '' }]);
+
+  const saveProgress = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        step, form, logoBase64, latLng, lgpdConsent, categories, products,
+        savedAt: Date.now()
+      }));
+    } catch {}
+  };
+
+  useEffect(() => {
+    saveProgress();
+  }, [step, form, logoBase64, latLng, lgpdConsent, categories, products]);
 
   const update = (field: string, value: string | boolean) => setForm(f => ({ ...f, [field]: value }));
 
@@ -204,6 +231,7 @@ export default function RestaurantOnboarding() {
       }));
 
       await registerRestaurant(restaurantData, categories, cleanedProducts);
+      localStorage.removeItem(STORAGE_KEY);
       setStep(4);
       toast.success('Restaurante cadastrado com sucesso!');
     } catch (e) {
@@ -341,6 +369,10 @@ export default function RestaurantOnboarding() {
   return (
     <div className={`min-h-screen transition-colors pb-16 ${isDark ? 'bg-[#121212]' : 'bg-[#F9FAFB]'}`}>
       
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
+      
       {/* Premium Header Art Banner */}
       <div className="bg-[#111111] text-[#F3F4F6] relative overflow-hidden px-6 py-10 md:py-16 border-b border-amber-500/10 shadow-2xl">
         {/* Background ambient glowing elements */}
@@ -449,16 +481,6 @@ export default function RestaurantOnboarding() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CPF / CNPJ</label>
-                  <input 
-                    value={form.cnpj} 
-                    onChange={e => update('cnpj', e.target.value)} 
-                    placeholder="000.000.000-00" 
-                    className={`w-full bg-white border ${fieldErrors.cnpj ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all`}
-                  />
-                  {fieldErrors.cnpj && <p className="text-[10px] text-red-500 font-bold mt-1">{fieldErrors.cnpj}</p>}
-                </div>
-                <div>
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.whatsapp')} *</label>
                     <div className="relative">
                       <input 
@@ -482,48 +504,6 @@ export default function RestaurantOnboarding() {
                     value={form.email} 
                     onChange={e => update('email', e.target.value)} 
                     placeholder="seu@email.com" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
-                </div>
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CEP</label>
-                    <input
-                      value={form.cep}
-                      onChange={e => update('cep', e.target.value.replace(/\D/g, '').slice(0, 8))}
-                      onBlur={() => handleCepBlur(form.cep)}
-                      placeholder="00000-000"
-                      maxLength={8}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all"
-                    />
-                  </div>
-                  <div className="flex items-end pb-1">
-                    <button
-                      type="button"
-                      onClick={requestGeoLocation}
-                      disabled={geoLoading}
-                      className="w-full flex items-center justify-center gap-2 bg-[#111] text-white text-xs font-black px-4 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
-                    >
-                      {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
-                      {latLng ? 'Localizado ✓' : 'Usar GPS'}
-                    </button>
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.address')}</label>
-                  <input 
-                    value={form.address} 
-                    onChange={e => update('address', e.target.value)} 
-                    placeholder="Rua, número" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.neighborhood')}</label>
-                  <input 
-                    value={form.neighborhood} 
-                    onChange={e => update('neighborhood', e.target.value)} 
-                    placeholder="Bairro" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
                   />
                 </div>
@@ -552,6 +532,76 @@ export default function RestaurantOnboarding() {
                     value={form.hours} 
                     onChange={e => update('hours', e.target.value)} 
                     placeholder="Ex: Seg-Sex 11h-22h" 
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
+                  />
+                </div>
+              </div>
+
+              {/* Advanced Settings Toggle */}
+              <div className="border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <span>Configurações avançadas</span>
+                    <span className="text-[8px] text-gray-300 font-normal normal-case">(opcional)</span>
+                  </span>
+                  <span className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>▼</span>
+                </button>
+              </div>
+
+              {showAdvanced && <>
+                <div className="space-y-5 border-t border-gray-100 pt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CPF / CNPJ</label>
+                  <input 
+                    value={form.cnpj} 
+                    onChange={e => update('cnpj', e.target.value)} 
+                    placeholder="000.000.000-00" 
+                    className={`w-full bg-white border ${fieldErrors.cnpj ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all`}
+                  />
+                  {fieldErrors.cnpj && <p className="text-[10px] text-red-500 font-bold mt-1">{fieldErrors.cnpj}</p>}
+                </div>
+                <div className="flex items-end pb-1">
+                  <button
+                    type="button"
+                    onClick={requestGeoLocation}
+                    disabled={geoLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-[#111] text-white text-xs font-black px-4 py-3 rounded-xl hover:bg-gray-800 transition-colors disabled:opacity-50"
+                  >
+                    {geoLoading ? <Loader2 size={14} className="animate-spin" /> : <MapPin size={14} />}
+                    {latLng ? 'Localizado ✓' : 'Usar GPS'}
+                  </button>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CEP</label>
+                  <input
+                    value={form.cep}
+                    onChange={e => update('cep', e.target.value.replace(/\D/g, '').slice(0, 8))}
+                    onBlur={() => handleCepBlur(form.cep)}
+                    placeholder="00000-000"
+                    maxLength={8}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.address')}</label>
+                  <input 
+                    value={form.address} 
+                    onChange={e => update('address', e.target.value)} 
+                    placeholder="Rua, número" 
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.neighborhood')}</label>
+                  <input 
+                    value={form.neighborhood} 
+                    onChange={e => update('neighborhood', e.target.value)} 
+                    placeholder="Bairro" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
                   />
                 </div>
@@ -622,6 +672,9 @@ export default function RestaurantOnboarding() {
                   ))}
               </div>
             </div>
+            </div>
+            </>
+            }
           </div>
           </div>
         )}

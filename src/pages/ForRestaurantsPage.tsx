@@ -3,6 +3,7 @@ import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, Sho
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import BackButton from '../components/BackButton';
 import ScrollReveal from '../components/ScrollReveal';
 
 export default function ForRestaurantsPage() {
@@ -13,6 +14,10 @@ export default function ForRestaurantsPage() {
         description="Crie seu cardápio digital grátis, receba pedidos direto no WhatsApp e venda sem comissão. Junte-se ao Meu Ovo e seja dono do seu negócio."
       />
       <Navbar />
+
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
 
       <div className="relative pt-20 pb-24 overflow-hidden bg-[#0A0A0A] border-b border-white/5 font-sans">
         {/* Glowing ambient background colored lights */}

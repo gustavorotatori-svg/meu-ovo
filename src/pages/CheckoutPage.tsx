@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import SEO from '../components/SEO';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
@@ -29,15 +30,27 @@ export default function CheckoutPage() {
   const { items, subtotal, clearCart, tableNumber: cartTableNumber } = useCart();
   const { restaurants, deliverySettings, addOrder } = useRestaurant();
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   const restaurantId = items[0]?.product.restaurantId;
   const restaurant = restaurants.find(r => r.id === restaurantId);
 
   const [isExpress, setIsExpress] = useState(false);
 
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => localStorage.getItem('meuovo_customer_name') || '');
   const [nameError, setNameError] = useState('');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(() => {
+    const saved = localStorage.getItem('customerPhone');
+    if (saved) {
+      const digits = saved.replace(/\D/g, '');
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+      if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+    }
+    return '';
+  });
   const [phoneError, setPhoneError] = useState('');
 
   const formatPhone = (value: string) => {
@@ -235,6 +248,7 @@ export default function CheckoutPage() {
       }
 
       setAppliedCoupon(coupon);
+      if (selectedReward) setSelectedReward(null);
       toast.success('Cupom aplicado com sucesso!');
     } catch (error) {
       console.error('Error validating coupon:', error);
@@ -260,20 +274,16 @@ export default function CheckoutPage() {
         ? (subtotal * selectedReward.value) / 100 
         : (selectedReward?.type === 'free_product' ? getFreeProductValue() : 0));
 
-  const getDeliveryFee = () => {
+  const getDeliveryFee = (rest: typeof restaurant) => {
     if (orderType !== 'delivery') return 0;
-    
-    // Check if restaurant has specific fees for neighborhoods
-    const neighborhoodFees = restaurant.deliverySettings?.feeByNeighborhood || [];
+    if (!rest) return 0;
+    const neighborhoodFees = rest.deliverySettings?.feeByNeighborhood || [];
     const matched = neighborhoodFees.find(n => n.neighborhood === selectedNeighborhood);
-    
     if (matched) return matched.fee;
-    
-    // Fallback to restaurant's default fee or context's deliverySettings
-    return restaurant.deliverySettings?.fee ?? deliverySettings?.fee ?? 0;
+    return rest.deliverySettings?.fee ?? deliverySettings?.fee ?? 0;
   };
 
-  const deliveryFee = getDeliveryFee();
+  const deliveryFee = getDeliveryFee(restaurant);
   const total = Math.max(0, subtotal + deliveryFee + tipAmount + caixinhaAmount + donationAmount - discountValue);
 
   const handleSubmit = async () => {
@@ -322,7 +332,7 @@ export default function CheckoutPage() {
     }
 
     setSubmitting(true);
-    const id = `ORD${Date.now().toString().slice(-6)}${Math.random().toString(36).slice(2, 4).toUpperCase()}`;
+    const id = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     
     // If free product reward was selected, we need to mark it in the order items
     const orderItems = items.map(item => {
@@ -373,7 +383,8 @@ export default function CheckoutPage() {
 
     try {
       await addOrder(order);
-    } catch {
+    } catch (err) {
+      console.error('[Checkout] Failed to save order:', err);
       toast.error('Erro ao salvar pedido. Seu carrinho foi preservado.');
       setSubmitting(false);
       return;
@@ -394,6 +405,7 @@ export default function CheckoutPage() {
         });
       } catch (err) {
         console.error('Error redeeming points:', err);
+        toast.error('Erro ao deduzir pontos de fidelidade. Entre em contato com o suporte.');
       }
     }
 
@@ -405,6 +417,7 @@ export default function CheckoutPage() {
         });
       } catch (err) {
         console.error('Error incrementing coupon usage:', err);
+        toast.error('Erro ao registrar uso do cupom. Entre em contato com o suporte.');
       }
     }
 
@@ -476,17 +489,18 @@ export default function CheckoutPage() {
     }
 
     localStorage.setItem('customerPhone', phone);
+    localStorage.setItem('meuovo_customer_name', name);
     if (user?.id) {
       updateStreak(user.id).then(result => {
         if (result.milestone) {
           setTimeout(() => toast.success(`🎉 ${result.milestone.label} — ${result.milestone.reward}`), 2000);
         }
-      }).catch(() => {});
+      }).catch((err) => console.error('[Checkout] Streak update failed:', err));
       awardPlatformPoints(user.id, total).then(result => {
         if (result) {
           setTimeout(() => toast.success(`🏆 +${result.earned} pontos MEU OVO! Total: ${result.total} pts`), 3000);
         }
-      }).catch(() => {});
+      }).catch((err) => console.error('[Checkout] Platform points failed:', err));
       checkAndAwardAchievements(user.id, {
         orderCount: 0,
         streakDays: 0,
@@ -502,7 +516,7 @@ export default function CheckoutPage() {
             if (ach) setTimeout(() => toast.success(`🏅 ${ach.icon} ${ach.label}: ${ach.description}`), 4000);
           });
         }
-      }).catch(() => {});
+      }).catch((err) => console.error('[Checkout] Achievement check failed:', err));
     }
     clearCart();
     setSubmitted(true);
@@ -511,7 +525,7 @@ export default function CheckoutPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#F5F5F5] flex items-center justify-center p-4">
+      <div className={cn('min-h-screen flex items-center justify-center p-4', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -590,7 +604,7 @@ export default function CheckoutPage() {
                                   toast.success(t('checkout.pixSuccess') || 'PIX copiado!');
                                 }}
                                 title={t('checkout.pixCopy') || 'Copiar'}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FFC928] text-black rounded-lg shadow-sm"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-3 bg-[#FFC928] text-black rounded-lg shadow-sm"
                               >
                                 <Ticket size={14} />
                               </motion.button>
@@ -631,14 +645,19 @@ export default function CheckoutPage() {
                     <p className="text-[10px] text-slate-500 font-bold px-4">
                       Clique no botão abaixo para ser redirecionado ao link de pagamento do restaurante.
                     </p>
-                    <a
-                      href={paymentMethod === 'credit' ? restaurant?.paymentSettings?.creditCardLink : paymentMethod === 'debit' ? restaurant?.paymentSettings?.debitLink : restaurant?.paymentSettings?.voucherLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 mt-3 px-8 py-4 bg-[#111] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg"
-                    >
-                      <CreditCard size={18} /> Ir para Pagamento
-                    </a>
+                    {(() => {
+                      const link = paymentMethod === 'credit' ? restaurant?.paymentSettings?.creditCardLink : paymentMethod === 'debit' ? restaurant?.paymentSettings?.debitLink : restaurant?.paymentSettings?.voucherLink;
+                      if (!link) return (
+                        <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mt-3">
+                          Link de pagamento não configurado pelo restaurante
+                        </p>
+                      );
+                      return (
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-3 px-8 py-4 bg-[#111] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg">
+                          <CreditCard size={18} /> Ir para Pagamento
+                        </a>
+                      );
+                    })()}
                   </div>
                 </div>
               </motion.div>
@@ -669,11 +688,11 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
+    <div className={cn('min-h-screen', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
       <SEO title="Finalizar Pedido" description="Revise seu carrinho e finalize seu pedido no MEU OVO. Pagamento por PIX, cartão ou dinheiro." url="/checkout" />
       <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate(-1)} aria-label="Voltar" className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+          <button onClick={() => navigate(-1)} aria-label="Voltar" className="p-3 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-black text-[#111] text-xl">{t('checkout.title')}</h1>
@@ -710,11 +729,11 @@ export default function CheckoutPage() {
           </div>
           <button
             onClick={() => setIsExpress(!isExpress)}
-            className={`relative w-12 h-6 rounded-full transition-colors ${isExpress ? 'bg-[#FFC928]' : 'bg-gray-200'}`}
+            className={`relative w-12 h-7 rounded-full transition-colors p-1 ${isExpress ? 'bg-[#FFC928]' : 'bg-gray-200'}`}
           >
             <motion.div 
-              animate={{ x: isExpress ? 24 : 2 }}
-              className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm"
+              animate={{ x: isExpress ? 22 : 0 }}
+              className="w-5 h-5 bg-white rounded-full shadow-sm"
             />
           </button>
         </motion.div>
@@ -796,7 +815,7 @@ export default function CheckoutPage() {
             <div className="w-1.5 h-4 bg-[#FFC928] rounded-full" />
             {t('checkout.orderType')}
           </h2>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {([
               { value: 'delivery', label: t('checkout.delivery'), icon: <MapPin size={20} />, enabled: restaurant.deliveryEnabled },
               { value: 'pickup', label: t('checkout.pickup'), icon: <Package size={20} />, enabled: restaurant.pickupEnabled },
@@ -892,7 +911,7 @@ export default function CheckoutPage() {
                       {(() => { try { return JSON.parse(localStorage.getItem('meuovo_addresses') || '[]') as SavedAddress[]; } catch { return []; } })().map(addr => (
                         <button key={addr.id} type="button"
                           onClick={() => setDeliveryAddress(`${addr.street}, ${addr.number}${addr.complement ? ` - ${addr.complement}` : ''} - ${addr.neighborhood}, ${addr.city}`)}
-                          className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl border transition-all ${deliveryAddress.includes(addr.street) ? 'bg-[#FFC928] border-[#FFC928] text-black' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-[#FFC928]'}`}
+                          className={`text-[9px] font-black uppercase tracking-widest px-3 py-2.5 rounded-xl border transition-all ${deliveryAddress.includes(addr.street) ? 'bg-[#FFC928] border-[#FFC928] text-black' : 'bg-slate-50 border-slate-200 text-slate-500 hover:border-[#FFC928]'}`}
                         >
                           {addr.label}
                         </button>
@@ -930,7 +949,7 @@ export default function CheckoutPage() {
               type="datetime-local"
               value={scheduledAt}
               onChange={e => setScheduledAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={(() => { const now = new Date(); return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16); })()}
               className="w-full border border-gray-100 bg-slate-50/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all"
             />
             {scheduledAt && (
@@ -1097,6 +1116,10 @@ export default function CheckoutPage() {
                               if (isSelected) {
                                 setSelectedReward(null);
                               } else {
+                                if (appliedCoupon) {
+                                  setAppliedCoupon(null);
+                                  toast('Cupom removido para usar recompensa de fidelidade', { icon: '🔄' });
+                                }
                                 setSelectedReward({
                                   type: rule.type,
                                   value: rule.value,
@@ -1137,12 +1160,12 @@ export default function CheckoutPage() {
                   key={pct}
                   type="button"
                   onClick={() => setTipPercent(pct)}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
-                    tipPercent === pct
-                      ? "border-[#FFC928] bg-[#FFF8E1] text-[#111]"
-                      : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
-                  )}
+                    className={cn(
+                      "flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                      tipPercent === pct
+                        ? "border-[#FFC928] bg-[#FFF8E1] text-[#111]"
+                        : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
+                    )}
                 >
                   {pct === 0 ? 'Sem' : `${pct}%`}
                 </button>
@@ -1173,7 +1196,7 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setCaixinhaAmount(val)}
                   className={cn(
-                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                    "flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
                     caixinhaAmount === val
                       ? "border-amber-500 bg-amber-100 text-amber-800"
                       : "border-amber-100 bg-white text-amber-500 hover:border-amber-300"
@@ -1203,7 +1226,7 @@ export default function CheckoutPage() {
                   type="button"
                   onClick={() => setDonationAmount(val)}
                   className={cn(
-                    "flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
+                    "flex-1 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest border-2 transition-all",
                     donationAmount === val
                       ? "border-rose-500 bg-rose-100 text-rose-800"
                       : "border-rose-100 bg-white text-rose-500 hover:border-rose-300"

@@ -68,3 +68,70 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 4. Ver cardápio em `/r/[slug]`
 5. Adicionar itens ao carrinho, ir para checkout
 6. Fechar pedido (PIX do restaurante + WhatsApp)
+
+---
+
+## Sessão (12/07/2026) — Componentes compartilhados + auditoria completa de cadastro/onboarding
+
+### Componentes criados
+- `src/components/BackButton.tsx` — Botão de voltar estilizado
+- `src/components/Badge.tsx` — 6 variantes (direto, aberto, fechado, promo, novo, eco) × 2 tamanhos
+- `src/components/SectionHeader.tsx` — subtitle + title + description + align
+- `src/components/EmptyState.tsx` — icon + title + subtitle + action
+- `src/components/ErrorBoundary.tsx` — Reload button + erro catch global
+
+### Refatorações
+- **MarketplacePage.tsx**: 3 SectionHeaders substituídos; badges inline → `<Badge>`
+- **RestaurantMenuPage.tsx**: badges inline → `<Badge>`; `isOpen` guard no `onAdd` (bloqueia pedido se fechado)
+- **CustomerProfilePage.tsx**: Empty states → `<EmptyState>`
+- **LoginPage.tsx**: `BackButton` aplicado; Google sign-in redirect fix
+- **InstallAppPage.tsx**: `BackButton` aplicado
+- **StoreSettings.tsx**: `isOpen` toggle adicionado no formData, UI e save handler
+
+### Correções de bug (cadastro/onboarding)
+- **AdminAuth.tsx**: Validação de senha/email adicionada; Ovos de Ouro box oculto no login; criação prematura de restaurant doc removida
+- **AuthContext.tsx**: `signUp` agora define role='customer' para signups de restaurante — upgrade acontece em `registerRestaurant` após onboarding
+- **LoginPage.tsx**: Google Sign-In agora redireciona (`handleGoogleSignIn` com `useCallback`); email.trim() na autenticação; import de `useCallback` adicionado
+- **RestaurantOnboarding.tsx**: Guard corrigido — permite 'customer' (pós-signup aguardando onboarding) e 'admin'
+- **RestaurantContext.tsx**: `registerRestaurant` verifica slug collision com `getDoc`; `getDoc` adicionado aos imports
+
+### Auditoria de fluxos (FASE 1-15 concluída)
+
+| Fase | Resultado |
+|------|-----------|
+| 1-2 | Matriz de fluxos + blueprint de correções |
+| 3 | Customer signup OK — Google redirect bug corrigido |
+| 4 | Restaurant signup OK — bugs críticos corrigidos anteriormente |
+| 5 | Validação OK (vazios, duplicatas, senha fraca, múltiplos cliques) |
+| 6-8 | Email verification, login, password recovery OK |
+| 9-10 | Onboarding + first access OK |
+| 11-12 | ProtectedRoute + role isolation OK (3 roles: customer, restaurant, admin) |
+| 15 | Build 0 erros + deploy Vercel OK (meu-ovo-pi.vercel.app) |
+
+### Build
+- `npx tsc --noEmit` — 0 erros
+- `npm run build` — módulos transformados, 0 erros
+
+---
+
+## Sessão (13/07/2026) — Tema auto (time-based) + BackButton em todas as telas
+
+### ThemeContext: modo auto (time-based)
+- Padrão alterado de `prefers-color-scheme` para **horário do dia** (light 6h-18h, dark 18h-6h)
+- `preference` = `'auto'` | `'light'` | `'dark'` (salvo no localStorage)
+- `theme` = valor resolvido (quando auto, computado; quando manual, a escolha)
+- Atualiza a cada 60s via `setInterval`
+- Admin/platform continuam forçando dark
+- Navbar toggle agora cicla: auto → light → dark → auto (3 estados)
+- Ícones: Monitor (auto), Sun (dark → light), Moon (light → dark)
+
+### BackButton adicionado em 19 páginas
+**Públicas**: MarketplacePage, SocialImpactPage, ForRestaurantsPage, OvosDeOuroInfoPage, BlogPage, CustomerProfilePage, RestaurantOnboarding
+
+**Admin standalone**: MenuManagement, KitchenMode, CouponManagement, FlashDealManagement
+
+**Plataforma**: PlatformDashboard, PlatformRestaurants, PlatformCustomers, PlatformIntelligence, PlatformMarketReports, PlatformPartners, PlatformDonations, PlatformOvosDeOuro
+
+### Build
+- `npx tsc --noEmit` — 0 erros
+- `npm run build` — sucesso completo

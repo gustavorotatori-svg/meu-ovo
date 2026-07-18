@@ -39,3 +39,12 @@ export function getFirebaseErrorMessage(error: unknown): string {
   }
   return 'Ocorreu um erro inesperado. Tente novamente.';
 }
+
+const CSV_INJECTION_RE = /^[=+\-@]/;
+
+export function sanitizeCSVCell(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  const needsQuotes = escaped.includes(';') || escaped.includes(',') || escaped.includes('"') || escaped.includes('\n') || escaped.includes('\r');
+  const final = CSV_INJECTION_RE.test(escaped) ? `'${escaped}` : escaped;
+  return needsQuotes ? `"${final}"` : final;
+}

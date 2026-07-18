@@ -7,6 +7,7 @@ import {
   UtensilsCrossed, Calendar, X
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import BackButton from '../../components/BackButton';
 import { Logo } from '../../components/Logo';
 import Breadcrumbs from '../../components/admin/Breadcrumbs';
 import { db } from '../../lib/firebase';
@@ -74,17 +75,35 @@ export default function PlatformOvosDeOuro() {
         const restSnap = await getDocs(collection(db, 'restaurants'));
         const restList: CandidateData[] = [];
         let countEnrolled = 0;
+
+        // Fetch real dish ratings to compute averages
+        const dishRatingsSnap = await getDocs(collection(db, 'dish_ratings'));
+        const dishScores: Record<string, { sum: number; count: number }> = {};
+        dishRatingsSnap.forEach(d => {
+          const data = d.data();
+          const restId = data.restaurantId;
+          if (restId) {
+            if (!dishScores[restId]) dishScores[restId] = { sum: 0, count: 0 };
+            dishScores[restId].sum += data.rating || 0;
+            dishScores[restId].count += 1;
+          }
+        });
+
         restSnap.forEach(docSnap => {
           const data = docSnap.data();
           const enrolled = !!data.ovosDeOuroParticipant;
           if (enrolled) countEnrolled++;
+          const restId = docSnap.id;
+          const avg = dishScores[restId] && dishScores[restId].count > 0
+            ? Number((dishScores[restId].sum / dishScores[restId].count).toFixed(1))
+            : 0;
           restList.push({
-            id: docSnap.id,
+            id: restId,
             name: data.name || 'Unnamed Restaurant',
             slug: data.slug || '',
             ovosDeOuroParticipant: enrolled,
             createdAt: data.createdAt,
-            ratingAverage: Number((4.1 + Math.random() * 0.8).toFixed(1))
+            ratingAverage: avg
           });
         });
         const votesSnap = await getDocs(collection(db, 'ovos_de_ouro_votes'));
@@ -237,6 +256,10 @@ export default function PlatformOvosDeOuro() {
         <div className="p-8 max-w-7xl mx-auto">
           <Breadcrumbs />
 
+          <div className="px-6 pt-6">
+            <BackButton to="/" />
+          </div>
+
           {/* Tabs */}
           <div className="flex gap-2 mb-8">
             <button
@@ -334,7 +357,7 @@ export default function PlatformOvosDeOuro() {
                   </div>
                   <div className="mt-3 text-[10px] text-[#FFC928] font-bold flex items-center gap-1">
                     <Sparkles size={11} className="fill-amber-400" />
-                    <span>Zero notas excluídas pelo filtro de spoofing</span>
+                    <span>Bebidas e sobremesas isentas da avaliação</span>
                   </div>
                 </div>
                 <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-6 border border-gray-100 dark:border-neutral-800 shadow-sm relative overflow-hidden">
@@ -406,7 +429,7 @@ export default function PlatformOvosDeOuro() {
                       {[
                         { title: 'Firestore Rules', status: 'Criptografia Ativa', ok: true },
                         { title: 'Conexão Bancos de Dados', status: 'Conectado e Estável', ok: true },
-                        { title: 'Audit Logs (spoofing)', status: 'Votos blindados e únicos', ok: true },
+                        { title: 'Unicidade dos Votos', status: 'Um voto por pedido (1 doc/order)', ok: true },
                         { title: 'Secrecy Module', status: 'Habilitado (Apenas Top 3 exposto)', ok: true }
                       ].map((chk, i) => (
                         <div key={i} className="flex items-center justify-between p-2.5 bg-white/5 rounded-xl border border-white/5">
@@ -506,18 +529,21 @@ export default function PlatformOvosDeOuro() {
                             <div className="mt-4 border-t border-amber-200 pt-4 space-y-2">
                               <p className="text-[10px] font-black text-amber-950 uppercase tracking-widest leading-none">Top 3 Oficial:</p>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2">
-                                {[0, 1, 2].map(i => {
-                                  const medal = ['🥇', '🥈', '🥉'][i];
-                                  const label = ['1º LUGAR', '2º LUGAR', '3º LUGAR'][i];
-                                  const cand = candidates.filter(c => c.ovosDeOuroParticipant)[i];
-                                  return (
-                                    <div key={i} className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
-                                      <span className="text-[9px] font-black text-amber-800">{label} {medal}</span>
-                                      <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{cand?.name || '-'}</span>
-                                      <span className="text-[10px] text-amber-500 font-extrabold font-display">{cand ? `${cand.ratingAverage} ★` : ''}</span>
-                                    </div>
-                                  );
-                                })}
+                                {(() => {
+                                  const topCands = candidates.filter(c => c.ovosDeOuroParticipant).sort((a, b) => (b.ratingAverage || 0) - (a.ratingAverage || 0));
+                                  return [0, 1, 2].map(i => {
+                                    const medal = ['🥇', '🥈', '🥉'][i];
+                                    const label = ['1º LUGAR', '2º LUGAR', '3º LUGAR'][i];
+                                    const cand = topCands[i];
+                                    return (
+                                      <div key={i} className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
+                                        <span className="text-[9px] font-black text-amber-800">{label} {medal}</span>
+                                        <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{cand?.name || '-'}</span>
+                                        <span className="text-[10px] text-amber-500 font-extrabold font-display">{cand && cand.ratingAverage ? `${cand.ratingAverage} ★` : ''}</span>
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             </div>
                           </div>

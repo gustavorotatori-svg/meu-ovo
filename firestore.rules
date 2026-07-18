@@ -59,7 +59,11 @@ service cloud.firestore {
     // ─── USERS ───────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if request.auth.uid == userId || isPlatformAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId
+        && incoming().diff(existing()).affectedKeys()
+             .hasOnly(['full_name', 'role', 'createdAt', 'pwaInstallPending',
+                       'onboardingComplete', 'customerRating', 'customerRatingCount'])
+        && incoming().role == 'customer';
       allow update: if isSignedIn() && request.auth.uid == userId
         && incoming().diff(existing()).affectedKeys()
              .hasOnly(['full_name', 'profile_image_url', 'updatedAt', 'role', 'pwaInstallPending'])
@@ -157,7 +161,7 @@ service cloud.firestore {
     match /customer_ratings/{ratingId} {
       allow read: if isPlatformAdmin() || isOwnerOrAdmin(resource.data.restaurantId);
       allow list: if isPlatformAdmin();
-      allow create: if isSignedIn()
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
         && incoming().customerPhoneClean is string
         && incoming().customerPhone is string
         && incoming().restaurantId is string

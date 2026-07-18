@@ -8,6 +8,8 @@ import OptimizedImage from '../components/OptimizedImage';
 import ShareModal from '../components/ShareModal';
 import VoiceSearch from '../components/VoiceSearch';
 import OnboardingTutorial from '../components/OnboardingTutorial';
+import Badge from '../components/Badge';
+import SectionHeader from '../components/SectionHeader';
 import SEO from '../components/SEO';
 import { RestaurantCardSkeleton } from '../components/Skeleton';
 import { cuisineTypes, cuisineEmojis } from '../data/mockData';
@@ -31,6 +33,7 @@ import {
   getDocs,
   QueryDocumentSnapshot
 } from 'firebase/firestore';
+import BackButton from '../components/BackButton';
 
 const PAGE_SIZE = 9;
 const priceLabels = { low: 'R$', medium: 'R$ R$', high: 'R$ R$ R$' };
@@ -325,28 +328,32 @@ export default function MarketplacePage() {
       />
       <Navbar />
 
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
+
       {/* Hero search */}
-      <div className="bg-[#111111] pt-32 pb-12">
+      <div className="bg-[#111111] pt-20 md:pt-32 pb-12">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl md:text-5xl font-display font-black text-white text-center mb-8 leading-tight">
             O que você quer comer hoje?
           </h1>
           <p className="text-gray-400 text-center mb-8 font-medium">Pedido direto. Sem comissão. Apoie o restaurante local.</p>
-          <div className="bg-white rounded-3xl flex items-center gap-3 p-2 shadow-2xl border-4 border-white/10">
-            <div className="flex items-center gap-2 border-r border-gray-100 pr-5 pl-4 py-2">
-              <MapPin size={22} className="text-[#FFC928]" />
+          <div className="bg-white rounded-3xl shadow-2xl border-4 border-white/10 p-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
+            <div className="flex items-center gap-2 sm:border-r sm:border-gray-100 sm:pr-5 pl-2 sm:pl-4 py-1 sm:py-2">
+              <MapPin size={18} className="text-[#FFC928] shrink-0" />
               <select
                 value={selectedCity}
                 onChange={e => setSelectedCity(e.target.value)}
-                className="text-sm text-gray-700 bg-transparent outline-none font-black uppercase tracking-widest cursor-pointer"
+                className="text-xs sm:text-sm text-gray-700 bg-transparent outline-none font-black uppercase tracking-widest cursor-pointer"
               >
                 <option>São Paulo</option>
                 <option>Rio de Janeiro</option>
                 <option>Belo Horizonte</option>
               </select>
             </div>
-            <div className="flex-1 flex items-center gap-2 relative">
-              <Search size={22} className="text-gray-400 ml-4" />
+            <div className="flex-1 flex items-center gap-2 relative bg-gray-50 sm:bg-transparent rounded-2xl sm:rounded-none px-3 sm:px-0 py-2 sm:py-0">
+              <Search size={18} className="text-gray-400 shrink-0" />
               <input
                 type="text"
                 placeholder="Busque por restaurante ou tipo de comida..."
@@ -357,9 +364,9 @@ export default function MarketplacePage() {
                   setSearch(e.target.value);
                   setShowSuggestions(true);
                 }}
-                className="flex-1 outline-none text-base font-bold text-gray-700 placeholder-gray-400"
+                className="flex-1 outline-none text-sm sm:text-base font-bold text-gray-700 placeholder-gray-400 min-w-0"
               />
-              <VoiceSearch onTranscript={(text) => setSearch(text)} className="p-3" />
+              <VoiceSearch onTranscript={(text) => setSearch(text)} className="p-2 shrink-0" />
 
               {/* Autocomplete Suggestions */}
               <AnimatePresence>
@@ -368,26 +375,26 @@ export default function MarketplacePage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
-                    className="absolute top-full left-0 right-0 mt-4 bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50 p-2"
+                    className="absolute top-full left-0 right-0 mt-2 sm:mt-4 bg-white rounded-2xl sm:rounded-3xl shadow-2xl border border-gray-100 overflow-hidden z-50 p-2"
                   >
                     {suggestions.map((s, idx) => (
                       <button
                         key={idx}
                         onClick={() => handleSuggestionClick(s.value)}
-                        className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-2xl transition-all text-left group"
+                        className="w-full flex items-center gap-3 p-3 sm:p-4 hover:bg-gray-50 rounded-xl sm:rounded-2xl transition-all text-left group"
                       >
-                        <div className={`p-3 rounded-xl ${
+                        <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${
                           s.type === 'cuisine' ? 'bg-orange-100 text-orange-600' : 
                           s.type === 'restaurant' ? 'bg-blue-100 text-blue-600' : 
                           'bg-green-100 text-green-600'
                         }`}>
-                          {s.type === 'cuisine' ? <Utensils size={18} /> : 
-                           s.type === 'restaurant' ? <Building2 size={18} /> : 
-                           <MapPin size={18} />}
+                          {s.type === 'cuisine' ? <Utensils size={16} /> : 
+                           s.type === 'restaurant' ? <Building2 size={16} /> : 
+                           <MapPin size={16} />}
                         </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-[#FFC928] transition-colors">{s.value}</p>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-[#FFC928] transition-colors truncate">{s.value}</p>
+                          <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                             {s.type === 'cuisine' ? 'Tipo de Culinária' : 
                              s.type === 'restaurant' ? `Restaurante • ${s.extra}` : 
                              'Localidade'}
@@ -400,11 +407,11 @@ export default function MarketplacePage() {
               </AnimatePresence>
             </div>
             {search && (
-              <button onClick={() => setSearch('')} className="p-2 hover:bg-gray-100 rounded-full transition-colors" aria-label="Limpar busca">
+              <button onClick={() => setSearch('')} className="hidden sm:block p-2 hover:bg-gray-100 rounded-full transition-colors shrink-0" aria-label="Limpar busca">
                 <X size={18} className="text-gray-400" />
               </button>
             )}
-            <button onClick={() => trackSearch(search)} className="bg-[#FFC928] text-[#111] font-display font-black px-8 py-4 rounded-2xl text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#FFC928]/20">
+            <button onClick={() => trackSearch(search)} className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-[#FFC928]/20 shrink-0">
               Buscar
             </button>
           </div>
@@ -443,7 +450,7 @@ export default function MarketplacePage() {
         <div className="flex items-center gap-3 mb-6 flex-wrap">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-full text-sm font-medium hover:border-[#FFC928] transition-colors"
+            className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-3 rounded-full text-sm font-medium hover:border-[#FFC928] transition-colors"
           >
             <Filter size={16} />
             Filtros
@@ -482,19 +489,19 @@ export default function MarketplacePage() {
 
           <button
             onClick={() => setFilterOpenNow(!filterOpenNow)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterOpenNow ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterOpenNow ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Aberto agora
           </button>
           <button
             onClick={() => setFilterDelivery(!filterDelivery)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterDelivery ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterDelivery ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Com delivery
           </button>
           <button
             onClick={() => setFilterPickup(!filterPickup)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${filterPickup ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
+            className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterPickup ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
             Com retirada
           </button>
@@ -654,11 +661,14 @@ export default function MarketplacePage() {
         {/* Personalized shelf */}
         {!initialLoading && hasMinHistory() && (
           <div className="mb-10">
-            <div className="flex flex-col gap-1 mb-6">
-              <span className="text-xs font-black uppercase text-purple-600 tracking-widest">Pra Você 🎯</span>
-              <h2 className="font-display font-black text-[#111] text-2xl tracking-tight leading-none uppercase italic">Descobertas para Você</h2>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Baseado nas suas preferências e histórico</p>
-            </div>
+            <SectionHeader
+              subtitle="Pra Você 🎯"
+              title="Descobertas para Você"
+              description="Baseado nas suas preferências e histórico"
+              align="left"
+              subtitleClass="text-purple-600"
+              className="mb-6"
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {scoreRestaurantsForUser(pageRestaurants, orders, getUserProfile()).slice(0, 3).map(r => (
                 <RestaurantCard key={`personal-${r.id}`} restaurant={r} onShare={(e) => handleShare(e, r)} />
@@ -714,11 +724,14 @@ export default function MarketplacePage() {
         <div className="mt-16 space-y-16 mb-20 border-t border-gray-100 pt-12">
           {/* Section 1: Restaurantes Familiares do Bairro */}
           <div>
-            <div className="flex flex-col gap-1 mb-8">
-              <span className="text-xs font-black uppercase text-[#FF7A00] tracking-widest">Liderados por Famílias ❤️</span>
-              <h2 className="font-display font-black text-[#111] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Restaurantes Familiares do Bairro</h2>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">A comida com tempero, afeto e receitas de gerações</p>
-            </div>
+            <SectionHeader
+              subtitle="Liderados por Famílias ❤️"
+              title="Restaurantes Familiares do Bairro"
+              description="A comida com tempero, afeto e receitas de gerações"
+              align="left"
+              subtitleClass="text-[#FF7A00]"
+              className="mb-8"
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {isLoading ? (
                 [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`family-skeleton-${i}`} />)
@@ -733,11 +746,15 @@ export default function MarketplacePage() {
           {/* Section 2: Proprietários Independentes */}
           <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 blur-[100px] rounded-full bg-[#FFC928]/5 -z-10" />
-            <div className="flex flex-col gap-1 mb-8">
-              <span className="text-xs font-black uppercase text-[#FFC928] tracking-widest">Soberania Local 👤</span>
-              <h2 className="font-display font-black text-[#FFC928] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Apoie Empreendedores Independentes</h2>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Onde o valor do seu pedido apoia pessoas e não conglomerados corporativos</p>
-            </div>
+            <SectionHeader
+              subtitle="Soberania Local 👤"
+              title="Apoie Empreendedores Independentes"
+              description="Onde o valor do seu pedido apoia pessoas e não conglomerados corporativos"
+              align="left"
+              subtitleClass="text-[#FFC928]"
+              titleClass="text-[#FFC928]"
+              className="mb-8"
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {isLoading ? (
                 [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`independent-skeleton-${i}`} />)
@@ -751,11 +768,14 @@ export default function MarketplacePage() {
 
           {/* Section 3: Mais Pedidos Próximos de Você */}
           <div>
-            <div className="flex flex-col gap-1 mb-8">
-              <span className="text-xs font-black uppercase text-amber-600 tracking-widest">Os favoritos do Bairro 🔥</span>
-              <h2 className="font-display font-black text-[#111] text-2xl md:text-3xl tracking-tight leading-none uppercase italic">Mais Pedidos Perto de Você</h2>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">Os estabelecimentos mais requisitados da nossa comunidade local</p>
-            </div>
+            <SectionHeader
+              subtitle="Os favoritos do Bairro 🔥"
+              title="Mais Pedidos Perto de Você"
+              description="Os estabelecimentos mais requisitados da nossa comunidade local"
+              align="left"
+              subtitleClass="text-amber-600"
+              className="mb-8"
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {isLoading ? (
                 [...Array(3)].map((_, i) => <RestaurantCardSkeleton key={`featured-skeleton-${i}`} />)
@@ -805,30 +825,24 @@ const RestaurantCard: React.FC<{
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
           <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-            <span className="bg-[#FFC928] text-[#111] text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg flex items-center gap-1">
-              🍳 Direto
-            </span>
+            <Badge>🍳 Direto</Badge>
             {r.isOpen ? (
-              <span className="bg-green-500/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1">
+              <Badge variant="success">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 Aberto
-              </span>
+              </Badge>
             ) : (
-              <span className="bg-gray-500/80 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm">
-                Fechado
-              </span>
+              <Badge variant="outline">Fechado</Badge>
             )}
             {hasPromo && (
-              <span className="bg-red-500/90 text-white text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1 animate-pulse">
-                🔥 Promo
-              </span>
+              <Badge variant="danger" className="animate-pulse">🔥 Promo</Badge>
             )}
           </div>
 
           <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
             <button 
               onClick={onShare}
-              className="p-2.5 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg hover:scale-110"
+              className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg hover:scale-110"
               aria-label="Compartilhar restaurante"
             >
               <Share2 size={14} />
@@ -839,7 +853,7 @@ const RestaurantCard: React.FC<{
                 e.stopPropagation();
                 toggleFavorite(r.id);
               }}
-              className={`p-2.5 backdrop-blur-md rounded-full transition-all shadow-lg hover:scale-110 ${
+              className={`p-3 backdrop-blur-md rounded-full transition-all shadow-lg hover:scale-110 ${
                 isFav 
                   ? 'bg-red-500/90 text-white hover:bg-red-600' 
                   : 'bg-white/20 text-white hover:bg-red-500 hover:text-white'

@@ -562,9 +562,9 @@ export default function PlatformCanceledOrdersReport({ isDark }: ReportProps) {
           <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/30 p-5 rounded-[2rem] flex items-start gap-3.5 text-left">
             <HelpCircle className="text-orange-500 shrink-0 mt-0.5" size={18} />
             <div className="space-y-1">
-              <h4 className="text-xs font-black text-orange-950 dark:text-orange-300 uppercase">Imunidade a Spoofing</h4>
+              <h4 className="text-xs font-black text-orange-950 dark:text-orange-300 uppercase">Verificação de Pedidos</h4>
               <p className="text-[11px] text-gray-500 dark:text-gray-400 font-medium leading-relaxed">
-                Algoritmos de inteligência cruzam timestamps e logins dos clientes para descartar cancelamentos forjados (competidores inflando estatísticas ruins de rivais). Dados de alta austeridade garantidos pelo Meu Ovo.
+                Dados exibidos são baseados no status real dos pedidos no Firestore. Cancelamentos são registrados com timestamp e ID do usuário para rastreabilidade.
               </p>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { Heart, CheckCircle, TrendingUp, ArrowRight, Sparkles } from 'lucide-rea
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import BackButton from '../components/BackButton';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/firebase';
@@ -105,6 +106,10 @@ export default function SocialImpactPage() {
         description="O Meu Ovo transforma o ato de pedir comida em uma força de mudança social. Veja nosso impacto em restaurantes locais e comunidades."
       />
       <Navbar />
+
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
 
       {/* Hero Header Banner with Live Stats */}
       <div className="pt-20 bg-[#FFC928]">

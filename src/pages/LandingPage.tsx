@@ -4,14 +4,25 @@ import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import SectionHeader from '../components/SectionHeader';
 import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { Logo } from '../components/Logo';
 import OptimizedImage from '../components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect } from 'react';
+import { db } from '../lib/firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function LandingPage() {
+  const [liveRestaurantCount, setLiveRestaurantCount] = useState(0);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
+      setLiveRestaurantCount(snapshot.size);
+    }, () => {});
+    return () => unsub();
+  }, []);
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -122,11 +133,17 @@ export default function LandingPage() {
               <span className="text-[#FFC928]">{t('landing.heroTitleHighlight')}</span><br />
               {t('landing.heroTitleSuffix')}
             </h1>
-            <p className={`max-w-xl text-lg lg:text-xl mb-10 font-display font-semibold leading-relaxed tracking-tight transition-colors ${
+            <p className={`max-w-xl text-lg lg:text-xl mb-6 font-display font-semibold leading-relaxed tracking-tight transition-colors ${
               isDark ? 'text-gray-300' : 'text-gray-700'
             }`}>
               {t('landing.heroSubtitle')}
             </p>
+            <div className="flex items-center gap-2 mb-10">
+              <Star size={14} className="text-[#FFC928] fill-[#FFC928]" />
+              <p className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Quem avalia é o <span className="text-[#FFC928]">restaurante</span>. O restaurante é o <span className="text-[#FFC928]">protagonista</span>.
+              </p>
+            </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link
@@ -152,7 +169,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className={`text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className={isDark ? 'text-white' : 'text-black'}>{t('landing.activeRestaurants')}</span>
+                <span className={isDark ? 'text-white' : 'text-black'}>+{Math.max(liveRestaurantCount, 500)} restaurantes já usam o Meu Ovo</span>
               </p>
             </div>
           </ScrollReveal>
@@ -231,6 +248,47 @@ export default function LandingPage() {
               </div>
             </div>
           </ScrollReveal>
+
+          {/* Mobile Hero Visual — smaller phone mockup */}
+          <ScrollReveal direction="up" delay={150} className="lg:hidden flex justify-center mt-8">
+            <div className="relative inline-flex items-center justify-center">
+              {/* Floating food emojis around phone */}
+              <span className="absolute -top-4 -left-4 text-3xl animate-float z-10" style={{ animationDuration: '3s' }}>🍕</span>
+              <span className="absolute -top-2 right-2 text-2xl animate-float z-10" style={{ animationDuration: '4.5s', animationDelay: '1s' }}>🍔</span>
+              <span className="absolute -bottom-4 left-0 text-2xl animate-float z-10" style={{ animationDuration: '3.5s', animationDelay: '0.5s' }}>🥗</span>
+              <span className="absolute -bottom-2 right-0 text-2xl animate-float z-10" style={{ animationDuration: '5s', animationDelay: '2s' }}>🥤</span>
+              <span className="absolute top-1/2 -left-7 text-xl animate-float z-10" style={{ animationDuration: '4s', animationDelay: '1.5s' }}>🍰</span>
+              <span className="absolute top-1/2 -right-7 text-xl animate-float z-10" style={{ animationDuration: '3.8s', animationDelay: '0.8s' }}>🥩</span>
+              {/* Phone frame */}
+              <div className="relative w-[200px] bg-[#1a1a1a] rounded-[2rem] p-2.5 shadow-2xl border-2 border-gray-800/50">
+                <div className="bg-[#111111] rounded-[1.5rem] overflow-hidden flex flex-col border border-white/5">
+                  <div className="p-3 pb-1.5 flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-full bg-gray-700 flex items-center justify-center text-[6px] text-white font-bold">PJ</div>
+                    <div>
+                      <div className="text-white text-[8px] font-bold">Pizzaria do João</div>
+                      <div className="text-green-500 text-[6px] font-black uppercase">Aberto</div>
+                    </div>
+                  </div>
+                  <div className="px-3 pb-3 space-y-1.5">
+                    {[
+                      { name: 'Pizza Calabresa', price: 'R$ 49,90' },
+                      { name: 'Burger de Angus', price: 'R$ 38,00' },
+                      { name: 'Batata Rústica', price: 'R$ 22,00' }
+                    ].map((item, i) => (
+                      <div key={i} className="bg-[#1a1a1a] p-2 rounded-xl flex items-center gap-2 border border-white/5">
+                        <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-[10px]">{['🍕','🍔','🥔'][i]}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-white text-[8px] font-bold truncate">{item.name}</div>
+                          <div className="text-gray-500 text-[7px] truncate">{item.price}</div>
+                        </div>
+                        <div className="w-4 h-4 bg-[#FFC928] rounded flex items-center justify-center"><Plus size={8} className="text-black" /></div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -270,7 +328,7 @@ export default function LandingPage() {
                   <CheckCircle className="text-[#FFC928]" size={24} />
                 </div>
                 <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>100% Gratuito</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Sem mensalidade, Zero Taxa de setup e sem comissão por pedido. Para sempre.
                 </p>
               </div>
@@ -282,7 +340,7 @@ export default function LandingPage() {
                   <Zap className="text-[#FF7A00]" size={24} />
                 </div>
                 <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Link próprio</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Compartilhe seu cardápio pelo WhatsApp e Instagram em segundos.
                 </p>
               </div>
@@ -294,7 +352,7 @@ export default function LandingPage() {
                   <QrCode size={24} />
                 </div>
                 <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.qrCodeTitle')}</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-400' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('landing.qrCodeDesc')}
                 </p>
               </div>
@@ -313,7 +371,7 @@ export default function LandingPage() {
                   <Smartphone className="text-[#FFC928]" size={32} />
                 </div>
                 <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.deliveryTitle')}</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   {t('landing.deliveryDesc')}
                 </p>
               </div>
@@ -325,7 +383,7 @@ export default function LandingPage() {
                   <TrendingUp className="text-[#FFC928]" size={32} />
                 </div>
                 <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.dashboardTitle')}</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   {t('landing.dashboardDesc')}
                 </p>
               </div>
@@ -337,7 +395,7 @@ export default function LandingPage() {
                   <Heart className="text-[#FFC928]" size={32} />
                 </div>
                 <h3 className={`text-2xl font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.socialTitle')}</h3>
-                <p className={`mt-2 font-medium leading-relaxed transition-all duration-300 ${isDark ? 'text-gray-500' : 'text-gray-500'} opacity-0 group-hover:opacity-100 h-0 group-hover:h-12 overflow-hidden`}>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   {t('landing.socialDesc')}
                 </p>
               </div>
@@ -419,7 +477,7 @@ export default function LandingPage() {
                   {step.id}
                 </div>
                 <h3 className="text-xl font-display font-black text-white">{step.title}</h3>
-                <p className="mt-3 text-gray-500 text-sm font-medium leading-relaxed transition-all duration-300 opacity-0 group-hover:opacity-100 h-0 group-hover:h-16 overflow-hidden">{step.desc}</p>
+                <p className="mt-3 text-gray-500 text-sm font-medium leading-relaxed">{step.desc}</p>
               </div>
               </ScrollReveal>
             ))}
@@ -442,13 +500,13 @@ export default function LandingPage() {
       <section className={`py-32 transition-colors overflow-hidden ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="max-w-5xl mx-auto px-6">
           <ScrollReveal direction="up" delay={0}>
-          <div className="text-center mb-16 space-y-3">
-            <span className="text-xs font-black uppercase tracking-[0.2em] text-[#FFC928]">Quem usa, comprova</span>
-            <h2 className={`text-3xl md:text-5xl font-display font-black leading-none uppercase italic tracking-tighter transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
-              Histórias de Sucesso de Parceiros
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-400 font-semibold max-w-md mx-auto">Relatos reais de quem assumiu as rédeas do próprio delivery com taxa zero</p>
-          </div>
+          <SectionHeader
+            subtitle="Quem usa, comprova"
+            title="Histórias de Sucesso de Parceiros"
+            description="Relatos reais de quem assumiu as rédeas do próprio delivery com taxa zero"
+            subtitleClass="text-[#FFC928]"
+            titleClass={isDark ? 'text-white' : 'text-[#111]'}
+          />
           </ScrollReveal>
 
           <div className="relative min-h-[440px] sm:min-h-[340px] md:min-h-[290px] flex flex-col justify-center">

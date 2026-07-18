@@ -1,9 +1,10 @@
-import type { HTMLAttributes } from 'react';
+import React, { type HTMLAttributes } from 'react';
 import { cn } from '../lib/utils';
 
 interface SkeletonProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   variant?: 'default' | 'golden';
+  key?: React.Key;
 }
 
 export function Skeleton({ className, variant = 'default', ...props }: SkeletonProps) {

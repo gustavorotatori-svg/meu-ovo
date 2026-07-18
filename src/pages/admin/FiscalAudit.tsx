@@ -21,7 +21,7 @@ import {
   BookOpen
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { cn } from '../../lib/utils';
+import { cn, sanitizeCSVCell } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface MockLog {
@@ -242,13 +242,7 @@ export default function FiscalAudit() {
           log.metadata?.chaveAcesso || "Gerada Dinamicamente"
         ];
 
-        const escaped = row.map(val => {
-          const str = String(val).replace(/"/g, '""');
-          if (str.includes(';') || str.includes('"') || str.includes('\n')) {
-            return `"${str}"`;
-          }
-          return str;
-        });
+        const escaped = row.map(val => sanitizeCSVCell(String(val)));
 
         csvRows.push(escaped.join(";"));
       }

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Eye, Sparkles, Wallet, X, Clock, ChefHat, Package, Bike, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Eye, Sparkles, Wallet, X, Clock, ChefHat, Package, Bike, CheckCircle, XCircle, Sticker, AlertTriangle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { db } from '../../lib/firebase';
 import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { Order, Product } from '../../types';
+import { ALLERGEN_MAP } from '../../data/allergens';
 import { motion } from 'motion/react';
 import { AreaChart, Area, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { toast } from 'react-hot-toast';
@@ -187,7 +188,7 @@ export default function AdminDashboard() {
                   Fechar Caixa
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   { label: 'Abertura', value: `R$ ${(activeSession.openingAmount || 0).toFixed(2)}`, color: 'text-blue-400' },
                   { label: 'Vendas', value: `R$ ${sessionSales.toFixed(2)}`, color: 'text-emerald-400' },
@@ -296,6 +297,44 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        {/* ─── NEAR EXPIRY ─── */}
+        {(() => {
+          const nearExpiry = products.filter(p => {
+            if (!p.labelInfo?.shelfLifeDays || !p.selectedAllergens?.length) return false;
+            return true;
+          }).slice(0, 5);
+          return nearExpiry.length > 0 ? (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-[#FFC928]" /> Produtos com Validade
+                </h3>
+                <button onClick={() => navigate('/admin/etiquetas')} className="text-[10px] font-black uppercase tracking-widest text-[#FFC928] hover:opacity-80 transition-opacity flex items-center gap-1">
+                  <Sticker size={12} /> Etiquetas
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {nearExpiry.map(p => (
+                  <div key={p.id} className="bg-zinc-800/30 border border-zinc-700/50 rounded-xl p-3">
+                    <p className="text-sm font-bold text-white truncate">{p.name}</p>
+                    {p.labelInfo && (
+                      <p className="text-[10px] text-gray-500 mt-1">
+                        {p.labelInfo.shelfLifeDays} dias • {p.labelInfo.storageType === 'refrigerated' ? '🧊' : p.labelInfo.storageType === 'frozen' ? '❄️' : '🏠'} {p.labelInfo.storageType}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-0.5 mt-1">
+                      {(p.selectedAllergens || []).slice(0, 6).map(key => {
+                        const a = ALLERGEN_MAP.get(key);
+                        return a ? <span key={key} className="text-[10px]" title={a.label}>{a.icon}</span> : null;
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null;
+        })()}
+
         {/* ─── CHARTS ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
@@ -314,7 +353,7 @@ export default function AdminDashboard() {
 
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-6">Canais de Venda</h3>
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 flex-wrap">
               <ResponsiveContainer width="50%" height={180}>
                 <PieChart>
                   <Pie data={channelData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={6} dataKey="value">

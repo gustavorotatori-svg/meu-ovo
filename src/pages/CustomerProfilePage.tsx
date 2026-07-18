@@ -7,12 +7,14 @@ import { db } from '../lib/firebase';
 import { Order, SavedAddress, Product, CartItem } from '../types';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import BackButton from '../components/BackButton';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useCart } from '../context/CartContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
+import EmptyState from '../components/EmptyState';
 import { getCustomerStats } from '../services/customerRatingService';
 import { getStreak, getNextMilestone } from '../services/streakService';
 import { getPlatformPoints, pointsToDiscount } from '../services/platformLoyaltyService';
@@ -172,6 +174,9 @@ export default function CustomerProfilePage() {
     return (
       <div className="min-h-screen flex flex-col justify-between bg-[#f8fafc]">
         <Navbar />
+        <div className="px-6 pt-6">
+          <BackButton to="/" />
+        </div>
         <div className="flex-1 flex items-center justify-center p-6 py-20">
           <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden relative p-8 md:p-10">
               <div className="text-center space-y-4 mb-8">
@@ -330,7 +335,11 @@ export default function CustomerProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <Navbar />
-      
+
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
+
       <main className="max-w-7xl mx-auto px-6 py-12 lg:py-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           
@@ -647,13 +656,12 @@ export default function CustomerProfilePage() {
                     </motion.div>
                   ))
                 ) : (
-                  <div className="bg-white rounded-[2rem] p-20 text-center border-2 border-slate-100">
-                     <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                       <Package size={32} className="text-slate-200" />
-                     </div>
-                     <p className="font-display font-black text-slate-300 uppercase text-2xl italic tracking-tighter">Nenhum pedido ainda</p>
-                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Que tal fazer o seu primeiro hoje?</p>
-                  </div>
+                  <EmptyState
+                    icon={<Package size={32} />}
+                    title="Nenhum pedido ainda"
+                    subtitle="Que tal fazer o seu primeiro hoje?"
+                    className="bg-white rounded-[2rem] p-20 border-2 border-slate-100"
+                  />
                 )
               ) : activeTab === 'favorites' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -698,31 +706,33 @@ export default function CustomerProfilePage() {
                     </motion.div>
                   ))}
                   {favoriteRestaurants.length === 0 && (
-                    <div className="col-span-full bg-white rounded-[2rem] p-20 text-center border-2 border-slate-100">
-                       <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                         <Heart size={32} className="text-slate-200" />
-                       </div>
-                       <p className="font-display font-black text-slate-300 uppercase text-2xl italic tracking-tighter">Nenhum favorito ainda</p>
-                       <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Qual o seu restaurante preferido da região?</p>
-                       <Link 
-                         to="/marketplace" 
-                         className="inline-block bg-[#FFC928] hover:bg-black text-black hover:text-[#FFC928] font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl mt-6 transition-all"
-                       >
-                         Explorar estabelecimentos
-                       </Link>
+                    <div className="col-span-full">
+                      <EmptyState
+                        icon={<Heart size={32} />}
+                        title="Nenhum favorito ainda"
+                        subtitle="Qual o seu restaurante preferido da região?"
+                        className="bg-white rounded-[2rem] p-20 border-2 border-slate-100"
+                        action={
+                          <Link 
+                            to="/marketplace" 
+                            className="inline-block bg-[#FFC928] hover:bg-black text-black hover:text-[#FFC928] font-black text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all"
+                          >
+                            Explorar estabelecimentos
+                          </Link>
+                        }
+                      />
                     </div>
                   )}
                 </div>
               ) : (
                 <div className="space-y-4">
                   {savedAddresses.length === 0 ? (
-                    <div className="bg-white rounded-[2rem] p-16 text-center border-2 border-slate-100">
-                      <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <MapPin size={32} className="text-slate-200" />
-                      </div>
-                      <p className="font-display font-black text-slate-300 uppercase text-2xl italic tracking-tighter">Nenhum endereço salvo</p>
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2">Adicione endereços para agilizar seus pedidos</p>
-                    </div>
+                    <EmptyState
+                      icon={<MapPin size={32} />}
+                      title="Nenhum endereço salvo"
+                      subtitle="Adicione endereços para agilizar seus pedidos"
+                      className="bg-white rounded-[2rem] p-16 border-2 border-slate-100"
+                    />
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {savedAddresses.map((addr, i) => (

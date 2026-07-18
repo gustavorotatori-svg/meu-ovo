@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, onSnapshot, orderBy, limit, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Restaurant, Category, Product, OrderItem, Coupon, LoyaltyProfile, Additional } from '../types';
+import { ALLERGEN_MAP } from '../data/allergens';
 import { Logo } from '../components/Logo';
 import { WA_NUMBER } from '../services/whatsappService';
 import { 
@@ -744,12 +745,25 @@ export default function MenuDisplay() {
                              <p className="text-[9px] font-medium text-slate-500 leading-tight">{product.ingredients}</p>
                           </div>
                         )}
-                        {product.allergens && (
+                        {(product.selectedAllergens?.length ? product.selectedAllergens : product.allergens) && (
                           <div className="flex items-start gap-1.5 mt-1">
                              <div className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-red-100 italic flex items-center gap-1">
                                 <X size={8} /> ALERGÊNICOS
                              </div>
-                             <p className="text-[9px] font-bold text-red-600/70 leading-tight uppercase tracking-tighter italic">{product.allergens}</p>
+                             {product.selectedAllergens?.length ? (
+                               <div className="flex flex-wrap gap-1">
+                                 {product.selectedAllergens.map(key => {
+                                   const a = ALLERGEN_MAP.get(key);
+                                   return a ? (
+                                     <span key={key} className="inline-flex items-center gap-0.5 bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-bold border border-red-100">
+                                       {a.icon} {a.label}
+                                     </span>
+                                   ) : null;
+                                 })}
+                               </div>
+                             ) : (
+                               <p className="text-[9px] font-bold text-red-600/70 leading-tight uppercase tracking-tighter italic">{product.allergens}</p>
+                             )}
                           </div>
                         )}
                         {product.estimatedPrepTime && (
@@ -1349,14 +1363,25 @@ export default function MenuDisplay() {
                     </div>
                   </div>
                 )}
-                {customizingProduct.allergens && (
+                {(customizingProduct.selectedAllergens?.length ? customizingProduct.selectedAllergens : customizingProduct.allergens) && (
                   <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
                     <X size={16} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="space-y-1">
                       <p className="text-[10px] font-black text-red-600/60 uppercase tracking-widest">Atenção: Alergênicos</p>
-                      <p className="text-[11px] font-bold text-red-600 leading-relaxed italic">
-                        {customizingProduct.allergens}
-                      </p>
+                      {customizingProduct.selectedAllergens?.length ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {customizingProduct.selectedAllergens.map(key => {
+                            const a = ALLERGEN_MAP.get(key);
+                            return a ? (
+                              <span key={key} className="inline-flex items-center gap-1 bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-red-100">
+                                {a.icon} {a.label}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] font-bold text-red-600 leading-relaxed italic">{customizingProduct.allergens}</p>
+                      )}
                     </div>
                   </div>
                 )}

@@ -3,6 +3,7 @@ import { Trophy, Shield, EyeOff, Scale, HelpCircle, ArrowRight, CheckCircle2, Lo
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import BackButton from '../components/BackButton';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,6 +18,10 @@ export default function OvosDeOuroInfoPage() {
         description="Conheça o Prêmio Ovos de Ouro: a competição anual do Meu Ovo baseada em imparcialidade histórica, austeridade rígida e sigilo absoluto das avaliações."
       />
       <Navbar />
+
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
 
       {/* Hero Section */}
       <section className={`pt-36 pb-20 px-6 relative overflow-hidden text-center`}>

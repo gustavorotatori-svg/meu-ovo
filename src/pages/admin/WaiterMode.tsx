@@ -18,7 +18,7 @@ import { cn, formatCurrency } from '../../lib/utils';
 import { Skeleton } from '../../components/Skeleton';
 import AdminLayout from './AdminLayout';
 import { motion, AnimatePresence } from 'motion/react';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 
 type TabType = 'tables' | 'new-order' | 'qr-codes';
 
@@ -659,11 +659,10 @@ export default function WaiterMode() {
               <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-10">Escaneie para pedir</p>
               
               <div className="w-64 h-64 bg-slate-50 rounded-[40px] mx-auto mb-10 p-8 flex items-center justify-center relative">
-                <QRCode 
+                <QRCodeSVG 
                   value={showQrModal.qrCodeUrl || `${window.location.origin}/r/${restaurant?.slug}?mesa=${showQrModal.number}`}
                   size={200}
                   style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  viewBox={`0 0 256 256`}
                 />
                 <div className="absolute inset-0 border-2 border-dashed border-[#FFC928]/30 rounded-[40px] m-4 pointer-events-none" />
               </div>

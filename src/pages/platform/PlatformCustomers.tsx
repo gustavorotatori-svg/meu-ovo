@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Store, Brain, BarChart3, Users, Heart, Search, Bell, Trophy, Star, RefreshCw, Shield, ChevronRight, X, User, Phone } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import BackButton from '../../components/BackButton';
 import { Logo } from '../../components/Logo';
 import Breadcrumbs from '../../components/admin/Breadcrumbs';
 import { db } from '../../lib/firebase';
@@ -126,6 +127,10 @@ export default function PlatformCustomers() {
 
         <div className="p-8 max-w-7xl mx-auto">
           <Breadcrumbs />
+
+          <div className="px-6 pt-6">
+            <BackButton to="/" />
+          </div>
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24">

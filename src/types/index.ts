@@ -113,6 +113,36 @@ export interface AdditionalGroup {
   items: Additional[];
 }
 
+export type AllergenKey =
+  | 'gluten'
+  | 'lactose'
+  | 'milk'
+  | 'eggs'
+  | 'peanuts'
+  | 'tree_nuts'
+  | 'soy'
+  | 'crustaceans'
+  | 'fish'
+  | 'sesame'
+  | 'sulfites'
+  | 'celery'
+  | 'mustard'
+  | 'lupin';
+
+export interface AllergenInfo {
+  key: AllergenKey;
+  label: string;
+  icon: string;
+}
+
+export type StorageType = 'refrigerated' | 'frozen' | 'dry' | 'ambient';
+
+export interface LabelInfo {
+  shelfLifeDays: number;
+  storageType: StorageType;
+  storageInstructions: string;
+}
+
 export interface Product {
   id: string;
   restaurantId: string;
@@ -132,11 +162,30 @@ export interface Product {
   order: number;
   ingredients?: string;
   allergens?: string;
+  selectedAllergens?: AllergenKey[];
+  labelInfo?: LabelInfo;
   optionGroups?: any[];
   estimatedPrepTime?: number;
   notes?: string;
   stock?: number;
   minStockAlert?: number;
+}
+
+export interface LabelRecord {
+  id: string;
+  restaurantId: string;
+  productId: string;
+  productName: string;
+  batchNumber: string;
+  prepDate: string;
+  expiryDate: string;
+  storageType: StorageType;
+  storageInstructions: string;
+  allergens: AllergenKey[];
+  operatorName: string;
+  printedAt: string;
+  restaurantName?: string;
+  restaurantLogo?: string;
 }
 
 export interface CartItem {

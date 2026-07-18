@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
 import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession } from '../types';
 import { auth } from '../lib/firebase-auth';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
@@ -16,6 +16,7 @@ import {
   deleteDoc,
   setDoc,
   orderBy,
+  getDoc,
   getDocs,
   arrayUnion
 } from 'firebase/firestore';
@@ -127,7 +128,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
   }, [favorites, user?.id]);
 
-  const toggleFavorite = (restaurantId: string) => {
+  const toggleFavorite = useCallback((restaurantId: string) => {
     setFavorites(prev => {
       const isAlreadyFav = prev.includes(restaurantId);
       if (isAlreadyFav) {
@@ -138,7 +139,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         return [...prev, restaurantId];
       }
     });
-  };
+  }, []);
 
   // Listen to restaurants from Firestore
   useEffect(() => {
@@ -230,33 +231,33 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     };
   }, [currentRestaurant, user]);
 
-  const addProduct = async (p: Product) => {
+  const addProduct = useCallback(async (p: Product) => {
     try {
       const { id, ...data } = p;
       await setDoc(doc(db, 'products', id), data);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `products/${p.id}`);
     }
-  };
+  }, []);
 
-  const updateProduct = async (p: Product) => {
+  const updateProduct = useCallback(async (p: Product) => {
     try {
       const { id, ...data } = p;
       await updateDoc(doc(db, 'products', id), data as Partial<Product>);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `products/${p.id}`);
     }
-  };
+  }, []);
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = useCallback(async (id: string) => {
     try {
       await deleteDoc(doc(db, 'products', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `products/${id}`);
     }
-  };
+  }, []);
 
-  const addOrder = async (o: Order) => {
+  const addOrder = useCallback(async (o: Order) => {
     try {
       const { id, ...data } = o;
       if (id) {
@@ -268,53 +269,58 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       handleFirestoreError(error, OperationType.WRITE, 'orders');
       throw error;
     }
-  };
+  }, []);
 
-  const updateOrderStatus = async (id: string, status: Order['status']) => {
+  const updateOrderStatus = useCallback(async (id: string, status: Order['status']) => {
     try {
       await updateDoc(doc(db, 'orders', id), { status });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `orders/${id}`);
       throw error;
     }
-  };
+  }, []);
 
-  const addCategory = async (c: Category) => {
+  const addCategory = useCallback(async (c: Category) => {
     try {
       const { id, ...data } = c;
       await setDoc(doc(db, 'categories', id), data);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `categories/${c.id}`);
     }
-  };
+  }, []);
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = useCallback(async (id: string) => {
     try {
       await deleteDoc(doc(db, 'categories', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `categories/${id}`);
     }
-  };
+  }, []);
 
-  const reorderProducts = (newProducts: Product[]) => {
-    // In a real app, you might update a 'sortOrder' field in Firestore
+  const reorderProducts = useCallback((newProducts: Product[]) => {
     setProducts(newProducts);
-  };
+  }, []);
 
-  const reorderCategories = (newCategories: Category[]) => {
+  const reorderCategories = useCallback((newCategories: Category[]) => {
     setCategories(newCategories);
-  };
+  }, []);
 
-  const registerRestaurant = async (restaurant: Restaurant, categoryNames: string[], productData: any[]) => {
+  const registerRestaurant = useCallback(async (restaurant: Restaurant, categoryNames: string[], productData: any[]) => {
     try {
       if (!auth.currentUser?.uid) {
         toast.error('Você precisa estar logado para cadastrar um restaurante');
         return;
       }
-      // 1. Create Restaurant
-      const { id: rId, ...rData } = restaurant;
+      // 1. Create Restaurant with unique slug
+      let { id: rId, ...rData } = restaurant;
+      const existingSnap = await getDoc(doc(db, 'restaurants', rId));
+      if (existingSnap.exists()) {
+        rId += `-${Math.random().toString(36).substr(2, 4)}`;
+      }
       const finalRData = {
         ...rData,
+        id: rId,
+        slug: rId,
         ownerId: auth.currentUser.uid,
         createdAt: new Date().toISOString()
       };
@@ -363,9 +369,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       handleFirestoreError(error, OperationType.WRITE, 'restaurants/multi');
       throw error;
     }
-  };
+  });
 
-  const addTable = async (t: Table) => {
+  const addTable = useCallback(async (t: Table) => {
     try {
       const { id, ...data } = t;
       await setDoc(doc(db, 'tables', id), {
@@ -375,26 +381,26 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `tables/${t.id}`);
     }
-  };
+  }, []);
 
-  const updateTable = async (t: Table) => {
+  const updateTable = useCallback(async (t: Table) => {
     try {
       const { id, ...data } = t;
       await updateDoc(doc(db, 'tables', id), data as Partial<Table>);
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `tables/${t.id}`);
     }
-  };
+  }, []);
 
-  const deleteTable = async (id: string) => {
+  const deleteTable = useCallback(async (id: string) => {
     try {
       await deleteDoc(doc(db, 'tables', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `tables/${id}`);
     }
-  };
+  }, []);
 
-  const openCashier = async (amount: number, user: string) => {
+  const openCashier = useCallback(async (amount: number, user: string) => {
     const newSession: Omit<CashierSession, 'id'> = {
       restaurantId: currentRestaurant?.id || '',
       openedAt: new Date().toISOString(),
@@ -413,9 +419,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
     }
-  };
+  }, [currentRestaurant]);
 
-  const closeCashier = async (amount: number) => {
+  const closeCashier = useCallback(async (amount: number) => {
     if (!activeSession) return;
     try {
       await updateDoc(doc(db, 'cashier_sessions', activeSession.id), {
@@ -426,9 +432,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
     }
-  };
+  }, [activeSession]);
 
-  const addCashierMovement = async (type: 'withdrawal' | 'addition', amount: number, reason: string) => {
+  const addCashierMovement = useCallback(async (type: 'withdrawal' | 'addition', amount: number, reason: string) => {
     if (!activeSession) return;
     const movement = { amount, reason, time: new Date().toISOString() };
     try {
@@ -445,18 +451,28 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'cashier_sessions');
     }
-  };
+  }, [activeSession]);
+
+  const value = useMemo(() => ({
+    currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
+    orders, tables, deliverySettings, cashierSessions, activeSession,
+    favorites, toggleFavorite,
+    addProduct, updateProduct, deleteProduct,
+    addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
+    registerRestaurant,
+    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
+  }), [
+    currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
+    orders, tables, deliverySettings, cashierSessions, activeSession,
+    favorites, toggleFavorite,
+    addProduct, updateProduct, deleteProduct,
+    addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
+    registerRestaurant,
+    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
+  ]);
 
   return (
-    <RestaurantContext.Provider value={{
-      currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
-      orders, tables, deliverySettings, cashierSessions, activeSession,
-      favorites, toggleFavorite,
-      addProduct, updateProduct, deleteProduct,
-      addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
-      registerRestaurant,
-      addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
-    }}>
+    <RestaurantContext.Provider value={value}>
       {children}
     </RestaurantContext.Provider>
   );

@@ -1,8 +1,9 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useCallback, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Loader, Store, Utensils } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 import { Logo } from '../components/Logo';
 import SEO from '../components/SEO';
 import { auth } from '../lib/firebase-auth';
@@ -25,6 +26,23 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState({ name: '', email: '', password: '' });
   const isRestaurant = roleTab === 'restaurant';
+
+  const handleGoogleSignIn = useCallback(async () => {
+    if (!isLogin && !lgpdConsent) {
+      toast.error('Você precisa aceitar os termos de privacidade');
+      return;
+    }
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      toast.success('Bem-vindo!');
+      navigate(redirectTo || '/busca');
+    } catch (error) {
+      toast.error(getFirebaseErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  }, [signInWithGoogle, navigate, redirectTo, isLogin, lgpdConsent]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -87,7 +105,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (isLogin) {
-        await signIn(formData.email, formData.password);
+        await signIn(formData.email.trim(), formData.password);
         toast.success('Bem-vindo de volta!');
         if (!isRestaurant && !auth.currentUser?.emailVerified) {
           toast('Verifique seu email antes de fazer pedidos', { icon: '✉️' });
@@ -96,7 +114,7 @@ export default function LoginPage() {
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const role = isRestaurant ? 'restaurant' : 'customer';
-        await signUp(formData.email, formData.password, formData.name.trim(), role);
+        await signUp(formData.email.trim(), formData.password, formData.name.trim(), role);
         if (isRestaurant) {
           toast.success('Conta de restaurante criada! Agora cadastre seu cardápio.');
           navigate('/cadastro-restaurante');
@@ -206,7 +224,7 @@ export default function LoginPage() {
                 minLength={6}
                 className={`w-full border bg-slate-50/50 rounded-xl pl-11 pr-11 py-3 text-sm font-bold focus:outline-none focus:bg-white transition-all ${fieldErrors.password ? 'border-red-300 focus:border-red-400' : 'border-gray-100 focus:border-[#FFC928]'}`}
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-300 hover:text-gray-500">
+              <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-gray-300 hover:text-gray-500">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
@@ -227,7 +245,7 @@ export default function LoginPage() {
           </div>
 
           {isLogin && (
-              <button type="button" onClick={handleForgotPassword} disabled={resetting} className="block py-2 text-[10px] font-black text-[#FFC928] hover:text-[#e6b520] uppercase tracking-widest transition-colors disabled:opacity-40 flex items-center gap-1">
+              <button type="button" onClick={handleForgotPassword} disabled={resetting} className="block py-3 text-[10px] font-black text-[#FFC928] hover:text-[#e6b520] uppercase tracking-widest transition-colors disabled:opacity-40 flex items-center gap-1">
               {resetting && <Loader size={12} className="animate-spin" />}
               {resetting ? 'Enviando...' : 'Esqueci minha senha'}
             </button>
@@ -240,7 +258,7 @@ export default function LoginPage() {
                 checked={lgpdConsent}
                 onChange={e => setLgpdConsent(e.target.checked)}
                 required
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-[#FFC928] focus:ring-[#FFC928]"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-[#FFC928] focus:ring-[#FFC928] shrink-0"
               />
               <span className="text-[10px] font-bold text-gray-500 leading-relaxed">
                 Aceito os{' '}
@@ -268,7 +286,7 @@ export default function LoginPage() {
 
           <button
             type="button"
-            onClick={signInWithGoogle}
+            onClick={handleGoogleSignIn}
             disabled={loading}
             className="w-full bg-white border border-gray-200 text-gray-700 font-black py-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
           >
@@ -286,10 +304,8 @@ export default function LoginPage() {
           </button>
         </div>
 
-        <div className="text-center mt-4">
-          <Link to="/" className="text-[10px] font-black text-gray-300 hover:text-gray-500 uppercase tracking-widest transition-colors">
-            ← Voltar ao início
-          </Link>
+        <div className="flex justify-center mt-6">
+          <BackButton to="/" />
         </div>
       </div>
     </div>

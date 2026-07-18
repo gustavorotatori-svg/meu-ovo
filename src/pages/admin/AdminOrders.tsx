@@ -10,6 +10,7 @@ import { awardLoyaltyPoints } from '../../services/loyaltyService';
 import { triggerAutomaticNotification, WA_NUMBER } from '../../services/whatsappService';
 import { getCustomerStats, submitCustomerRating, CustomerStats } from '../../services/customerRatingService';
 import { toast } from 'react-hot-toast';
+import { sanitizeCSVCell } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -841,7 +842,7 @@ export default function AdminOrders() {
         o.total.toFixed(2),
         o.status,
         `"${itemsStr}"`
-      ];
+      ].map(val => sanitizeCSVCell(String(val)));
     });
 
     const csvContent = [
@@ -1421,7 +1422,7 @@ export default function AdminOrders() {
               {/* Form Grid */}
               <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 no-scrollbar">
                 {/* Width & Font Size */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Largura da Bobina</label>
                     <select
@@ -1453,7 +1454,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* Copies & Auto Print */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Número de Cópias</label>
                     <input
@@ -1483,7 +1484,7 @@ export default function AdminOrders() {
                 </div>
 
                 {/* Include address & Comments toggles */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1541,7 +1542,7 @@ export default function AdminOrders() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2.5 mt-8 border-t border-slate-100 pt-4">
+              <div className="flex gap-2.5 mt-8 border-t border-slate-100 pt-4 flex-wrap">
                 <button
                   type="button"
                   onClick={printTestReceipt}

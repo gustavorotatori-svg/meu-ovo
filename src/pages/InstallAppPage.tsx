@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
+import BackButton from '../components/BackButton';
 import SEO from '../components/SEO';
 import { Logo } from '../components/Logo';
 
@@ -245,6 +246,9 @@ export default function InstallAppPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white">
       <SEO title="Instalar App" description="Instale o MEU OVO na tela inicial do seu celular ou computador para pedir mais rápido." url="/install-app" />
       <div className="max-w-lg mx-auto px-6 py-12">
+        <div className="mb-6">
+          <BackButton to="/" />
+        </div>
         <div className="text-center mb-10">
           <motion.div
             initial={{ y: -20, opacity: 0 }}

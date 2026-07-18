@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { showLocalNotification, getNotifPreferences } from './notificationService';
 
 export interface StreakData {
   currentStreak: number;
@@ -68,4 +69,34 @@ export async function updateStreak(userId: string): Promise<UpdateStreakResult> 
 
   const milestone = MILESTONES.find(m => m.days === newStreak) || null;
   return { updated, milestone };
+}
+
+const STREAK_REMINDER_KEY = 'meuovo_streak_reminded';
+
+export function shouldRemindStreak(streak: StreakData): boolean {
+  if (streak.currentStreak === 0) return false;
+  const today = new Date().toISOString().split('T')[0];
+  if (streak.lastOrderDate === today) return false;
+  try {
+    const lastReminded = localStorage.getItem(STREAK_REMINDER_KEY);
+    if (lastReminded === today) return false;
+  } catch { }
+  return true;
+}
+
+export function markStreakReminded(): void {
+  try {
+    localStorage.setItem(STREAK_REMINDER_KEY, new Date().toISOString().split('T')[0]);
+  } catch { }
+}
+
+export function checkStreakReminder(streak: StreakData): void {
+  if (!shouldRemindStreak(streak)) return;
+  const prefs = getNotifPreferences();
+  if (!prefs.streak_reminder) return;
+  markStreakReminded();
+  showLocalNotification(
+    '🔥 Streak em risco!',
+    `Você está com ${streak.currentStreak} dia(s) seguidos! Faça um pedido hoje para não perder sua sequência.`
+  );
 }

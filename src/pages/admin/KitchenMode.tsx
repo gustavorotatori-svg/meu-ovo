@@ -3,6 +3,7 @@ import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Order } from '../../types';
 import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, Volume2, VolumeX, Smartphone, MapPin, Store, Maximize2, Minimize2 } from 'lucide-react';
+import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { format } from 'date-fns';
@@ -88,17 +89,21 @@ export default function KitchenMode() {
       {/* Sound hidden element */}
       <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto" />
 
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
+
       {/* Header */}
       <header className={cn("p-4 flex items-center justify-between border-b sticky top-0 z-10", isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-200')}>
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-[#FFC928] rounded-2xl text-[#111] shadow-lg shadow-yellow-500/20">
-            <ChefHat size={32} strokeWidth={2.5} />
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3 bg-[#FFC928] rounded-2xl text-[#111] shadow-lg shadow-yellow-500/20 shrink-0">
+              <ChefHat size={32} strokeWidth={2.5} />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-black uppercase tracking-tighter italic truncate">Cozinha {currentRestaurant?.name || 'MEU OVO'}</h1>
+              <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.2em]">KDS - Monitor de Produção</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-black uppercase tracking-tighter italic">Cozinha {currentRestaurant?.name || 'MEU OVO'}</h1>
-            <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.2em]">KDS - Monitor de Produção</p>
-          </div>
-        </div>
 
         <div className="flex items-center gap-3">
           <div className={cn("hidden md:flex rounded-xl p-1", isDark ? 'bg-white/5' : 'bg-gray-100')}>
@@ -242,7 +247,7 @@ export default function KitchenMode() {
                       )}
                       {order.status === 'ready' && (
                         <button
-                          onClick={() => updateOrderStatus(order.id, 'out_for_delivery')}
+                          onClick={() => updateOrderStatus(order.id, 'out-for-delivery')}
                           className="col-span-2 w-full py-4 bg-[#FFC928] text-[#111] font-black rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all uppercase tracking-widest text-xs shadow-lg shadow-yellow-500/10"
                         >
                           {order.type === 'delivery' ? 'Enviar p/ Entrega' : 'Chamar Cliente'}

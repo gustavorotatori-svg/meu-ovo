@@ -18,37 +18,62 @@ export default function AdminCashier() {
   const [amount, setAmount] = useState('');
   const [reason, setReason] = useState('');
 
-  const handleOpen = () => {
+  const handleOpen = async () => {
     if (!amount) return toast.error('Informe o valor de abertura');
-    openCashier(parseFloat(amount), 'Admin');
-    setAmount('');
-    setShowOpenModal(false);
-    toast.success('Caixa aberto com sucesso!');
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount < 0) return toast.error('Valor inválido');
+    try {
+      await openCashier(parsedAmount, 'Admin');
+      setAmount('');
+      setShowOpenModal(false);
+      toast.success('Caixa aberto com sucesso!');
+    } catch (err) {
+      console.error('[Cashier] Error opening cashier:', err);
+      toast.error('Erro ao abrir caixa. Tente novamente.');
+    }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
     if (!amount) return toast.error('Informe o valor de fechamento');
-    closeCashier(parseFloat(amount));
-    setAmount('');
-    setShowCloseModal(false);
-    toast.success('Caixa fechado com sucesso!');
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount < 0) return toast.error('Valor inválido');
+    try {
+      await closeCashier(parsedAmount);
+      setAmount('');
+      setShowCloseModal(false);
+      toast.success('Caixa fechado com sucesso!');
+    } catch (err) {
+      console.error('[Cashier] Error closing cashier:', err);
+      toast.error('Erro ao fechar caixa. Tente novamente.');
+    }
   };
 
-  const handleMovement = () => {
+  const handleMovement = async () => {
     if (!amount || !reason || !showMovementModal) return toast.error('Informe valor e motivo');
-    addCashierMovement(showMovementModal.type, parseFloat(amount), reason);
-    setAmount('');
-    setReason('');
-    setShowMovementModal(null);
-    toast.success('Movimentação registrada!');
+    const parsedAmount = parseFloat(amount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) return toast.error('Valor inválido');
+    try {
+      await addCashierMovement(showMovementModal.type, parsedAmount, reason);
+      setAmount('');
+      setReason('');
+      setShowMovementModal(null);
+      toast.success('Movimentação registrada!');
+    } catch (err) {
+      console.error('[Cashier] Error recording movement:', err);
+      toast.error('Erro ao registrar movimentação. Tente novamente.');
+    }
   };
 
   const calculateTotalSales = () => {
     if (!activeSession) return 0;
-    // Filter orders finished after activeSession.openedAt
+    const sessionStart = new Date(activeSession.openedAt).getTime();
     return orders
-      .filter(o => o.status === 'finished' && new Date(o.createdAt) > new Date(activeSession.openedAt))
-      .reduce((acc, current) => acc + current.total, 0);
+      .filter(o => o.status === 'finished')
+      .filter(o => {
+        const orderTime = o.updatedAt ? new Date(o.updatedAt).getTime() : new Date(o.createdAt).getTime();
+        return orderTime >= sessionStart;
+      })
+      .reduce((acc, current) => acc + (current.total || 0), 0);
   };
 
   const currentSales = calculateTotalSales();
@@ -72,7 +97,7 @@ export default function AdminCashier() {
         {/* Main Control */}
         <div className="lg:col-span-2 space-y-8">
           {!activeSession ? (
-            <div className={`rounded-[2.5rem] p-12 text-center border-4 border-dashed ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100'}`}>
+            <div className={`rounded-[2.5rem] p-6 sm:p-12 text-center border-4 border-dashed ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-gray-100'}`}>
               <div className="w-20 h-20 bg-[#FFC928]/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Wallet className="text-[#FFC928]" size={40} />
               </div>
@@ -80,7 +105,7 @@ export default function AdminCashier() {
               <p className="text-gray-500 mb-8 max-w-xs mx-auto">Abra o caixa para começar a registrar vendas e movimentações financeiras.</p>
               <button 
                 onClick={() => setShowOpenModal(true)}
-                className="bg-[#FFC928] text-black font-black px-10 py-5 rounded-3xl uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#FFC928]/20"
+                className="bg-[#FFC928] text-black font-black px-6 sm:px-10 py-4 sm:py-5 rounded-3xl uppercase tracking-tighter hover:scale-105 active:scale-95 transition-all shadow-xl shadow-[#FFC928]/20"
               >
                 Abrir Caixa agora
               </button>

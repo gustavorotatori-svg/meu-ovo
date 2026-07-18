@@ -27,7 +27,7 @@ import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
 import { Restaurant } from '../types';
 import { rankRestaurants } from '../lib/recommendations';
-import { getStreak, getNextMilestone } from '../services/streakService';
+import { getStreak, getNextMilestone, checkStreakReminder } from '../services/streakService';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -41,7 +41,10 @@ export default function Home() {
 
   useEffect(() => {
     if (user?.id) {
-      getStreak(user.id).then(s => setStreak(s)).catch(() => {});
+      getStreak(user.id).then(s => {
+        setStreak(s);
+        checkStreakReminder(s);
+      }).catch(() => {});
     }
   }, [user?.id]);
   

@@ -51,6 +51,7 @@ const StoreSettings = lazy(() => import('./pages/admin/StoreSettings'));
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const OvosDeOuro = lazy(() => import('./pages/admin/OvosDeOuro'));
 const FlashDealManagement = lazy(() => import('./pages/admin/FlashDealManagement'));
+const LabelManagement = lazy(() => import('./pages/admin/LabelManagement'));
 const OrderStatusPage = lazy(() => import('./pages/OrderStatusPage'));
 
 const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'));
@@ -179,6 +180,11 @@ export default function App() {
                     <Route path="/admin/flash-deals" element={
                       <ProtectedRoute roles={['restaurant', 'admin']}>
                         <PageSuspense><FlashDealManagement /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/etiquetas" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><LabelManagement /></PageSuspense>
                       </ProtectedRoute>
                     } />
 

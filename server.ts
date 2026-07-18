@@ -4,6 +4,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import cors from "cors";
+import helmet from "helmet";
 import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -30,12 +31,16 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  }));
   app.use(cors({
     origin: process.env.APP_URL || 'http://localhost:3000',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
   }));
-  app.use(express.json({ limit: '10mb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   // Simple in-memory rate limiter
   const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -58,12 +63,15 @@ async function startServer() {
 
   app.use('/api', rateLimit(30, 60000));
 
-  // Simple API key check for AI endpoints
+  // API key authentication for AI/costly endpoints
   function requireApiKey(req: express.Request, res: express.Response, next: express.NextFunction) {
-    const apiKey = req.headers['x-api-key'] as string;
-    const validKey = process.env.GEMINI_API_KEY;
-    if (!validKey || validKey === 'MY_GEMINI_API_KEY') {
+    if (process.env.NODE_ENV !== 'production') {
       return next();
+    }
+    const apiKey = req.headers['x-api-key'] as string;
+    const validKey = process.env.API_SECRET_KEY || process.env.GEMINI_API_KEY;
+    if (!validKey) {
+      return res.status(500).json({ error: 'Server misconfigured — API_SECRET_KEY not set' });
     }
     if (apiKey !== validKey) {
       return res.status(401).json({ error: 'Unauthorized — invalid or missing x-api-key header' });
@@ -85,6 +93,10 @@ async function startServer() {
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
+
+  // Protect costly endpoints with API key auth
+  app.use('/api/blog', requireApiKey);
+  app.use('/api/newsletter', requireApiKey);
 
   /**
    * AI Menu Document Parser
@@ -109,7 +121,7 @@ async function startServer() {
       };
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         contents: { parts: [filePart, promptPart] },
         config: {
           responseMimeType: "application/json",
@@ -149,10 +161,7 @@ async function startServer() {
       });
     } catch (error: any) {
       console.error("AI Menu parsing error:", error);
-      res.status(500).json({ 
-        error: "Failed to parse menu using AI", 
-        details: error?.message || String(error)
-      });
+      res.status(500).json({ error: "Failed to parse menu using AI" });
     }
   });
 
@@ -176,7 +185,7 @@ O tempo de preparo deve ser em minutos.
 Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -215,7 +224,7 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error("AI Menu generation error:", error);
-      res.status(500).json({ error: "Failed to generate menu using AI", details: error?.message || String(error) });
+      res.status(500).json({ error: "Failed to generate menu using AI" });
     }
   });
 
@@ -237,7 +246,7 @@ A descrição deve ser muito apetitosa, curta e atraente para o cliente final.
 Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) condizente com este prato específico e categoria. Ex: Se for uma sobremesa, que seja uma foto de sobremesa do Unsplash.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         contents: "Gere um prato/produto para o cardápio.",
         config: {
           systemInstruction,
@@ -259,7 +268,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
       res.json({ success: true, data: result });
     } catch (error: any) {
       console.error("AI Product generation error:", error);
-      res.status(500).json({ error: "Failed to generate product using AI", details: error?.message || String(error) });
+      res.status(500).json({ error: "Failed to generate product using AI" });
     }
   });
 
@@ -277,7 +286,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
 
       // Using Gemini with URL context is the best approach here as per SKILL.md
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         contents: "Resuma as 3 últimas notícias de cada um destes sites para um blog de foodservice. Foque no que é relevante para donos de restaurantes. Extraia títulos, um breve resumo, links (estimados se não puder ler) e tente descrever uma imagem que acompanharia a notícia.\n\nSites:\n1. https://sp.abrasel.com.br/noticias/\n2. https://anrbrasil.org.br/noticias/\n3. https://mercadoeconsumo.com.br/category/foodservice/",
         config: {
           tools: [{ urlContext: {} }],
@@ -321,7 +330,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
+        model: "gemini-3.1-flash-lite",
         contents: `Gere um conteúdo de boas-vindas para o newsletter do 'Meu Ovo' para o email ${email}. 
         O tom deve ser empreendedor, direto e parceiro. 
         Inclua um resumo rápido de uma notícia quente do setor de restaurantes (Abrasel ou ANR).`
@@ -344,15 +353,9 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
    * Requires FIREBASE_SERVICE_ACCOUNT_KEY env var + FCM tokens registered on user docs
    * Intended to be called by an external cron service (e.g., cron-job.org) once daily
    */
-  app.post("/api/notifications/reengage", async (req, res) => {
+  app.post("/api/notifications/reengage", requireApiKey, async (req, res) => {
     if (!firebaseAdminInitialized) {
       return res.status(503).json({ error: "Firebase Admin not configured — set FIREBASE_SERVICE_ACCOUNT_KEY" });
-    }
-
-    const apiKey = req.headers['x-api-key'] as string;
-    const validKey = process.env.GEMINI_API_KEY;
-    if (validKey && validKey !== 'MY_GEMINI_API_KEY' && apiKey !== validKey) {
-      return res.status(401).json({ error: 'Unauthorized — invalid or missing x-api-key header' });
     }
 
     try {
@@ -403,7 +406,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
       });
     } catch (error: any) {
       console.error('Re-engagement push error:', error);
-      res.status(500).json({ error: 'Failed to send re-engagement notifications', details: error?.message || String(error) });
+      res.status(500).json({ error: 'Failed to send re-engagement notifications' });
     }
   });
 

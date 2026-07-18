@@ -22,11 +22,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
+import Badge from '../components/Badge';
 import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Product, CartItem, Category, Additional, FlashDeal } from '../types';
+import { ALLERGEN_MAP } from '../data/allergens';
 import { motion, AnimatePresence } from 'motion/react';
 import OptimizedImage from '../components/OptimizedImage';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -697,9 +699,7 @@ export default function RestaurantMenuPage() {
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="bg-[#FFC928] text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
-                    🍳 100% DIRETO
-                  </span>
+                  <Badge size="md">🍳 100% DIRETO</Badge>
                   {tableNumber && (
                     <span className="bg-black text-[#FFC928] dark:bg-[#FFC928] dark:text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
                       MESA {tableNumber}
@@ -825,12 +825,8 @@ export default function RestaurantMenuPage() {
                 {restaurant.historyText || "Servindo afeto e as melhores receitas artesanais diretamente do nosso balcão para você, sem intermediários corporativos gulosos."}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest bg-amber-500/10 text-amber-600 dark:text-[#FFC928] px-2.5 py-1 rounded-full border border-amber-500/20">
-                  🛡️ SEM COMISSÃO PARA O APP
-                </span>
-                <span className="text-[9px] font-extrabold uppercase tracking-widest bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full border border-emerald-500/20">
-                  ⚡ COMPRA 100% DIRETA
-                </span>
+                <Badge variant="warning">🛡️ SEM COMISSÃO PARA O APP</Badge>
+                <Badge variant="success">⚡ COMPRA 100% DIRETA</Badge>
               </div>
             </div>
 
@@ -967,10 +963,10 @@ export default function RestaurantMenuPage() {
                           <span className="text-[10px] font-black uppercase text-[#FF7A00] dark:text-[#FFC928] tracking-widest leading-none">Recomendação dos Clientes</span>
                           <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 dark:text-white mt-1">🔥 Destaques e Preferidos do Bairro</h3>
                         </div>
-                        <div className="bg-[#FFC928] text-black text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider self-start sm:self-center flex items-center gap-1">
+                        <Badge size="md" className="self-start sm:self-center">
                           <Star size={10} className="fill-black" />
                           Favoritos Locais
-                        </div>
+                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1117,6 +1113,10 @@ export default function RestaurantMenuPage() {
           isDark={isDark}
           onClose={() => setSelectedProduct(null)}
           onAdd={(item) => {
+            if (!restaurant.isOpen) {
+              toast.error('Restaurante fechado no momento');
+              return;
+            }
             addItem(item);
             setSelectedProduct(null);
           }}
@@ -1381,21 +1381,21 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               
               <div className="flex flex-wrap items-center gap-2 pt-2">
                 {product.bestSeller && (
-                  <span className="bg-[#FFC928] text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg flex items-center gap-1.5 shadow-sm">
-                    <Star size={10} className="fill-[#111] text-[#111]" />
+                  <Badge size="md">
+                    <Star size={10} className="fill-black" />
                     MAIS PEDIDO
-                  </span>
+                  </Badge>
                 )}
                 {product.onPromotion && (
-                  <span className="bg-red-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg shadow-sm">
+                  <Badge variant="danger" size="md">
                     REDUÇÃO DE PREÇO
-                  </span>
+                  </Badge>
                 )}
                 {product.estimatedPrepTime && (
-                  <span className="bg-slate-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg flex items-center gap-1.5">
+                  <Badge variant="outline" size="md">
                     <Clock size={10} />
                     SAI EM {product.estimatedPrepTime} MIN
-                  </span>
+                  </Badge>
                 )}
               </div>
             </div>
@@ -1416,14 +1416,25 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                     </p>
                   </div>
                 )}
-                {product.allergens && (
+                {(product.selectedAllergens?.length ? product.selectedAllergens : product.allergens) && (
                   <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-1 select-none flex items-center gap-1">
+                    <p className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-2 select-none flex items-center gap-1">
                       <AlertTriangle size={11} /> Informações de Alergia
                     </p>
-                    <p className="text-xs text-red-500 font-black leading-relaxed italic">
-                      {product.allergens}
-                    </p>
+                    {product.selectedAllergens?.length ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.selectedAllergens.map(key => {
+                          const a = ALLERGEN_MAP.get(key);
+                          return a ? (
+                            <span key={key} className="inline-flex items-center gap-1 bg-red-500/10 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-red-500/20">
+                              {a.icon} {a.label}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-red-500 font-black leading-relaxed italic">{product.allergens}</p>
+                    )}
                   </div>
                 )}
               </div>

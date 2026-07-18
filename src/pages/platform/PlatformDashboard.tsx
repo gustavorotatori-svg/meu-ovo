@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, Store, Brain, BarChart3, Users, Heart, Search, Bell, Menu, X, 
   ArrowUpRight, ArrowDownRight, Trophy, Shield, Info, Lock, Activity, CheckCircle2, 
-  Scale, FileText, ChevronRight, Sparkles, RefreshCw, AlertTriangle, Eye
+  Scale, FileText, ChevronRight, Sparkles, RefreshCw, AlertTriangle, Eye,
+  Utensils
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import BackButton from '../../components/BackButton';
 import { Logo } from '../../components/Logo';
 import Breadcrumbs from '../../components/admin/Breadcrumbs';
 import { db } from '../../lib/firebase';
@@ -38,9 +40,19 @@ export default function PlatformDashboard() {
 
   const [simulationActive, setSimulationActive] = useState(false);
 
+  // Real platform statistics from Firestore
+  const [stats, setStats] = useState([
+    { label: 'Restaurantes Ativos', value: '...', change: '', isPositive: true },
+    { label: 'Pedidos (24h)', value: '...', change: '', isPositive: true },
+    { label: 'GMV Mensal', value: '...', change: '', isPositive: true },
+    { label: 'Doações Sociais', value: '...', change: '', isPositive: true },
+  ]);
+
+  const [activityFeed, setActivityFeed] = useState<{ action: string; detail: string; time: string; icon: React.ReactNode }[]>([]);
+
   // Load candidates and votes from Firestore
   useEffect(() => {
-    const fetchOvosPlatformData = async () => {
+    const fetchPlatformData = async () => {
       setLoadingOvos(true);
       try {
         // 1. Fetch all restaurants
@@ -52,19 +64,73 @@ export default function PlatformDashboard() {
           const data = docSnap.data();
           const enrolled = !!data.ovosDeOuroParticipant;
           if (enrolled) countEnrolled++;
-
           restList.push({
             id: docSnap.id,
             name: data.name || 'Unnamed Restaurant',
             slug: data.slug || '',
             ovosDeOuroParticipant: enrolled,
             createdAt: data.createdAt,
-            ratingAverage: Number((4.1 + Math.random() * 0.8).toFixed(1)) // default display for audit
+            ratingAverage: 0
           });
         });
 
         // 2. Fetch total secure votes
         const votesSnap = await getDocs(collection(db, 'ovos_de_ouro_votes'));
+
+        // 3. Fetch real order data for stats
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        const now = Date.now();
+        const oneDayAgo = now - 86400000;
+        const thirtyDaysAgo = now - 30 * 86400000;
+        let orders24h = 0;
+        let gmvMonthly = 0;
+        let donationsMonthly = 0;
+        const recentActivities: { action: string; detail: string; time: string; icon: React.ReactNode }[] = [];
+
+        const restaurantNames: Record<string, string> = {};
+        restList.forEach(r => { restaurantNames[r.id] = r.name; });
+
+        ordersSnap.forEach(docSnap => {
+          const data = docSnap.data();
+          const createdAt = data.createdAt?.toMillis?.() || data.createdAt || 0;
+          const orderTotal = data.total || data.totalAmount || 0;
+          const donationAmt = data.donationAmount || data.caixinhaAmount || 0;
+          const restName = restaurantNames[data.restaurantId] || data.restaurantName || 'Restaurante';
+
+          if (createdAt > oneDayAgo) {
+            orders24h++;
+            if (recentActivities.length < 10) {
+              const timeAgo = Math.floor((now - createdAt) / 60000);
+              const timeStr = timeAgo < 60 ? `${timeAgo}m atrás` : `${Math.floor(timeAgo / 60)}h atrás`;
+              recentActivities.push({
+                action: `Novo Pedido`,
+                detail: `${restName} — R$ ${(orderTotal).toFixed(2).replace('.', ',')}`,
+                time: timeStr,
+                icon: <Utensils size={16} className="text-[#FFC928]" />
+              });
+            }
+          }
+          if (createdAt > thirtyDaysAgo) {
+            gmvMonthly += orderTotal;
+            donationsMonthly += donationAmt;
+          }
+        });
+
+        // Sort by most recent
+        recentActivities.sort((a, b) => a.time.localeCompare(b.time)).reverse();
+
+        setActivityFeed(recentActivities.slice(0, 8));
+
+        const prevOrders = await getDocs(query(collection(db, 'orders'), where('createdAt', '<', thirtyDaysAgo)));
+        const prevCount = prevOrders.size;
+        const orderChange = prevCount > 0 ? Math.round(((orders24h - prevCount) / prevCount) * 100) : 0;
+
+        setStats([
+          { label: 'Restaurantes Ativos', value: restSnap.size.toString(), change: '', isPositive: true },
+          { label: 'Pedidos (24h)', value: orders24h.toLocaleString('pt-BR'), change: `${orderChange >= 0 ? '+' : ''}${orderChange}%`, isPositive: orderChange >= 0 },
+          { label: 'GMV Mensal', value: `R$ ${(gmvMonthly / 1000).toFixed(1)}k`, change: '', isPositive: true },
+          { label: 'Doações Sociais', value: `R$ ${donationsMonthly.toFixed(0).replace('.', ',')}`, change: '', isPositive: true },
+        ]);
         
         setCandidates(restList);
         setTotals({
@@ -73,21 +139,14 @@ export default function PlatformDashboard() {
           votesCount: votesSnap.size
         });
       } catch (err) {
-        console.error('Error fetching platform Ovos de Ouro stats:', err);
+        console.error('Error fetching platform data:', err);
       } finally {
         setLoadingOvos(false);
       }
     };
 
-    fetchOvosPlatformData();
+    fetchPlatformData();
   }, [location.pathname]);
-
-  const stats = [
-    { label: 'Restaurantes Ativos', value: totals.totalCount > 0 ? totals.totalCount.toString() : '12', change: '+12%', isPositive: true },
-    { label: 'Pedidos (24h)', value: '18.492', change: '+8%', isPositive: true },
-    { label: 'GMV Mensal', value: 'R$ 4.2M', change: '+15%', isPositive: true },
-    { label: 'Doações Sociais', value: 'R$ 84.300', change: '+22%', isPositive: true },
-  ];
 
   const sidebarItems = [
     { to: '/plataforma', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -168,6 +227,10 @@ export default function PlatformDashboard() {
 
         <div className="p-8 max-w-7xl mx-auto">
           <Breadcrumbs />
+
+          <div className="px-6 pt-6">
+            <BackButton to="/" />
+          </div>
 
           {/* DYNAMIC CONDITIONAL ROUTE RENDERER */}
           {location.pathname === '/plataforma/ovos-de-ouro' ? (
@@ -251,7 +314,7 @@ export default function PlatformDashboard() {
                   </div>
                   <div className="mt-3 text-[10px] text-[#FFC928] font-bold flex items-center gap-1">
                     <Sparkles size={11} className="fill-amber-400" />
-                    <span>Zero notas excluídas pelo filtro de spoofing</span>
+                    <span>Bebidas e sobremesas isentas da avaliação</span>
                   </div>
                 </div>
 
@@ -336,7 +399,7 @@ export default function PlatformDashboard() {
                       {[
                         { title: 'Firestore Rules', status: 'Criptografia Ativa', ok: true },
                         { title: 'Conexão Bancos de Dados', status: 'Conectado e Estável', ok: true },
-                        { title: 'Audit Logs (spoofing)', status: 'Votos blindados e únicos', ok: true },
+                        { title: 'Unicidade dos Votos', status: 'Um voto por pedido (1 doc/order)', ok: true },
                         { title: 'Secrecy Module', status: 'Habilitado (Apenas Top 3 exposto)', ok: true }
                       ].map((chk, i) => (
                         <div key={i} className="flex items-center justify-between p-2.5 bg-white/5 rounded-xl border border-white/5">
@@ -422,12 +485,12 @@ export default function PlatformDashboard() {
                                 )}
 
                                 {/* Auditing Average Rating */}
-                                <div className="text-right border-l pl-3 dark:border-neutral-700">
-                                  <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest leading-none">Nota Interna</p>
-                                  <p className="text-xs font-black text-amber-500 mt-1 font-display">
-                                    {cand.ovosDeOuroParticipant ? `${cand.ratingAverage || '4.5'} ★` : 'N/A'}
-                                  </p>
-                                </div>
+                                  <div className="text-right border-l pl-3 dark:border-neutral-700">
+                                    <p className="text-[9px] text-gray-400 font-extrabold uppercase tracking-widest leading-none">Nota Interna</p>
+                                    <p className="text-xs font-black text-amber-500 mt-1 font-display">
+                                      {cand.ovosDeOuroParticipant && cand.ratingAverage ? `${cand.ratingAverage} ★` : cand.ovosDeOuroParticipant ? 'Aguardando votos' : 'N/A'}
+                                    </p>
+                                  </div>
                               </div>
                             </div>
                           </div>
@@ -451,21 +514,21 @@ export default function PlatformDashboard() {
                             <div className="mt-4 border-t border-amber-200 pt-4 space-y-2">
                               <p className="text-[10px] font-black text-amber-950 uppercase tracking-widest leading-none">O Top 3 Oficial Consolidado Revelado Pública:</p>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2">
-                                <div className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
-                                  <span className="text-[9px] font-black text-amber-800">1º LUGAR 🥇</span>
-                                  <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{candidates.filter(c => c.ovosDeOuroParticipant)[0]?.name || 'Pizzaria do João'}</span>
-                                  <span className="text-[10px] text-amber-500 font-extrabold font-display">4.9 ★ (Vencedor Geral)</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
-                                  <span className="text-[9px] font-black text-slate-500">2º LUGAR 🥈</span>
-                                  <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{candidates.filter(c => c.ovosDeOuroParticipant)[1]?.name || 'Burger da Praça'}</span>
-                                  <span className="text-[10px] text-slate-400 font-extrabold font-display">4.8 ★</span>
-                                </div>
-                                <div className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
-                                  <span className="text-[9px] font-black text-orange-700">3º LUGAR 🥉</span>
-                                  <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{candidates.filter(c => c.ovosDeOuroParticipant)[2]?.name || 'Sushi Master'}</span>
-                                  <span className="text-[10px] text-orange-700 font-extrabold font-display">4.7 ★</span>
-                                </div>
+                                {(() => {
+                                  const topCands = candidates.filter(c => c.ovosDeOuroParticipant).sort((a, b) => (b.ratingAverage || 0) - (a.ratingAverage || 0));
+                                  const medals = ['🥇', '🥈', '🥉'];
+                                  const labels = ['1º LUGAR', '2º LUGAR', '3º LUGAR'];
+                                  return [0, 1, 2].map(i => {
+                                    const cand = topCands[i];
+                                    return (
+                                      <div key={i} className="bg-white p-3 rounded-xl border border-amber-200 flex flex-col justify-between">
+                                        <span className="text-[9px] font-black text-amber-800">{labels[i]} {medals[i]}</span>
+                                        <span className="font-black text-xs text-[#111] uppercase mt-1 truncate">{cand?.name || '-'}</span>
+                                        <span className="text-[10px] text-amber-500 font-extrabold font-display">{cand && cand.ratingAverage ? `${cand.ratingAverage} ★` : cand ? 'Aguardando votos' : ''}</span>
+                                      </div>
+                                    );
+                                  });
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -533,12 +596,7 @@ export default function PlatformDashboard() {
                   <div className="bg-white dark:bg-neutral-900 rounded-[2.5rem] p-8 shadow-sm border border-gray-100 dark:border-neutral-800 text-left">
                     <h3 className="text-xl font-black text-[#111] dark:text-white mb-6">Atividade Recente</h3>
                     <div className="space-y-6">
-                      {[
-                        { action: 'Nova Doação', detail: 'Cliente de Pizzaria do João doou R$ 15', time: '2m ago', icon: <Heart size={16} className="text-red-500" /> },
-                        { action: 'Novo Onboarding', detail: 'Sushi Master acaba de ser aprovado', time: '14m ago', icon: <Store size={16} className="text-blue-500" /> },
-                        { action: 'Ativação Ovos de Ouro', detail: 'Estabelecimento Marmita Dona Ana ativou participação', time: '40m ago', icon: <Trophy size={16} className="text-[#FFC928]" /> },
-                        { action: 'Alto Volume', detail: 'Burger da Praça superou 100 pedidos hoje', time: '1h ago', icon: <Activity size={16} className="text-green-500" /> },
-                      ].map((log, i) => (
+                      {activityFeed.length > 0 ? activityFeed.map((log, i) => (
                         <div key={i} className="flex items-center justify-between group">
                           <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-gray-50 dark:bg-neutral-800 rounded-2xl flex items-center justify-center group-hover:bg-[#FFC928]/20 transition-colors">
@@ -551,7 +609,9 @@ export default function PlatformDashboard() {
                           </div>
                           <span className="text-[10px] font-bold text-gray-300 dark:text-neutral-650 uppercase">{log.time}</span>
                         </div>
-                      ))}
+                      )) : (
+                        <p className="text-sm text-gray-400 text-center py-8">Nenhum pedido nas últimas 24h</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -602,3 +662,4 @@ export default function PlatformDashboard() {
     </div>
   );
 }
+

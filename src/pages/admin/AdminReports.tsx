@@ -8,11 +8,11 @@ import {
   Users, Clock, Filter, CalendarDays, CreditCard, Trophy, Shield, 
   Sparkles, HelpCircle, ChevronRight, Eye, RefreshCw, EyeOff, LayoutDashboard, FileText
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { toast } from 'react-hot-toast';
+import { sanitizeCSVCell } from '../../lib/utils';
 import AdminLayout from './AdminLayout';
 
 interface NeighborhoodStat {
@@ -285,12 +285,7 @@ export default function AdminReports() {
       });
 
       const csvContent = "\uFEFF" + headers.map(row => 
-        row.map(val => {
-          const cleanVal = String(val).replace(/"/g, '""');
-          return cleanVal.includes(',') || cleanVal.includes(';') || cleanVal.includes('\n') || cleanVal.includes(' ')
-            ? `"${cleanVal}"`
-            : cleanVal;
-        }).join(';')
+        row.map(val => sanitizeCSVCell(String(val))).join(';')
       ).join('\n');
 
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -310,8 +305,9 @@ export default function AdminReports() {
   };
 
   // PREMIUM INFOGRAPHIC PDF GENERATION
-  const generatePDF = () => {
+  const generatePDF = async () => {
     try {
+      const { jsPDF } = await import('jspdf');
       const doc = new jsPDF();
       
       const AMBER_GOLD = [255, 201, 40];
@@ -825,7 +821,7 @@ export default function AdminReports() {
           {/* Preset Buttons Col-5 */}
           <div className="md:col-span-5 space-y-1.5">
             <span className="text-[10px] font-black text-gray-400 uppercase">Período Consolidado</span>
-            <div className="grid grid-cols-4 gap-1.5 bg-gray-50 p-1.5 rounded-xl border border-gray-100/80">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 bg-gray-50 p-1.5 rounded-xl border border-gray-100/80">
               {[
                 { id: '7d', label: '7 Dias' },
                 { id: '30d', label: '30 Dias' },

@@ -64,6 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               onboardingComplete: data?.onboardingComplete,
             });
           } else {
+            // Firestore doc missing — recreate it to prevent orphaned auth user
+            try {
+              await setDoc(doc(db, 'users', firebaseUser.uid), {
+                full_name: firebaseUser.displayName || '',
+                role: 'customer',
+                createdAt: new Date().toISOString(),
+                pwaInstallPending: true,
+                onboardingComplete: false,
+                customerRating: 5,
+                customerRatingCount: 0,
+              });
+            } catch (createErr) {
+              console.error("Error recreating missing user profile:", createErr);
+            }
             setUser({
               id: firebaseUser.uid,
               email: firebaseUser.email || '',
@@ -105,25 +119,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signUp(email: string, password: string, fullName: string, role: UserRole) {
     const res = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(res.user, { displayName: fullName });
 
-    const userData: Record<string, unknown> = {
-      full_name: fullName,
-      role: role,
-      createdAt: new Date().toISOString(),
-      pwaInstallPending: true,
-      onboardingComplete: false,
-    };
-    if (role === 'customer') {
-      userData.customerRating = 5;
-      userData.customerRatingCount = 0;
+    // Only 'customer' can be self-assigned. 'restaurant' is set via registerRestaurant after onboarding.
+    // 'admin' is NEVER assignable via signup.
+    const safeRole: UserRole = 'customer';
+
+    try {
+      await updateProfile(res.user, { displayName: fullName });
+
+      const userData: Record<string, unknown> = {
+        full_name: fullName,
+        role: safeRole,
+        createdAt: new Date().toISOString(),
+        pwaInstallPending: true,
+        onboardingComplete: false,
+      };
+      if (safeRole === 'customer') {
+        userData.customerRating = 5;
+        userData.customerRatingCount = 0;
+      }
+
+      await setDoc(doc(db, 'users', res.user.uid), userData);
+    } catch (firestoreError) {
+      // If Firestore write fails, rollback the auth user to prevent orphaned accounts
+      await res.user.delete().catch(() => {});
+      console.error('[Auth] signUp failed, auth user rolled back:', firestoreError);
+      throw new Error('Falha ao criar perfil. Tente novamente.');
     }
-
-    await setDoc(doc(db, 'users', res.user.uid), userData);
 
     try {
       await sendEmailVerification(res.user);
-      console.log('Email de verificação enviado para', email);
     } catch (_e) {
       // Non-critical — user can still use the app
     }
@@ -131,22 +156,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser({
       id: res.user.uid,
       email,
-      ...userData
+      full_name: fullName,
+      role: safeRole,
+      createdAt: new Date().toISOString(),
+      pwaInstallPending: true,
+      onboardingComplete: false,
+      customerRating: 5,
+      customerRatingCount: 0,
     });
 
     registerFCMAndActivity(res.user.uid);
   }
 
   async function signIn(email: string, password: string) {
-    try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      if (!cred.user.emailVerified) {
-        // Allow access but user can verify later
-      }
-      registerFCMAndActivity(cred.user.uid);
-    } catch (error) {
-      throw error;
-    }
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    registerFCMAndActivity(cred.user.uid);
   }
 
   async function signInWithGoogleFn() {
@@ -168,11 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      throw error;
-    }
+    await firebaseSignOut(auth);
   }
 
   async function resendVerification() {
@@ -182,11 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function resetPassword(email: string) {
-    try {
-      await sendPasswordResetEmail(auth, email);
-    } catch (error) {
-      throw error;
-    }
+    await sendPasswordResetEmail(auth, email);
   }
 
   async function refreshUserProfile() {
@@ -222,7 +238,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp, signIn, signInWithGoogle: signInWithGoogleFn, signOut, resetPassword,
         isAuthenticated: false,
         resendVerification: async () => {},
-        emailVerified: true,
+        emailVerified: false,
         refreshUserProfile,
       }}>
         <div className="min-h-screen bg-white flex items-center justify-center">

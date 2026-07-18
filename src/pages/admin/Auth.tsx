@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import BackButton from '../../components/BackButton';
 import { Logo } from '../../components/Logo';
 import { ChefHat, Mail, Lock, User, Store, Trophy, Shield } from 'lucide-react';
 import { Button } from '../../components/Button';
@@ -45,36 +46,25 @@ export default function AdminAuth() {
     try {
       if (isLogin) {
         const { user } = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-        try {
-          await setDoc(doc(db, 'restaurants', user.uid), {
-            ovosDeOuroParticipant: wantToParticipate
-          }, { merge: true });
-        } catch (dbErr) {
-          console.warn("Could not save restaurant participant preference on login:", dbErr);
-        }
         toast.success('Bem-vindo de volta!');
-        navigate('/admin/dashboard');
+        navigate('/admin');
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
+        if (formData.password.length < 6) { toast.error('A senha deve ter no mínimo 6 caracteres'); setLoading(false); return; }
+        if (!/[A-Za-z]/.test(formData.password)) { toast.error('A senha deve conter pelo menos uma letra'); setLoading(false); return; }
+        if (!/[0-9]/.test(formData.password)) { toast.error('A senha deve conter pelo menos um número'); setLoading(false); return; }
+        if (!formData.email.includes('@')) { toast.error('Digite um e-mail válido'); setLoading(false); return; }
         const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         await updateProfile(user, { displayName: formData.name });
 
-        // Create users doc with role 'restaurant'
+        // Create users doc with role 'customer' initially — registerRestaurant upgrades after onboarding
         await setDoc(doc(db, 'users', user.uid), {
           full_name: formData.name,
-          role: 'restaurant',
+          role: 'customer',
           createdAt: new Date().toISOString(),
+          pwaInstallPending: true,
+          onboardingComplete: false,
         });
-
-        // Save Ovos de Ouro preference
-        const slug = formData.restaurantName.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-        await setDoc(doc(db, 'restaurants', slug), {
-          name: formData.restaurantName,
-          slug,
-          ownerId: user.uid,
-          ovosDeOuroParticipant: wantToParticipate,
-          createdAt: new Date().toISOString(),
-        }, { merge: true });
 
         toast.success('Conta criada! Agora complete o cadastro do seu restaurante.');
         navigate('/install-app');
@@ -170,7 +160,8 @@ export default function AdminAuth() {
             </div>
           </div>
 
-          {/* Golden Ovos de Ouro Preference Box */}
+          {/* Golden Ovos de Ouro Preference Box — only on signup */}
+          {!isLogin && (
           <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 space-y-2.5 text-left">
             <div className="flex items-start gap-2.5">
               <input
@@ -195,6 +186,7 @@ export default function AdminAuth() {
               Garantia de Confidencialidade: Suas avaliações individuais acumuladas serão invisíveis para clientes e concorrentes, visíveis somente para o próprio estabelecimento e para a equipe Meu Ovo. Publicaremos apenas os 3 primeiros colocados generais em 15 de Dezembro. Austeridade e imparcialidade total.
             </p>
           </div>
+          )}
 
           {isLogin && (
             <button
@@ -245,6 +237,9 @@ export default function AdminAuth() {
             </p>
           </div>
         </form>
+        <div className="px-8 pb-6">
+          <BackButton to="/" label="Voltar ao início" />
+        </div>
       </div>
     </div>
   );

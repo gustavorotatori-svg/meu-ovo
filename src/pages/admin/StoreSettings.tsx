@@ -5,9 +5,9 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { Button } from '../../components/Button';
 import { toast } from 'react-hot-toast';
 import { QrCode as QrIcon, Copy, Settings, Store, Truck, MapPin, Phone, Plus, Trash2, Clock, Download, Volume2, Printer, Zap, Smartphone, XCircle, FileText, Upload, Shield, Key, Star, AlertTriangle, Check, FileSpreadsheet, Search, ChevronDown, ChevronUp, Eye, CreditCard } from 'lucide-react';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 import { Skeleton } from '../../components/Skeleton';
-import { cn } from '../../lib/utils';
+import { cn, sanitizeCSVCell } from '../../lib/utils';
 import AdminLayout from './AdminLayout';
 import { validateFiscalXML, generateDemoValidFiscalXML, isValidCNPJ } from '../../services/fiscalValidationService';
 
@@ -100,6 +100,7 @@ export default function StoreSettings() {
   const [formData, setFormData] = useState({
     name: restaurant?.name || '',
     description: restaurant?.description || '',
+    isOpen: restaurant?.isOpen ?? true,
     address: restaurant?.address || '',
     whatsapp: restaurant?.whatsapp || '',
     cuisineType: restaurant?.cuisineType || '',
@@ -351,13 +352,7 @@ export default function StoreSettings() {
           log.metadata?.chaveAcesso || "Gerada Dinamicamente"
         ];
 
-        const escapedRow = row.map(val => {
-          const stringVal = String(val).replace(/"/g, '""');
-          if (stringVal.includes(';') || stringVal.includes('"') || stringVal.includes('\n')) {
-            return `"${stringVal}"`;
-          }
-          return stringVal;
-        });
+        const escapedRow = row.map(val => sanitizeCSVCell(String(val)));
 
         csvRows.push(escapedRow.join(";"));
       }
@@ -390,6 +385,7 @@ export default function StoreSettings() {
       const updatedFields = {
         name: formData.name,
         description: formData.description,
+        isOpen: formData.isOpen,
         address: formData.address,
         whatsapp: formData.whatsapp,
         cuisineType: formData.cuisineType,
@@ -660,7 +656,7 @@ export default function StoreSettings() {
 
               <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Guia de Preços Recomendado:</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <p className="text-[9px] font-bold text-slate-600">Econômico</p>
                     <p className="text-[8px] text-slate-400 leading-tight">Açaí, Pastel, Marmitas. Áreas residenciais.</p>
@@ -706,12 +702,32 @@ export default function StoreSettings() {
                <div className="p-1.5 bg-brand-black rounded-lg text-brand-egg shadow-sm">
                  <Truck size={16} />
                </div>
-               <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Logística Própria</h3>
-             </div>
+                <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Funcionamento</h3>
+              </div>
 
-             <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
-                <div>
-                   <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Status do Delivery</p>
+              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                 <div>
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Restaurante Aberto</p>
+                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Aceitar novos pedidos agora</p>
+                 </div>
+                 <button
+                   type="button"
+                   onClick={() => setFormData({...formData, isOpen: !formData.isOpen})}
+                   className={cn(
+                     "h-5 w-10 rounded-full relative transition-colors duration-200 focus:outline-none",
+                     formData.isOpen ? "bg-green-500" : "bg-slate-300"
+                   )}
+                 >
+                   <div className={cn(
+                     "absolute top-1 w-3 h-3 bg-white rounded-full transition-all duration-200",
+                     formData.isOpen ? "left-6" : "left-1"
+                   )} />
+                 </button>
+              </div>
+
+              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                 <div>
+                    <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Status do Delivery</p>
                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Permitir pedidos online agora</p>
                 </div>
                 <button
@@ -812,7 +828,7 @@ export default function StoreSettings() {
              </div>
 
              <div className="space-y-3 pt-4 border-t border-slate-50">
-                <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Zero Taxa por Bairro (Exceções)</h4>
                    <Button 
                     type="button" 
@@ -1618,7 +1634,7 @@ export default function StoreSettings() {
                            <div className="border-t border-slate-200/50 pt-3 mt-3 grid grid-cols-2 gap-y-2 gap-x-4 text-left font-sans">
                               <div>
                                  <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1 font-sans">Chave de Acesso</span>
-                                 <span className="text-[10px] font-mono font-bold tracking-tight">{validationResult.metadata.chaveAcesso || 'Gerada Dinamicamente'}</span>
+                                 <span className="text-[10px] font-mono font-bold tracking-tight break-all">{validationResult.metadata.chaveAcesso || 'Gerada Dinamicamente'}</span>
                               </div>
                               <div>
                                  <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1 font-sans">Modelo / Série / Número</span>
@@ -1943,7 +1959,7 @@ export default function StoreSettings() {
              
              <div className="p-4 bg-slate-50 rounded-lg mb-4 text-center border border-slate-100 shadow-inner group/qr">
                 <div ref={qrRef} className="bg-white p-3 rounded shadow-sm inline-block border border-slate-100 mb-3 group-hover/qr:scale-105 transition-transform duration-500">
-                   <QRCode value={menuUrl} size={140} />
+                   <QRCodeSVG value={menuUrl} size={140} />
                 </div>
                 <div className="flex items-center justify-center gap-2">
                    <button 

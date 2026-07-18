@@ -18,7 +18,9 @@ import {
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../components/Button';
-import { Category, Product } from '../../types';
+import BackButton from '../../components/BackButton';
+import { Category, Product, AllergenKey, LabelInfo, StorageType } from '../../types';
+import { ALLERGENS, STORAGE_OPTIONS } from '../../data/allergens';
 import { toast } from 'react-hot-toast';
 import { cn, formatCurrency } from '../../lib/utils';
 import { Skeleton } from '../../components/Skeleton';
@@ -75,6 +77,10 @@ export default function MenuManagement() {
     notes: '',
     ingredients: '',
     allergens: '',
+    selectedAllergens: [] as AllergenKey[],
+    shelfLifeDays: '',
+    storageType: 'refrigerated' as StorageType,
+    storageInstructions: '',
     optionGroups: [] as OptionGroup[],
     stock: '',
     minStockAlert: '',
@@ -268,6 +274,12 @@ export default function MenuManagement() {
     const prepTimeNum = newProd.estimatedPrepTime ? parseInt(newProd.estimatedPrepTime) : null;
     const stockNum = newProd.stock !== '' ? parseInt(newProd.stock) : undefined;
     const minStockNum = newProd.minStockAlert !== '' ? parseInt(newProd.minStockAlert) : undefined;
+    const shelfLifeNum = newProd.shelfLifeDays !== '' ? parseInt(newProd.shelfLifeDays) : undefined;
+    const labelInfo: LabelInfo | undefined = shelfLifeNum ? {
+      shelfLifeDays: shelfLifeNum,
+      storageType: newProd.storageType,
+      storageInstructions: newProd.storageInstructions,
+    } : undefined;
 
     try {
       let finalImageUrl = newProd.imageUrl;
@@ -286,6 +298,8 @@ export default function MenuManagement() {
           notes: newProd.notes,
           ingredients: newProd.ingredients || '',
           allergens: newProd.allergens || '',
+          selectedAllergens: newProd.selectedAllergens,
+          labelInfo,
           isActive: newProd.isActive,
           isAvailable: newProd.isAvailable,
           isFeatured: false,
@@ -315,6 +329,8 @@ export default function MenuManagement() {
         notes: newProd.notes,
         ingredients: newProd.ingredients || '',
         allergens: newProd.allergens || '',
+        selectedAllergens: newProd.selectedAllergens,
+        labelInfo,
         isActive: newProd.isActive,
         isAvailable: newProd.isAvailable,
         isFeatured: false,
@@ -325,7 +341,7 @@ export default function MenuManagement() {
 
       toast.success(editingProduct ? t('menu.productUpdated') : t('menu.productCreated'));
       
-      setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [], stock: '', minStockAlert: '' });
+      setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], shelfLifeDays: '', storageType: 'refrigerated', storageInstructions: '', optionGroups: [], stock: '', minStockAlert: '' });
       setEditingProduct(null);
       setIsProductModalOpen(false);
     } catch (e) {
@@ -349,6 +365,10 @@ export default function MenuManagement() {
       notes: product.notes || '',
       ingredients: product.ingredients || '',
       allergens: product.allergens || '',
+      selectedAllergens: product.selectedAllergens || [],
+      shelfLifeDays: product.labelInfo?.shelfLifeDays?.toString() || '',
+      storageType: product.labelInfo?.storageType || 'refrigerated',
+      storageInstructions: product.labelInfo?.storageInstructions || '',
       optionGroups: product.optionGroups || [],
       stock: product.stock !== undefined ? product.stock.toString() : '',
       minStockAlert: product.minStockAlert !== undefined ? product.minStockAlert.toString() : '',
@@ -575,6 +595,9 @@ export default function MenuManagement() {
   }, []);
 
   return (    <div className="space-y-6">
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
@@ -869,6 +892,17 @@ export default function MenuManagement() {
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{product.estimatedPrepTime} min</span>
                       </div>
                     )}
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {(product.selectedAllergens || []).slice(0, 4).map(key => {
+                        const a = ALLERGENS.find(aa => aa.key === key);
+                        return a ? <span key={key} className="text-[9px] opacity-70" title={a.label}>{a.icon}</span> : null;
+                      })}
+                      {product.labelInfo && (
+                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider ml-1">
+                          {product.labelInfo.shelfLifeDays}d
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[10px] text-slate-400 mt-2 line-clamp-2 font-medium leading-relaxed">{product.description}</p>
                   </div>
                   
@@ -1079,7 +1113,7 @@ export default function MenuManagement() {
                   setIsProductModalOpen(false);
                   setEditingProduct(null);
                   setImageFile(null);
-                  setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
+                  setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], shelfLifeDays: '', storageType: 'refrigerated', storageInstructions: '', optionGroups: [], stock: '', minStockAlert: '' });
                 }} className="text-slate-400 hover:text-slate-600 transition-colors" aria-label="Fechar">
                   <X size={18} />
                </button>
@@ -1283,11 +1317,61 @@ export default function MenuManagement() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Alergênicos</label>
-                  <textarea 
-                    className="w-full border border-slate-200 rounded-md p-2 text-sm font-medium h-20 resize-none outline-none focus:ring-1 focus:ring-orange-500"
-                    placeholder="Ex: Amendoim, Lactose, Glúten..."
-                    value={newProd.allergens}
-                    onChange={(e) => setNewProd({...newProd, allergens: e.target.value})}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {ALLERGENS.map(a => {
+                      const isSelected = newProd.selectedAllergens.includes(a.key);
+                      return (
+                        <label key={a.key} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-colors text-[11px] ${isSelected ? 'bg-red-50 border-red-200 text-red-700 font-bold' : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300'}`}>
+                          <input type="checkbox" checked={isSelected}
+                            onChange={() => {
+                              const next = isSelected
+                                ? newProd.selectedAllergens.filter(k => k !== a.key)
+                                : [...newProd.selectedAllergens, a.key];
+                              setNewProd({...newProd, selectedAllergens: next, allergens: next.map(k => ALLERGENS.find(aa => aa.key === k)?.label).join(', ') });
+                            }}
+                            className="sr-only" />
+                          <span>{a.icon}</span>
+                          <span>{a.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Label Info Section */}
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <div>
+                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Informações de Validade</h4>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Configure para gerar etiquetas automaticamente</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Validade (dias)</label>
+                    <input type="number" min="0"
+                      className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                      placeholder="Ex: 7"
+                      value={newProd.shelfLifeDays}
+                      onChange={(e) => setNewProd({...newProd, shelfLifeDays: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Armazenamento</label>
+                    <select value={newProd.storageType}
+                      onChange={(e) => setNewProd({...newProd, storageType: e.target.value as StorageType})}
+                      className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none bg-white"
+                    >
+                      {STORAGE_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Instruções de Armazenamento (opcional)</label>
+                  <input type="text"
+                    className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                    placeholder="Ex: Manter refrigerado entre 2°C e 8°C"
+                    value={newProd.storageInstructions}
+                    onChange={(e) => setNewProd({...newProd, storageInstructions: e.target.value})}
                   />
                 </div>
               </div>
@@ -1463,7 +1547,7 @@ export default function MenuManagement() {
                 setIsProductModalOpen(false);
                 setEditingProduct(null);
                 setImageFile(null);
-                setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
+                setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], shelfLifeDays: '', storageType: 'refrigerated', storageInstructions: '', optionGroups: [], stock: '', minStockAlert: '' });
               }}>DESCARTAR</Button>
               <Button size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={handleCreateProduct}>
                 {editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO'}

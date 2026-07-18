@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import dotenv from "dotenv";
 import cors from "cors";
+import helmet from "helmet";
 
 dotenv.config();
 
@@ -9,12 +10,16 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const app = express();
 
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(cors({
   origin: process.env.APP_URL || 'http://localhost:3000',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
 }));
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -35,6 +40,19 @@ function rateLimit(maxRequests: number, windowMs: number) {
   };
 }
 
+// API key authentication for AI/costly endpoints
+function requireApiKey(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const apiKey = req.headers['x-api-key'] as string;
+  const validKey = process.env.API_SECRET_KEY || process.env.GEMINI_API_KEY;
+  if (!validKey) {
+    return res.status(500).json({ error: 'Server misconfigured — API_SECRET_KEY not set' });
+  }
+  if (apiKey !== validKey) {
+    return res.status(401).json({ error: 'Unauthorized — invalid or missing x-api-key header' });
+  }
+  next();
+}
+
 // Apply rate limiting to all /api routes
 app.use('/api', rateLimit(30, 60000)); // 30 requests per minute per IP
 
@@ -47,6 +65,8 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+// Blog and newsletter are now public (requireApiKey removed to match frontend behavior)
+
 app.post("/api/ai/parse-menu", async (req, res) => {
   const { fileData, mimeType } = req.body;
   if (!fileData || !mimeType) {
@@ -56,7 +76,7 @@ app.post("/api/ai/parse-menu", async (req, res) => {
     const filePart = { inlineData: { mimeType, data: fileData } };
     const promptPart = { text: "Analyze the attached menu document (image or PDF document). Extract all main categories and the list of individual products under each category. For each product, extract the name, price containing decimal numeric value (without currency symbol, e.g. 15.90), and categorize it with the corresponding category name. Create category names that are clear and concise. Return the categories and products lists matching the requested schema." };
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: { parts: [filePart, promptPart] },
       config: {
         responseMimeType: "application/json",
@@ -74,8 +94,8 @@ app.post("/api/ai/parse-menu", async (req, res) => {
     const parsedData = JSON.parse(resultText);
     res.json({ success: true, data: parsedData });
   } catch (error: any) {
-    console.error("AI Menu parsing error:", error);
-    res.status(500).json({ error: "Failed to parse menu using AI", details: error?.message || String(error) });
+    console.error("AI Menu parsing error:", error?.message || error);
+    res.status(500).json({ error: `AI parsing failed: ${error?.message || 'Unknown error'}` });
   }
 });
 
@@ -95,7 +115,7 @@ O tempo de preparo deve ser em minutos.
 Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -133,8 +153,8 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
     const result = JSON.parse(response.text || "{}");
     res.json({ success: true, data: result });
   } catch (error: any) {
-    console.error("AI Menu generation error:", error);
-    res.status(500).json({ error: "Failed to generate menu using AI", details: error?.message || String(error) });
+    console.error("AI Menu generation error:", error?.message || error);
+    res.status(500).json({ error: `AI generation failed: ${error?.message || 'Unknown error'}` });
   }
 });
 
@@ -152,7 +172,7 @@ A descrição deve ser muito apetitosa, curta e atraente para o cliente final.
 Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) condizente com este prato específico e categoria. Ex: Se for uma sobremesa, que seja uma foto de sobremesa do Unsplash.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: "Gere um prato/produto para o cardápio.",
       config: {
         systemInstruction,
@@ -173,15 +193,15 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
     const result = JSON.parse(response.text || "{}");
     res.json({ success: true, data: result });
   } catch (error: any) {
-    console.error("AI Product generation error:", error);
-    res.status(500).json({ error: "Failed to generate product using AI", details: error?.message || String(error) });
+    console.error("AI Product generation error:", error?.message || error);
+    res.status(500).json({ error: `AI generation failed: ${error?.message || 'Unknown error'}` });
   }
 });
 
 app.get("/api/blog/news", async (req, res) => {
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: "Resuma as 3 últimas notícias de cada um destes sites para um blog de foodservice. Foque no que é relevante para donos de restaurantes. Extraia títulos, um breve resumo, links (estimados se não puder ler) e tente descrever uma imagem que acompanharia a notícia.\n\nSites:\n1. https://sp.abrasel.com.br/noticias/\n2. https://anrbrasil.org.br/noticias/\n3. https://mercadoeconsumo.com.br/category/foodservice/",
       config: {
         tools: [{ urlContext: {} }],
@@ -208,7 +228,7 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
   if (!email) return res.status(400).json({ error: "Email is required" });
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: `Gere um conteúdo de boas-vindas para o newsletter do 'Meu Ovo' para o email ${email}. O tom deve ser empreendedor, direto e parceiro. Inclua um resumo rápido de uma notícia quente do setor de restaurantes (Abrasel ou ANR).`
     });
     res.json({ success: true, message: "Subscribed successfully!", preview: response.text });

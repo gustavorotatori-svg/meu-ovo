@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import BackButton from '../components/BackButton';
 import OptimizedImage from '../components/OptimizedImage';
 import { Newspaper, ExternalLink, Loader2, Sparkles } from 'lucide-react';
 
@@ -79,6 +80,10 @@ export default function BlogPage() {
         description="Fique por dentro das últimas notícias do setor de foodservice, bares e restaurantes."
       />
       <Navbar />
+
+      <div className="px-6 pt-6">
+        <BackButton to="/" />
+      </div>
 
       <main className="pt-40 pb-20 px-6 max-w-7xl mx-auto">
         <header className="mb-20 text-center space-y-4">
