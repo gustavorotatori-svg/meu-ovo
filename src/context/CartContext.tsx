@@ -34,10 +34,30 @@ function loadRestaurantId(): string | null {
   }
 }
 
+function loadTableNumber(): string | null {
+  try {
+    return sessionStorage.getItem('meuovo_table');
+  } catch {
+    return null;
+  }
+}
+
+function saveTableNumber(n: string | null) {
+  try {
+    if (n) sessionStorage.setItem('meuovo_table', n);
+    else sessionStorage.removeItem('meuovo_table');
+  } catch { /* noop */ }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(loadCart);
   const [restaurantId, setRestaurantId] = useState<string | null>(loadRestaurantId);
-  const [tableNumber, setTableNumber] = useState<string | null>(null);
+  const [tableNumber, setTableNumberState] = useState<string | null>(loadTableNumber);
+
+  const setTableNumber = useCallback((n: string | null) => {
+    setTableNumberState(n);
+    saveTableNumber(n);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('meuovo_cart', JSON.stringify(items));
@@ -82,7 +102,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const next = prev.filter((_, i) => i !== index);
       if (next.length === 0) {
         setRestaurantId(null);
-        setTableNumber(null);
       }
       return next;
     });
@@ -96,7 +115,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => {
     setItems([]);
     setRestaurantId(null);
-    setTableNumber(null);
   }, []);
 
   const subtotal = useMemo(() => items.reduce((sum, item) => {

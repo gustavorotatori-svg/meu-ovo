@@ -1331,7 +1331,7 @@ interface ProductModalProps {
   currentCategoryName: string;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName, categories }) => {
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState('');
   const [selectedAdditionals, setSelectedAdditionals] = useState<{ groupId: string; additionalId: string; name: string; price: number }[]>([]);

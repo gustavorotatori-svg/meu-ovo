@@ -15,7 +15,7 @@ import { fadeInScale, buttonHover, buttonTap, badgePop, durations, easings, spri
 export default function CartPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, removeItem, updateQuantity, subtotal, itemCount } = useCart();
+  const { items, removeItem, updateQuantity, subtotal, itemCount, tableNumber } = useCart();
   const { restaurants } = useRestaurant();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -79,7 +79,14 @@ export default function CartPage() {
           </motion.button>
           <div>
             <h1 className={cn("font-black text-xl leading-none", isDark ? 'text-white' : 'text-[#111]')}>{t('cart.title')}</h1>
-            {restaurant && <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">{restaurant.name}</p>}
+            <div className="flex items-center gap-2 mt-1">
+              {restaurant && <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">{restaurant.name}</p>}
+              {tableNumber && (
+                <span className="bg-[#FFC928] text-[#111] text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
+                  Mesa {tableNumber}
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -288,15 +288,19 @@ export default function CheckoutPage() {
 
   const handleSubmit = async () => {
     if (submitting) return;
-    if (!name || !phone) {
-      toast.error('Preencha nome e telefone');
-      return;
-    }
-
-    if (!isPhoneValid(phone)) {
-      setPhoneError('Por favor, insira um telefone válido com DDD');
-      toast.error('Telefone inválido');
-      return;
+    const isTabletDineIn = orderType === 'dine-in' && tableNumber;
+    if (isTabletDineIn) {
+      if (!name) setName(`Mesa ${tableNumber}`);
+    } else {
+      if (!name || !phone) {
+        toast.error('Preencha nome e telefone');
+        return;
+      }
+      if (!isPhoneValid(phone)) {
+        setPhoneError('Por favor, insira um telefone válido com DDD');
+        toast.error('Telefone inválido');
+        return;
+      }
     }
 
     // Check stock availability
@@ -409,6 +413,26 @@ export default function CheckoutPage() {
       }
     }
 
+    // Mark table as occupied for dine-in orders
+    if (orderType === 'dine-in' && tableNumber) {
+      try {
+        const tablesQuery = query(
+          collection(db, 'tables'),
+          where('restaurantId', '==', restaurant.id),
+          where('number', '==', tableNumber)
+        );
+        const tablesSnap = await getDocs(tablesQuery);
+        if (!tablesSnap.empty) {
+          await updateDoc(doc(db, 'tables', tablesSnap.docs[0].id), {
+            status: 'occupied',
+            currentOrderId: id,
+          });
+        }
+      } catch (err) {
+        console.error('[Checkout] Failed to mark table occupied:', err);
+      }
+    }
+
     // Increment coupon usage if applied
     if (appliedCoupon) {
       try {
@@ -481,11 +505,14 @@ export default function CheckoutPage() {
                 `✅ Enviado via *MEU OVO*`;
 
     const cleanRestaurantPhone = restaurant?.whatsapp || WA_NUMBER;
-    if (cleanRestaurantPhone) {
-      const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
-      window.open(whatsappUrl, '_blank');
-    } else {
-      toast.error('Restaurante não possui WhatsApp configurado');
+    // Skip WhatsApp redirect for dine-in tablets — order goes directly to KitchenMode
+    if (orderType !== 'dine-in' || !tableNumber) {
+      if (cleanRestaurantPhone) {
+        const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
+        window.open(whatsappUrl, '_blank');
+      } else {
+        toast.error('Restaurante não possui WhatsApp configurado');
+      }
     }
 
     localStorage.setItem('customerPhone', phone);
