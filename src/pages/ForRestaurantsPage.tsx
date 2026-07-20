@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2 } from 'lucide-react';
+import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2, Sticker } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -207,7 +207,7 @@ export default function ForRestaurantsPage() {
                   <div className="w-2 h-2 rounded-full bg-green-500" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-green-500">Pedido pelo Meu Ovo</p>
+                  <p className="text-green-500">Pedido pelo Meu OVO</p>
                   <p className="text-white"><span className="text-gray-500">Cliente:</span> João Silva</p>
                   <p className="text-white"><span className="text-gray-500">Tipo:</span> Delivery</p>
                   <p className="text-white"><span className="text-gray-500">Endereço:</span> Rua X, 123</p>
@@ -218,6 +218,33 @@ export default function ForRestaurantsPage() {
               </div>
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
+          </div>
+          </ScrollReveal>
+
+          {/* Etiquetas Inteligentes Card */}
+          <ScrollReveal direction="up" delay={200}>
+          <div className="bg-white rounded-[3rem] p-10 md:p-16 border border-gray-100 shadow-2xl shadow-black/5 hover:border-[#FFC928]/30 transition-all group">
+            <div className="w-16 h-16 bg-[#F9F9F9] rounded-2xl flex items-center justify-center mb-8 border border-gray-100 shadow-inner group-hover:bg-[#FFC928]/10 transition-colors">
+              <Sticker className="text-[#FFC928]" size={32} />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-black text-[#111] mb-6 leading-tight">Etiquetas Inteligentes</h2>
+            <p className="text-gray-500 text-lg font-medium mb-10 leading-relaxed">
+              Gere etiquetas automáticas com validade, lote e alérgenos para seus produtos. Imprima e cole nas embalagens — ideal para a RDC 727/2025.
+            </p>
+
+            <ul className="space-y-4">
+              {[
+                'Validade calculada automaticamente',
+                'Alérgenos e ícones nos rótulos',
+                'Impressão direta do painel',
+                'Histórico completo de etiquetas'
+              ].map((item, i) => (
+                <li key={i} className="flex items-center gap-3 text-[#111] font-bold">
+                  <CheckCircle className="text-green-500" size={20} />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
           </ScrollReveal>
         </div>
