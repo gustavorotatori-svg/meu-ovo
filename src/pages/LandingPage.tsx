@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote, Egg } from 'lucide-react';
+import { ShoppingBag, ArrowRight, CheckCircle, Zap, Heart, UtensilsCrossed, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote, Egg, Sticker } from 'lucide-react';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
@@ -321,7 +321,7 @@ export default function LandingPage() {
             Tecnologia que não come sua margem. Tudo que você precisa para vender mais.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-20">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mt-20">
             <ScrollReveal direction="up" delay={0}>
               <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
                 <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6">
@@ -354,6 +354,18 @@ export default function LandingPage() {
                 <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{t('landing.qrCodeTitle')}</h3>
                 <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('landing.qrCodeDesc')}
+                </p>
+              </div>
+            </ScrollReveal>
+
+            <ScrollReveal direction="up" delay={300}>
+              <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default ${isDark ? 'bg-[#151515] border border-white/5' : 'bg-white'}`}>
+                <div className="w-12 h-12 bg-white rounded-xl shadow-inner border border-gray-100 flex items-center justify-center mb-6 text-[#FFC928]">
+                  <Sticker size={24} />
+                </div>
+                <h3 className={`text-2xl font-display font-black transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Etiquetas Inteligentes</h3>
+                <p className={`mt-2 font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Validade, alérgenos e lote — etiquetas automáticas para seus produtos.
                 </p>
               </div>
             </ScrollReveal>

@@ -157,6 +157,24 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* ─── WELCOME BANNER ─── */}
+        {currentRestaurant && products.length === 0 && (
+          <div className="bg-gradient-to-r from-[#FFC928]/20 via-[#FFC928]/10 to-transparent border border-[#FFC928]/30 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-white uppercase tracking-tight">Bem-vindo ao Meu OVO!</h2>
+              <p className="text-sm text-gray-400 mt-1">Seu restaurante já está no ar. Complete o cadastro para começar a vender.</p>
+            </div>
+            <div className="flex gap-3 shrink-0">
+              <button onClick={() => navigate('/admin/cardapio?add_product=true')} className="bg-[#FFC928] text-black font-black px-5 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all flex items-center gap-2">
+                <Plus size={16} /> Adicionar Produto
+              </button>
+              <button onClick={() => navigate(`/r/${currentRestaurant?.slug}`)} className="bg-zinc-800 text-gray-300 border border-zinc-700 font-black px-5 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-zinc-700 transition-all flex items-center gap-2">
+                <Eye size={16} /> Ver Cardápio
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ─── CASHIER BAR ─── */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className={`rounded-[2rem] p-6 border ${activeSession ? 'bg-emerald-900/20 border-emerald-700/30' : 'bg-zinc-900/50 border-zinc-700/30'}`}>
           {!activeSession ? (
@@ -334,6 +352,18 @@ export default function AdminDashboard() {
             </div>
           ) : null;
         })()}
+
+        {/* ─── ETIQUETAS REMINDER ─── */}
+        <div className="bg-gradient-to-r from-[#FFC928]/10 via-[#FFC928]/5 to-transparent border border-[#FFC928]/20 rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <Sticker size={18} className="text-[#FFC928]" />
+            <h3 className="text-sm font-black uppercase tracking-tight text-white">Etiquetas para seus Produtos</h3>
+          </div>
+          <p className="text-xs text-gray-400 mb-4">Crie etiquetas automáticas com data de validade, alérgenos e informações de armazenamento para imprimir e colar nos seus produtos.</p>
+          <button onClick={() => navigate('/admin/etiquetas')} className="bg-[#FFC928] text-black font-black px-5 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all flex items-center gap-2">
+            <Sticker size={16} /> Gerenciar Etiquetas
+          </button>
+        </div>
 
         {/* ─── CHARTS ─── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

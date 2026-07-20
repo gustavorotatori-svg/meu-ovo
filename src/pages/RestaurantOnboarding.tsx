@@ -31,11 +31,8 @@ export default function RestaurantOnboarding() {
   }, [isAuthenticated, user?.role, navigate]);
   
   const STEPS = [
-    t('onboarding.step1'), 
-    t('onboarding.step2'), 
-    t('onboarding.step3'), 
-    t('onboarding.step4'), 
-    t('onboarding.step5')
+    'Dados essenciais', 
+    'Seu cardápio', 
   ];
 
   const STORAGE_KEY = 'meuovo_onboarding_progress';
@@ -134,10 +131,8 @@ export default function RestaurantOnboarding() {
   };
 
   const stepTips = [
-    { title: 'Dados do Restaurante', tips: ['Use o nome comercial do seu restaurante (como os clientes conhecem)', 'O WhatsApp será usado para receber os pedidos — mantenha sempre ativo', 'O endereço ajuda clientes a encontrar seu restaurante na busca'] },
-    { title: 'Categorias', tips: ['Crie categorias que façam sentido para o cliente: "Entradas", "Pratos Principais", "Bebidas"', 'Comece com 2 a 4 categorias — você pode adicionar mais depois', 'Categorias muito específicas podem confundir; prefira nomes claros'] },
-    { title: 'Produtos', tips: ['Capriche nos nomes: "Pizza Margherita" vende mais que "Pizza de Queijo"', 'Preços com centavos (ex: 29,90) passam mais credibilidade', 'Fotos de qualidade aumentam em até 30% as chances do cliente pedir'] },
-    { title: 'Delivery', tips: ['Taxa de entrega muito alta afasta clientes; comece com um valor justo', 'Defina um raio de entrega realista para não sobrecarregar sua cozinha', 'Tempo estimado sincero evita frustrações — melhor superestimar que subestimar'] },
+    { title: 'Dados Essenciais', tips: ['Use o nome comercial do seu restaurante (como os clientes conhecem)', 'O WhatsApp será usado para receber os pedidos — mantenha sempre ativo', 'Você pode preencher mais detalhes depois no painel de controle'] },
+    { title: 'Cardápio', tips: ['Capriche nos nomes: "Pizza Margherita" vende mais que "Pizza de Queijo"', 'Preços com centavos (ex: 29,90) passam mais credibilidade', 'Fotos de qualidade aumentam em até 30% as chances do cliente pedir'] },
   ];
 
   const fieldErrors = {
@@ -151,11 +146,7 @@ export default function RestaurantOnboarding() {
   const handleFinish = async () => {
     if (!form.name.trim()) { toast.error('Nome do restaurante é obrigatório'); return; }
     if (!form.whatsapp.trim()) { toast.error('WhatsApp é obrigatório'); return; }
-    if (!form.responsible.trim()) { toast.error('Nome do responsável é obrigatório'); return; }
-    if (!form.city.trim()) { toast.error('Cidade é obrigatória para aparecer na busca'); return; }
     if (form.whatsapp.replace(/\D/g, '').length < 10) { toast.error('WhatsApp inválido'); return; }
-    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { toast.error('Email inválido'); return; }
-    if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade para continuar'); return; }
 
     const validProducts = products.filter(p => p.name.trim() && p.price);
     if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome e preço'); return; }
@@ -232,7 +223,7 @@ export default function RestaurantOnboarding() {
 
       await registerRestaurant(restaurantData, categories, cleanedProducts);
       localStorage.removeItem(STORAGE_KEY);
-      setStep(4);
+      setStep(2);
       toast.success('Restaurante cadastrado com sucesso!');
     } catch (e) {
       console.error(e);
@@ -243,9 +234,9 @@ export default function RestaurantOnboarding() {
   };
 
   const next = () => { 
-    if (step === 3) {
+    if (step === 1) {
       handleFinish();
-    } else if (step < 4) {
+    } else if (step < 2) {
       setStep(s => s + 1); 
     }
   };
@@ -425,37 +416,16 @@ export default function RestaurantOnboarding() {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Step 0: Restaurant data */}
+        {/* Step 0: Essentials */}
         {step === 0 && (
           <div>
-            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">{t('onboarding.restaurantData')}</h2>
-            <p className="text-gray-500 text-xs uppercase font-black tracking-widest mb-3">{t('onboarding.basicInfo')}</p>
-
-            <button
-              onClick={() => setShowTips(!showTips)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
-            >
-              <Info size={14} /> Dicas
-              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
-            </button>
-
-            {showTips && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <ul className="space-y-1.5">
-                  {stepTips[0].tips.map((tip, i) => (
-                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
-                      <span className="text-[#FFC928] shrink-0">→</span>
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Dados essenciais</h2>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Informe o básico para começar. O resto você configura depois.</p>
 
             <div className="bg-white rounded-2xl p-6 space-y-5 border border-gray-100 shadow-md">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.restaurantName')} *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Nome do restaurante *</label>
                     <div className="relative">
                       <input 
                         value={form.name} 
@@ -472,16 +442,7 @@ export default function RestaurantOnboarding() {
                     </div>
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.responsible')} *</label>
-                  <input 
-                    value={form.responsible} 
-                    onChange={e => update('responsible', e.target.value)} 
-                    placeholder="Seu nome" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.whatsapp')} *</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">WhatsApp *</label>
                     <div className="relative">
                       <input 
                         value={form.whatsapp} 
@@ -497,17 +458,16 @@ export default function RestaurantOnboarding() {
                       {fieldErrors.whatsapp && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1">{fieldErrors.whatsapp}</p>}
                     </div>
                 </div>
-                <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.email')}</label>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Responsável</label>
                   <input 
-                    type="email"
-                    value={form.email} 
-                    onChange={e => update('email', e.target.value)} 
-                    placeholder="seu@email.com" 
+                    value={form.responsible} 
+                    onChange={e => update('responsible', e.target.value)} 
+                    placeholder="Seu nome" 
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
                   />
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Cidade</label>
                   <input 
                     value={form.city} 
@@ -526,18 +486,9 @@ export default function RestaurantOnboarding() {
                     {cuisineTypes.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Horário</label>
-                  <input 
-                    value={form.hours} 
-                    onChange={e => update('hours', e.target.value)} 
-                    placeholder="Ex: Seg-Sex 11h-22h" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
-                  />
-                </div>
               </div>
 
-              {/* Advanced Settings Toggle */}
+              {/* More details expander */}
               <div className="border-t border-gray-100 pt-4">
                 <button
                   type="button"
@@ -545,8 +496,8 @@ export default function RestaurantOnboarding() {
                   className="flex items-center justify-between w-full text-[10px] font-black uppercase tracking-wider text-gray-400 hover:text-gray-600 transition-colors"
                 >
                   <span className="flex items-center gap-2">
-                    <span>Configurações avançadas</span>
-                    <span className="text-[8px] text-gray-300 font-normal normal-case">(opcional)</span>
+                    <span>Completar perfil agora (opcional)</span>
+                    <span className="text-[8px] text-gray-300 font-normal normal-case">endereço, logo, horário</span>
                   </span>
                   <span className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`}>▼</span>
                 </button>
@@ -555,6 +506,16 @@ export default function RestaurantOnboarding() {
               {showAdvanced && <>
                 <div className="space-y-5 border-t border-gray-100 pt-4">
               <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">E-mail</label>
+                  <input 
+                    type="email"
+                    value={form.email} 
+                    onChange={e => update('email', e.target.value)} 
+                    placeholder="seu@email.com" 
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
+                  />
+                </div>
                 <div>
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CPF / CNPJ</label>
                   <input 
@@ -588,7 +549,7 @@ export default function RestaurantOnboarding() {
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.address')}</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Endereço</label>
                   <input 
                     value={form.address} 
                     onChange={e => update('address', e.target.value)} 
@@ -597,7 +558,7 @@ export default function RestaurantOnboarding() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">{t('onboarding.neighborhood')}</label>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Bairro</label>
                   <input 
                     value={form.neighborhood} 
                     onChange={e => update('neighborhood', e.target.value)} 
@@ -605,9 +566,18 @@ export default function RestaurantOnboarding() {
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
                   />
                 </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Horário</label>
+                  <input 
+                    value={form.hours} 
+                    onChange={e => update('hours', e.target.value)} 
+                    placeholder="Ex: Seg-Sex 11h-22h" 
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all" 
+                  />
+                </div>
               </div>
 
-              {/* Logo upload actual handler */}
+              {/* Logo upload */}
               <div className="border border-gray-100 rounded-xl p-4 bg-gray-50/50">
                 <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-2">Logo do restaurante</label>
                 <div className="relative">
@@ -679,11 +649,11 @@ export default function RestaurantOnboarding() {
           </div>
         )}
 
-        {/* Step 1: Categories */}
+        {/* Step 1: Categories + Products */}
         {step === 1 && (
           <div>
-            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Categorias do cardápio</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Organize seus produtos em categorias.</p>
+            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Seu cardápio</h2>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Crie categorias e adicione seus produtos.</p>
 
             <button
               onClick={() => setShowTips(!showTips)}
@@ -706,16 +676,18 @@ export default function RestaurantOnboarding() {
               </div>
             )}
 
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-md">
+            {/* Categories */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-md mb-6">
+              <h3 className="font-black text-sm text-[#111] uppercase tracking-tight mb-3">Categorias</h3>
               <div className="flex gap-2 mb-4">
                 <input
                   value={newCat}
                   onChange={e => setNewCat(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addCategory()}
-                  placeholder="Nome da categoria (ex: Massas)"
+                  placeholder="Ex: Massas, Bebidas, Sobremesas"
                   className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] focus:border-transparent outline-none transition-all"
                 />
-                <button onClick={addCategory} className="bg-[#FFC928] text-[#111] font-black px-5 py-3 rounded-xl hover:bg-[#e6b520] transition-colors flex items-center justify-center" aria-label="Adicionar produto">
+                <button onClick={addCategory} className="bg-[#FFC928] text-[#111] font-black px-5 py-3 rounded-xl hover:bg-[#e6b520] transition-colors flex items-center justify-center" aria-label="Adicionar categoria">
                   <Plus size={20} />
                 </button>
               </div>
@@ -724,44 +696,16 @@ export default function RestaurantOnboarding() {
                 {categories.map((cat, i) => (
                   <div key={i} className="flex items-center justify-between bg-slate-50 border border-slate-100 rounded-xl px-4 py-3">
                     <span className="font-bold text-slate-800 text-xs uppercase tracking-wider">{cat}</span>
-                    <button onClick={() => setCategories(c => c.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Excluir produto">
+                    <button onClick={() => setCategories(c => c.filter((_, idx) => idx !== i))} className="text-gray-400 hover:text-red-500 transition-colors" aria-label="Remover categoria">
                       <Trash2 size={16} />
                     </button>
                   </div>
                 ))}
               </div>
-
-              <p className="text-xs text-gray-400 mt-4 leading-relaxed font-bold uppercase tracking-wider">Sugestões: Pratos Executivos, Entradas, Pizzas Clássicas, Hambúrgueres, Combos Inteiros, Sobremesas, Bebidas</p>
             </div>
-          </div>
-        )}
 
-        {/* Step 2: Products */}
-        {step === 2 && (
-          <div>
-            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Cadastrar produtos</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Adicione os produtos do seu cardápio.</p>
-
-            <button
-              onClick={() => setShowTips(!showTips)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
-            >
-              <Info size={14} /> Dicas
-              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
-            </button>
-
-            {showTips && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <ul className="space-y-1.5">
-                  {stepTips[2].tips.map((tip, i) => (
-                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
-                      <span className="text-[#FFC928] shrink-0">→</span>
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="space-y-4 mt-6">
+              <h3 className="font-black text-sm text-[#111] uppercase tracking-tight mb-3">Produtos</h3>
 
             {/* AI feature active container - Powered by Gemini */}
             <div className="bg-gradient-to-r from-amber-950 to-black rounded-2xl p-6 mb-6 text-left border border-amber-500/20 shadow-xl relative overflow-hidden">
@@ -875,116 +819,12 @@ export default function RestaurantOnboarding() {
                 Adicionar mais um produto
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Step 3: Delivery */}
-        {step === 3 && (
-          <div>
-            <h2 className="font-black text-2xl text-[#111] uppercase tracking-tight italic mb-1">Configurar delivery</h2>
-            <p className="text-gray-500 text-xs font-black uppercase tracking-widest mb-3">Defina as condições da sua entrega.</p>
-
-            <button
-              onClick={() => setShowTips(!showTips)}
-              className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-amber-700 hover:text-amber-900 transition-colors mb-3"
-            >
-              <Info size={14} /> Dicas
-              <span className={`ml-1 transition-transform ${showTips ? 'rotate-180' : ''}`}>▼</span>
-            </button>
-
-            {showTips && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                <ul className="space-y-1.5">
-                  {stepTips[3].tips.map((tip, i) => (
-                    <li key={i} className="text-[11px] text-amber-700 flex items-start gap-2">
-                      <span className="text-[#FFC928] shrink-0">→</span>
-                      {tip}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="bg-white rounded-2xl p-6 space-y-4 border border-gray-100 shadow-md">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Taxa de entrega (R$)</label>
-                  <input 
-                    type="number"
-                    value={form.deliveryFee}
-                    onChange={e => update('deliveryFee', e.target.value)}
-                    placeholder="6.00" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Tempo estimado (minutos)</label>
-                  <input 
-                    type="number"
-                    value={form.estimatedTime}
-                    onChange={e => update('estimatedTime', e.target.value)}
-                    placeholder="45" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Pedido mínimo (R$)</label>
-                  <input 
-                    type="number"
-                    value={form.minOrder}
-                    onChange={e => update('minOrder', e.target.value)}
-                    placeholder="30.00" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Raio de entrega (km)</label>
-                  <input 
-                    type="number"
-                    value={form.deliveryRadius}
-                    onChange={e => update('deliveryRadius', e.target.value)}
-                    placeholder="5" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">Observação sobre entrega</label>
-                  <input 
-                    type="text"
-                    value={form.deliveryObs}
-                    onChange={e => update('deliveryObs', e.target.value)}
-                    placeholder="Ex: Entregamos todos os dias das 18h às 23h" 
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-[#FFC928] outline-none" 
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* LGPD Consent */}
-            <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-md mt-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={lgpdConsent}
-                  onChange={e => setLgpdConsent(e.target.checked)}
-                  className="mt-0.5 h-5 w-5 text-[#FFC928] border-gray-300 rounded focus:ring-[#FFC928] accent-[#FFC928]"
-                />
-                <div>
-                  <span className="text-xs font-black text-[#111] block leading-tight">
-                    Aceito os termos de privacidade
-                  </span>
-                  <span className="text-[10px] text-gray-500 font-medium mt-1 block leading-relaxed">
-                    Ao marcar esta opção, você autoriza o Meu Ovo a coletar e tratar seus dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD) para fins de operação da plataforma, incluindo cadastro, comunicação e emissão de notas fiscais. Você pode solicitar a exclusão dos seus dados a qualquer momento.{' '}
-                    <Link to="/privacidade" className="text-[#FFC928] font-bold underline">Ver Política de Privacidade</Link>
-                  </span>
-                </div>
-              </label>
             </div>
           </div>
         )}
 
-        {/* Step 4: Done */}
-        {step === 4 && (
+        {/* Step 2: Done */}
+        {step === 2 && (
           <div className="text-center">
             <div className="w-20 h-20 bg-[#FFC928] rounded-full flex items-center justify-center mx-auto mb-6">
               <Check size={40} className="text-[#111]" />
@@ -1069,7 +909,7 @@ export default function RestaurantOnboarding() {
         )}
 
         {/* Navigation */}
-        {step < 4 && (
+        {step < 2 && (
           <div className="flex items-center justify-between mt-8">
             <button
               onClick={prev}
@@ -1087,7 +927,7 @@ export default function RestaurantOnboarding() {
                 <Loader2 size={18} className="animate-spin" />
               ) : (
                 <>
-                  {step === 3 ? t('onboarding.finish') : t('onboarding.continue')}
+                  {step === 1 ? 'Finalizar cadastro' : t('onboarding.continue')}
                   <ArrowRight size={18} />
                 </>
               )}
