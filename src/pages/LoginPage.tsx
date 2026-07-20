@@ -104,7 +104,7 @@ export default function LoginPage() {
         if (!isRestaurant && !auth.currentUser?.emailVerified) {
           toast('Verifique seu email antes de fazer pedidos', { icon: '✉️' });
         }
-        navigate(redirectTo || (isRestaurant ? '/cadastro-restaurante' : '/busca'));
+        navigate(redirectTo || (isRestaurant ? '/admin' : '/busca'));
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const role = isRestaurant ? 'restaurant' : 'customer';

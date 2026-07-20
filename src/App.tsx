@@ -25,6 +25,7 @@ const RestaurantMenuPage = lazy(() => import('./pages/RestaurantMenuPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
 const RestaurantOnboarding = lazy(() => import('./pages/RestaurantOnboarding'));
+const SelfSignupPage = lazy(() => import('./pages/SelfSignupPage'));
 const SocialImpactPage = lazy(() => import('./pages/SocialImpactPage'));
 const ForRestaurantsPage = lazy(() => import('./pages/ForRestaurantsPage'));
 const OrderHistoryPage = lazy(() => import('./pages/OrderHistoryPage'));
@@ -95,6 +96,7 @@ export default function App() {
                     <Route path="/login" element={<PageSuspense><LoginPage /></PageSuspense>} />
                     <Route path="/install-app" element={<PageSuspense><InstallAppPage /></PageSuspense>} />
                     <Route path="/cadastro-restaurante" element={<PageSuspense><RestaurantOnboarding /></PageSuspense>} />
+                    <Route path="/cadastro" element={<PageSuspense><SelfSignupPage /></PageSuspense>} />
                     <Route path="/impacto-social" element={<PageSuspense><SocialImpactPage /></PageSuspense>} />
                     <Route path="/para-restaurantes" element={<PageSuspense><ForRestaurantsPage /></PageSuspense>} />
                     <Route path="/ovos-de-ouro" element={<PageSuspense><OvosDeOuroInfoPage /></PageSuspense>} />

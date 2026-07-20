@@ -169,7 +169,7 @@ export default function OvosDeOuroInfoPage() {
         <ScrollReveal direction="up" delay={100}>
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Link 
-            to="/cadastro-restaurante"
+            to="/cadastro"
             className="bg-[#FFC928] hover:bg-[#e6b520] text-black font-extrabold px-8 py-4 rounded-2xl text-sm uppercase tracking-widest transition-all"
           >
             Cadastrar meu Restaurante

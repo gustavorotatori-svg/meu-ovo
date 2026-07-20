@@ -97,7 +97,7 @@ export default function Navbar() {
           )}
 
           {/* Botão Cadastrar Restaurante (apenas desktop) */}
-          <Link to="/cadastro-restaurante" className="hidden lg:flex bg-[#FFC928] text-[#111] font-display font-black px-2 lg:px-3 py-2 rounded-xl text-[9px] uppercase tracking-[0.08em] hover:bg-[#e6b520] transition-all shadow-xl shadow-[#FFC928]/10 whitespace-nowrap shrink-0 items-center">
+          <Link to="/cadastro" className="hidden lg:flex bg-[#FFC928] text-[#111] font-display font-black px-2 lg:px-3 py-2 rounded-xl text-[9px] uppercase tracking-[0.08em] hover:bg-[#e6b520] transition-all shadow-xl shadow-[#FFC928]/10 whitespace-nowrap shrink-0 items-center">
             <span className="xl:hidden">Cadastrar</span>
             <span className="hidden xl:inline">{t('nav.register_restaurant')}</span>
           </Link>
@@ -137,7 +137,7 @@ export default function Navbar() {
                 </button>
               </motion.div>
               <motion.div variants={staggerItem} whileTap={buttonTap} className="mt-2">
-                <Link onClick={() => setMenuOpen(false)} to="/cadastro-restaurante" className="block bg-[#FFC928] text-[#111] font-display font-black px-6 py-5 rounded-2xl text-center uppercase tracking-widest text-xs shadow-xl shadow-[#FFC928]/20">
+                <Link onClick={() => setMenuOpen(false)} to="/cadastro" className="block bg-[#FFC928] text-[#111] font-display font-black px-6 py-5 rounded-2xl text-center uppercase tracking-widest text-xs shadow-xl shadow-[#FFC928]/20">
                   {t('nav.register_restaurant')}
                 </Link>
               </motion.div>

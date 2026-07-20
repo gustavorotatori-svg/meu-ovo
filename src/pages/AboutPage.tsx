@@ -168,7 +168,7 @@ export default function AboutPage() {
             
             <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
               <Link
-                to="/cadastro-restaurante"
+                to="/cadastro"
                 className="px-8 py-4 bg-[#FFC928] text-black text-xs font-black uppercase tracking-widest rounded-2xl hover:scale-105 transition-transform"
               >
                 Cadastrar meu restaurante

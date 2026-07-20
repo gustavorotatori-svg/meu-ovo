@@ -67,7 +67,7 @@ export default function ForRestaurantsPage() {
               {/* Action Buttons with high color contrast */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
                 <Link
-                  to="/cadastro-restaurante"
+                  to="/cadastro"
                   className="inline-flex justify-center items-center gap-2.5 bg-[#FFC928] hover:bg-[#ffe083] text-[#111] font-black px-8 py-4.5 rounded-2xl text-xs uppercase tracking-widest transition-all duration-300 hover:scale-105 active:scale-95 shadow-xl shadow-[#FFC928]/20 group text-center"
                 >
                   Seja dono do seu destino <ArrowRight size={15} className="group-hover:translate-x-1.5 transition-transform" />
@@ -438,7 +438,7 @@ export default function ForRestaurantsPage() {
           </h2>
           <p className="text-gray-500 text-xl mb-12 font-medium">O Meu Ovo é gratuito ontem, hoje e sempre.</p>
           <Link
-            to="/cadastro-restaurante"
+            to="/cadastro"
             className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-black px-12 py-6 rounded-[2rem] text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
           >
             Começar grátis agora <ArrowRight size={24} />

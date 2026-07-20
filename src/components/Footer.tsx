@@ -58,7 +58,7 @@ export default function Footer() {
       { label: 'Sobre nós', to: '/sobre' },
     ],
     restaurants: [
-      { label: t('nav.register_restaurant'), to: '/cadastro-restaurante' },
+      { label: t('nav.register_restaurant'), to: '/cadastro' },
       { label: 'Portal do Parceiro', to: '/admin' },
       { label: 'Prêmio Ovos de Ouro', to: '/ovos-de-ouro' },
       { label: 'Marketplace', to: '/busca' },

@@ -147,7 +147,7 @@ export default function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link
-                to="/cadastro-restaurante"
+                to="/cadastro"
                 className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-10 py-5 rounded-3xl text-lg hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-95 text-center shadow-xl shadow-[#FFC928]/10"
               >
                 {t('landing.createMenu')}
@@ -455,7 +455,7 @@ export default function LandingPage() {
                   <ArrowRight size={14} />
                 </Link>
                 <Link
-                  to="/cadastro-restaurante"
+                  to="/cadastro"
                   className="bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs uppercase tracking-widest px-8 py-5 rounded-[1.5rem] transition-all text-center"
                 >
                   Participar Gratuitamente
@@ -498,7 +498,7 @@ export default function LandingPage() {
           <ScrollReveal direction="up" delay={200}>
           <div className="mt-20">
             <Link
-              to="/cadastro-restaurante"
+              to="/cadastro"
               className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-[2rem] text-2xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
             >
               {t('landing.startNow')} <ArrowRight size={28} />
@@ -649,7 +649,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
-              to="/cadastro-restaurante"
+              to="/cadastro"
               className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-[2rem] text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20 flex items-center justify-center gap-3"
             >
               Criar meu cardápio grátis <ArrowRight size={24} />
