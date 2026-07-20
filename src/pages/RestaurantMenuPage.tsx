@@ -1120,6 +1120,9 @@ export default function RestaurantMenuPage() {
             addItem(item);
             setSelectedProduct(null);
           }}
+          allProducts={restaurantProducts}
+          categories={restaurantCategories}
+          currentCategoryName={restaurantCategories.find(c => c.id === selectedProduct.categoryId)?.name || ''}
         />
       )}
 
@@ -1276,17 +1279,67 @@ interface OptionGroupField {
   options?: Additional[];
 }
 
+function categorize(name: string): 'main' | 'drink' | 'dessert' | 'snack' {
+  const n = name.toLowerCase();
+  if (n.includes('bebida') || n.includes('refri') || n.includes('suco') || n.includes('cerveja') || n.includes('água') || n.includes('café') || n.includes('chá')) return 'drink';
+  if (n.includes('sobremesa') || n.includes('doce') || n.includes('chocolate') || n.includes('pudim') || n.includes('sorvete') || n.includes('torta')) return 'dessert';
+  if (n.includes('entrada') || n.includes('petisco') || n.includes('porção') || n.includes('batata') || n.includes('salada')) return 'snack';
+  return 'main';
+}
+
+function getCrossSellTargets(currentType: string): string[] {
+  if (currentType === 'main') return ['drink', 'dessert'];
+  if (currentType === 'drink') return ['snack'];
+  if (currentType === 'dessert') return ['drink'];
+  if (currentType === 'snack') return ['drink', 'main'];
+  return ['drink'];
+}
+
+function suggestComplementaryItems(
+  currentProduct: Product,
+  currentCategoryName: string,
+  allProducts: Product[],
+  categories: Category[]
+): Product[] {
+  const currentType = categorize(currentCategoryName);
+  const targets = getCrossSellTargets(currentType);
+
+  const catNameToId = new Map(categories.map(c => [c.id, c.name]));
+  const targetCatIds = new Set(
+    categories
+      .filter(c => targets.includes(categorize(c.name)))
+      .map(c => c.id)
+  );
+
+  return allProducts
+    .filter(p =>
+      p.id !== currentProduct.id &&
+      p.isAvailable !== false &&
+      targetCatIds.has(p.categoryId) &&
+      p.price > 0
+    )
+    .slice(0, 3);
+}
+
 interface ProductModalProps {
   product: Product;
   isDark: boolean;
   onClose: () => void;
   onAdd: (item: CartItem) => void;
+  allProducts: Product[];
+  categories: Category[];
+  currentCategoryName: string;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName }) => {
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState('');
   const [selectedAdditionals, setSelectedAdditionals] = useState<{ groupId: string; additionalId: string; name: string; price: number }[]>([]);
+
+  const suggestions = useMemo(
+    () => suggestComplementaryItems(product, currentCategoryName, allProducts, categories),
+    [product, currentCategoryName, allProducts, categories]
+  );
 
   const toggleAdditional = (groupId: string, additionalId: string, name: string, price: number, isSingle: boolean) => {
     setSelectedAdditionals(prev => {
@@ -1498,6 +1551,58 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                 </div>
               </div>
             ))}
+
+            {/* Sugestões Inteligentes — cross-sell */}
+            {suggestions.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={14} className="text-[#FFC928]" />
+                  <h4 className="font-display font-black text-xs uppercase tracking-widest text-[#111111] dark:text-white italic">
+                    Complete seu pedido
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 gap-2">
+                  {suggestions.map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => {
+                        onAdd({ product: s, quantity: 1, selectedAdditionals: [], observations: '' });
+                        toast.success(`${s.name} adicionado!`, {
+                          icon: '🍳',
+                          style: {
+                            borderRadius: '1.5rem',
+                            background: '#111',
+                            color: '#fff',
+                            fontWeight: 'extrabold',
+                            fontSize: '13px',
+                            border: '2px solid #FFC928'
+                          },
+                        });
+                      }}
+                      className={cn(
+                        "flex items-center justify-between p-3 rounded-2xl border-2 transition-all text-left",
+                        isDark
+                          ? "border-white/5 bg-white/5 hover:border-[#FFC928]/40"
+                          : "border-gray-100 bg-gray-50/50 hover:border-[#FFC928]/60"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {s.imageUrl && (
+                          <img src={s.imageUrl} alt={s.name} className="w-10 h-10 rounded-xl object-cover shrink-0" />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-black dark:text-white truncate">{s.name}</p>
+                          <p className="text-[9px] text-gray-400 font-semibold">R$ {s.price.toFixed(2)}</p>
+                        </div>
+                      </div>
+                      <span className="shrink-0 text-[10px] font-black text-[#FFC928] bg-[#FFC928]/10 px-3 py-1.5 rounded-xl uppercase tracking-wider hover:bg-[#FFC928] hover:text-black transition-all">
+                        + ADD
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Special comments text area */}
             <div className="space-y-2">
