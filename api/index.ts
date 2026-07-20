@@ -7,6 +7,25 @@ import helmet from "helmet";
 dotenv.config();
 
 import { GoogleGenAI, Type } from "@google/genai";
+import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { handleWebhook } from '../src/lib/whatsappWebhook';
+
+// Initialize Firebase Admin SDK
+let firebaseAdminInitialized = false;
+const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+if (serviceAccountKey) {
+  try {
+    const serviceAccount = JSON.parse(Buffer.from(serviceAccountKey, 'base64').toString('utf-8'));
+    initAdminApp({ credential: cert(serviceAccount) });
+    firebaseAdminInitialized = true;
+    console.log('[Vercel API] Firebase Admin SDK initialized');
+  } catch (e) {
+    console.warn('[Vercel API] Failed to initialize Firebase Admin SDK:', e);
+  }
+} else {
+  console.log('[Vercel API] FIREBASE_SERVICE_ACCOUNT_KEY not set');
+}
 
 const app = express();
 
@@ -235,6 +254,23 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
   } catch (error) {
     console.error("Newsletter error:", error);
     res.status(500).json({ error: "Subscription failed" });
+  }
+});
+
+/**
+ * WhatsApp AI Webhook
+ */
+app.post("/api/whatsapp/webhook", async (req, res) => {
+  try {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ success: false, message: "Firebase Admin not configured" });
+    }
+    const db = getFirestore();
+    const result = await handleWebhook(ai, db, req.body);
+    res.json(result);
+  } catch (error: any) {
+    console.error("[WhatsApp Webhook] Error:", error);
+    res.status(500).json({ success: false, message: error?.message || "Internal error" });
   }
 });
 

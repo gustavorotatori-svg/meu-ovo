@@ -229,8 +229,47 @@ export default function ForRestaurantsPage() {
             </div>
             <h2 className="text-3xl lg:text-4xl font-black text-[#111] mb-6 leading-tight">Etiquetas Inteligentes</h2>
             <p className="text-gray-500 text-lg font-medium mb-10 leading-relaxed">
-              Gere etiquetas automáticas com validade, lote e alérgenos para seus produtos. Imprima e cole nas embalagens — ideal para a RDC 727/2025.
+              Gere etiquetas automáticas com validade, lote e alérgenos. Imprima e cole — ideal para a RDC 727/2025.
             </p>
+
+            {/* Label Visual Mockup — like the terminal mockup above */}
+            <div className="bg-[#111] rounded-2xl p-6 border border-white/10 shadow-inner mb-8">
+              <div className="flex gap-2 mb-4">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+              </div>
+              <div className="bg-white rounded-xl p-4 border-2 border-black max-w-xs mx-auto font-mono text-[10px] leading-tight shadow-lg">
+                <div className="text-center border-b border-dashed border-gray-300 pb-2 mb-2">
+                  <p className="font-bold text-[11px] uppercase tracking-wider text-gray-700">Restaurante Sabor</p>
+                </div>
+                <p className="text-center text-sm font-black uppercase tracking-tight text-black mb-3">Bolo de Cenoura</p>
+                <div className="border-t border-dashed border-gray-300 pt-2 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Preparo</span>
+                    <span className="font-bold text-black">20/07/2026</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Validade</span>
+                    <span className="font-bold text-black">27/07/2026</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Lote</span>
+                    <span className="font-bold text-black">#LOT-0001</span>
+                  </div>
+                </div>
+                <div className="border-t border-dashed border-gray-300 pt-2 mt-2">
+                  <p className="text-[8px] font-bold text-gray-500 uppercase tracking-wider mb-1">Alérgenos</p>
+                  <div className="flex gap-2 text-[11px]">
+                    <span>🥚 Glúten</span>
+                    <span>🥛 Leite</span>
+                    <span>🌾 Ovos</span>
+                  </div>
+                </div>
+                <p className="text-center text-[9px] font-bold text-gray-600 border-t border-dashed border-gray-300 pt-2 mt-2">Conservar em geladeira</p>
+                <p className="text-center text-[7px] text-gray-400 uppercase tracking-wider border-t border-dashed border-gray-300 pt-2 mt-2">Gerado por Meu OVO</p>
+              </div>
+            </div>
 
             <ul className="space-y-4">
               {[

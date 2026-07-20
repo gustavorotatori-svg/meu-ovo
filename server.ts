@@ -8,6 +8,7 @@ import helmet from "helmet";
 import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { handleWebhook } from './src/lib/whatsappWebhook';
 
 dotenv.config();
 
@@ -407,6 +408,22 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
     } catch (error: any) {
       console.error('Re-engagement push error:', error);
       res.status(500).json({ error: 'Failed to send re-engagement notifications' });
+    }
+  });
+
+  /**
+   * WhatsApp AI Webhook
+   * Receives incoming WhatsApp messages from provider (Evolution API, Twilio, etc.)
+   * Processes with Gemini AI and sends response back
+   */
+  app.post("/api/whatsapp/webhook", async (req, res) => {
+    try {
+      const db = getFirestore();
+      const result = await handleWebhook(ai, db, req.body);
+      res.json(result);
+    } catch (error: any) {
+      console.error("[WhatsApp Webhook] Error:", error);
+      res.status(500).json({ success: false, message: error?.message || "Internal error" });
     }
   });
 
