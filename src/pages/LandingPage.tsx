@@ -148,13 +148,13 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link
                 to="/cadastro"
-                className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-10 py-5 rounded-3xl text-lg hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-95 text-center shadow-xl shadow-[#FFC928]/10"
+                className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-10 py-5 rounded-2xl text-lg hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-95 text-center shadow-xl shadow-[#FFC928]/10"
               >
                 {t('landing.createMenu')}
               </Link>
               <Link
                 to="/busca"
-                className={`w-full sm:w-auto border-2 font-display font-black px-10 py-5 rounded-3xl text-lg transition-all hover:bg-white/5 active:scale-95 text-center ${isDark ? 'border-white text-white' : 'border-[#111111] text-[#111111]'}`}
+                className={`w-full sm:w-auto border-2 font-display font-black px-10 py-5 rounded-2xl text-lg transition-all hover:bg-white/5 active:scale-95 text-center ${isDark ? 'border-white text-white' : 'border-[#111111] text-[#111111]'}`}
               >
                 {t('landing.viewDemo')}
               </Link>
@@ -456,7 +456,7 @@ export default function LandingPage() {
                 </Link>
                 <Link
                   to="/cadastro"
-                  className="bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs uppercase tracking-widest px-8 py-5 rounded-[1.5rem] transition-all text-center"
+                  className="bg-white/10 hover:bg-white/15 border border-white/10 font-bold text-xs uppercase tracking-widest px-8 py-5 rounded-2xl transition-all text-center"
                 >
                   Participar Gratuitamente
                 </Link>
@@ -499,7 +499,7 @@ export default function LandingPage() {
           <div className="mt-20">
             <Link
               to="/cadastro"
-              className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-[2rem] text-2xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
+              className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-2xl text-2xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
             >
               {t('landing.startNow')} <ArrowRight size={28} />
             </Link>
@@ -650,13 +650,13 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/cadastro"
-              className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-[2rem] text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20 flex items-center justify-center gap-3"
+              className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-12 py-6 rounded-2xl text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20 flex items-center justify-center gap-3"
             >
               Criar meu cardápio grátis <ArrowRight size={24} />
             </Link>
             <Link
               to="/busca"
-              className="w-full sm:w-auto border-2 border-white/20 text-white font-display font-black px-12 py-6 rounded-[2rem] text-xl hover:bg-white/5 transition-all text-center"
+              className="w-full sm:w-auto border-2 border-white/20 text-white font-display font-black px-12 py-6 rounded-2xl text-xl hover:bg-white/5 transition-all text-center"
             >
               Buscar restaurantes
             </Link>

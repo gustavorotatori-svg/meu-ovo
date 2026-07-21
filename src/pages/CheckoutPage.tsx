@@ -552,7 +552,7 @@ export default function CheckoutPage() {
 
   if (submitted) {
     return (
-      <div className={cn('min-h-screen flex items-center justify-center p-4', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
+      <div className={cn('min-h-screen checkout-dark flex items-center justify-center p-4', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
         <motion.div 
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -715,7 +715,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className={cn('min-h-screen', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
+    <div className={cn('min-h-screen checkout-dark', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
       <SEO title="Finalizar Pedido" description="Revise seu carrinho e finalize seu pedido no MEU OVO. Pagamento por PIX, cartão ou dinheiro." url="/checkout" />
       <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
@@ -1348,7 +1348,7 @@ export default function CheckoutPage() {
           whileTap={{ scale: 0.98 }}
           onClick={handleSubmit}
           disabled={submitting || !name || !phone || (orderType === 'delivery' && (!deliveryAddress || (restaurant.deliverySettings?.feeByNeighborhood?.length ? !selectedNeighborhood : false))) || (orderType === 'dine-in' && !tableNumber) || !!nameError || !!phoneError}
-          className="w-full bg-[#111111] text-white font-black py-6 rounded-3xl text-lg hover:bg-[#000] transition-all shadow-2xl shadow-black/20 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
+          className="w-full bg-[#111111] text-white font-black py-6 rounded-2xl text-lg hover:bg-[#000] transition-all shadow-2xl shadow-black/20 flex items-center justify-center gap-3 disabled:opacity-40 disabled:cursor-not-allowed group"
         >
           <Smartphone size={24} className="group-hover:rotate-12 transition-transform" />
           <span>{t('checkout.sendWhatsApp')}</span>

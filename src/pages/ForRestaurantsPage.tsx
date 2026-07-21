@@ -439,7 +439,7 @@ export default function ForRestaurantsPage() {
           <p className="text-gray-500 text-xl mb-12 font-medium">O Meu Ovo é gratuito ontem, hoje e sempre.</p>
           <Link
             to="/cadastro"
-            className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-black px-12 py-6 rounded-[2rem] text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
+            className="inline-flex items-center gap-3 bg-[#FFC928] text-[#111] font-black px-12 py-6 rounded-2xl text-xl hover:bg-[#e6b520] transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-[#FFC928]/20"
           >
             Começar grátis agora <ArrowRight size={24} />
           </Link>

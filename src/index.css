@@ -264,4 +264,57 @@
   box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
 }
 
+/* Checkout page dark mode overrides (applied when dark class is on html) */
+.dark .checkout-dark {
+  background-color: #0a0a0a !important;
+}
+
+.dark .checkout-dark .bg-white,
+.dark .checkout-dark .bg-\[\#F5F5F5\] {
+  background-color: #121212 !important;
+}
+
+.dark .checkout-dark .bg-slate-50,
+.dark .checkout-dark .bg-slate-50\/50,
+.dark .checkout-dark .bg-\[\#FFF8E1\],
+.dark .checkout-dark .bg-yellow-50,
+.dark .checkout-dark .bg-orange-50,
+.dark .checkout-dark .bg-amber-50,
+.dark .checkout-dark .bg-rose-50,
+.dark .checkout-dark .bg-red-50,
+.dark .checkout-dark .bg-emerald-500\/5 {
+  background-color: #1a1a1a !important;
+}
+
+.dark .checkout-dark .border-slate-100,
+.dark .checkout-dark .border-slate-200,
+.dark .checkout-dark .border-gray-100,
+.dark .checkout-dark .border-gray-200,
+.dark .checkout-dark .border-red-200,
+.dark .checkout-dark .border-amber-200,
+.dark .checkout-dark .border-rose-200,
+.dark .checkout-dark .border-emerald-500\/10 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .checkout-dark .text-slate-500,
+.dark .checkout-dark .text-slate-600,
+.dark .checkout-dark .text-gray-500,
+.dark .checkout-dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .checkout-dark input,
+.dark .checkout-dark select,
+.dark .checkout-dark textarea {
+  background-color: #161616 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .checkout-dark input::placeholder,
+.dark .checkout-dark textarea::placeholder {
+  color: #64748b !important;
+}
+
 

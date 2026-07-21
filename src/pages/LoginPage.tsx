@@ -196,6 +196,7 @@ export default function LoginPage() {
                 <input
                   type="text"
                   name="name"
+                  autoFocus={!isLogin}
                   value={formData.name}
                   onChange={handleChange}
                   placeholder={isRestaurant ? 'Seu nome (responsável)' : 'Seu nome'}
@@ -213,6 +214,7 @@ export default function LoginPage() {
               <input
                 type="email"
                 name="email"
+                autoFocus={isLogin}
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="seu@email.com"

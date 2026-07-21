@@ -125,6 +125,7 @@ export default function SelfSignupPage() {
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nome do restaurante</label>
                   <input
+                    autoFocus
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     placeholder="Ex: Restaurante Sabor"

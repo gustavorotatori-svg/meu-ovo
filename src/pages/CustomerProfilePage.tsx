@@ -203,47 +203,49 @@ export default function CustomerProfilePage() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-1.5">
-                  <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Nome Completo</label>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome Completo</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <input
                       type="text"
+                      autoFocus
                       required
                       value={authName}
                       onChange={(e) => setAuthName(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
-                      placeholder="Ex: João da Silva"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"
+                    placeholder="Ex: João da Silva"
                     />
                   </div>
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">E-mail</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">E-mail</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
                     type="email"
                     required
+                    autoFocus={isLogin}
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"
                     placeholder="voce@exemplo.com"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Senha</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
                     type="password"
                     required
                     minLength={6}
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-2xl text-xs font-black uppercase tracking-wider focus:ring-2 focus:ring-[#FFC928] focus:bg-white outline-none transition-all placeholder:text-slate-400"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"
                     placeholder="Mínimo 6 caracteres"
                   />
                 </div>

@@ -55,7 +55,7 @@ export default function CartPage() {
             whileHover={buttonHover}
             whileTap={buttonTap}
             onClick={() => navigate('/busca')}
-            className="bg-[#FFC928] text-[#111] font-black px-8 py-4 rounded-full shadow-lg shadow-yellow-200"
+            className="bg-[#FFC928] text-[#111] font-black px-8 py-4 rounded-2xl shadow-lg shadow-yellow-200"
           >
             {t('cart.backToSearch')}
           </motion.button>
@@ -237,7 +237,7 @@ export default function CartPage() {
             whileHover={buttonHover}
             whileTap={buttonTap}
             onClick={() => navigate('/checkout')}
-            className="w-full font-black py-6 rounded-3xl text-lg flex items-center justify-between px-8 transition-all bg-[#111] text-white hover:bg-black shadow-2xl shadow-black/10 group"
+            className="w-full font-black py-6 rounded-2xl text-lg flex items-center justify-between px-8 transition-all bg-[#111] text-white hover:bg-black shadow-2xl shadow-black/10 group"
           >
             <div className="flex items-center gap-3">
               <ShoppingBag size={24} className="text-[#FFC928] group-hover:-rotate-12 transition-transform" />
