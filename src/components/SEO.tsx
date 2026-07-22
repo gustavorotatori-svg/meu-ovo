@@ -2,6 +2,11 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useTranslation } from 'react-i18next';
 
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
 interface SEOProps {
   title?: string;
   description?: string;
@@ -12,6 +17,7 @@ interface SEOProps {
   publishedTime?: string;
   restaurantName?: string;
   noIndex?: boolean;
+  faqItems?: FAQItem[];
 }
 
 const SEO: React.FC<SEOProps> = ({
@@ -24,6 +30,7 @@ const SEO: React.FC<SEOProps> = ({
   publishedTime,
   restaurantName,
   noIndex,
+  faqItems,
 }) => {
   const { i18n } = useTranslation();
   const siteName = 'MEU OVO';
@@ -99,6 +106,24 @@ const SEO: React.FC<SEOProps> = ({
             "description": metaDescription,
             "image": metaImage,
             "url": metaUrl,
+          })}
+        </script>
+      )}
+
+      {/* FAQPage Schema */}
+      {faqItems && faqItems.length > 0 && (
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": faqItems.map(item => ({
+              "@type": "Question",
+              "name": item.question,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": item.answer,
+              },
+            })),
           })}
         </script>
       )}

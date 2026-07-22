@@ -118,11 +118,23 @@ export default function Footer() {
               );
             })()}
 
-            <div className="flex gap-4">
-              {[Instagram, Twitter, Facebook, Youtube].map((Icon, i) => (
-                <span key={i} className={`w-10 h-10 rounded-full flex items-center justify-center cursor-default ${isDark ? 'bg-white/5 text-gray-500' : 'bg-gray-50 text-gray-400'}`}>
+            <div className="flex gap-3">
+              {[
+                { Icon: Instagram, href: 'https://instagram.com/meuovo' },
+                { Icon: Twitter, href: 'https://twitter.com/meuovo' },
+                { Icon: Facebook, href: 'https://facebook.com/meuovo' },
+                { Icon: Youtube, href: 'https://youtube.com/@meuovo' },
+              ].map(({ Icon, href }, i) => (
+                <a
+                  key={i}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 ${isDark ? 'bg-white/5 text-gray-500 hover:bg-[#FFC928]/10 hover:text-[#FFC928]' : 'bg-gray-50 text-gray-400 hover:bg-orange-50 hover:text-orange-500'}`}
+                  aria-label={`Meu Ovo no ${href.split('//')[1]?.split('.')[0]}`}
+                >
                   <Icon size={18} />
-                </span>
+                </a>
               ))}
             </div>
           </div>
