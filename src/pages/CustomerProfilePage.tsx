@@ -172,7 +172,7 @@ export default function CustomerProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col justify-between bg-[#f8fafc]">
+      <div className="min-h-screen flex flex-col justify-between bg-[#f8fafc] customer-profile-page">
         <Navbar />
         <div className="px-6 pt-6">
           <BackButton to="/" />
@@ -335,7 +335,7 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f8fafc] customer-profile-page">
       <Navbar />
 
       <div className="px-6 pt-6">

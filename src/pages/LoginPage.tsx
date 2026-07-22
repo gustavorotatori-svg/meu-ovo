@@ -8,6 +8,7 @@ import { Logo } from '../components/Logo';
 import SEO from '../components/SEO';
 import { auth } from '../lib/firebase-auth';
 import { getFirebaseErrorMessage } from '../lib/utils';
+import { Button } from '../components/Button';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type RoleTab = 'customer' | 'restaurant';
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '';
+  const safeRedirect = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/busca';
   const initialTab: RoleTab = redirectTo === '/cadastro-restaurante' ? 'restaurant' : 'customer';
   const [roleTab, setRoleTab] = useState<RoleTab>(initialTab);
   const [isLogin, setIsLogin] = useState(true);
@@ -36,13 +38,13 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       toast.success('Bem-vindo!');
-      navigate(redirectTo || '/busca');
+      navigate(safeRedirect);
     } catch (error) {
       toast.error(getFirebaseErrorMessage(error));
     } finally {
       setLoading(false);
     }
-  }, [signInWithGoogle, navigate, redirectTo, isLogin, lgpdConsent]);
+    }, [signInWithGoogle, navigate, safeRedirect, isLogin, lgpdConsent]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -104,7 +106,7 @@ export default function LoginPage() {
         if (!isRestaurant && !auth.currentUser?.emailVerified) {
           toast('Verifique seu email antes de fazer pedidos', { icon: '✉️' });
         }
-        navigate(redirectTo || (isRestaurant ? '/admin' : '/busca'));
+        navigate(safeRedirect || (isRestaurant ? '/admin' : '/busca'));
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const role = isRestaurant ? 'restaurant' : 'customer';
@@ -114,7 +116,7 @@ export default function LoginPage() {
           navigate('/cadastro-restaurante');
         } else {
           toast.success('Conta criada! Verifique seu email.');
-          const next = redirectTo || '/busca';
+          const next = safeRedirect || '/busca';
           navigate(`/install-app?next=${encodeURIComponent(next)}`);
         }
       }
@@ -279,14 +281,16 @@ export default function LoginPage() {
             </label>
           )}
 
-          <button
+          <Button
             type="submit"
+            variant="secondary"
+            size="lg"
             disabled={loading}
-            className="w-full bg-[#111] text-white font-black py-4 rounded-xl hover:bg-black transition-all text-sm uppercase tracking-widest disabled:opacity-40 flex items-center justify-center gap-2"
+            isLoading={loading}
+            className="w-full rounded-xl"
           >
-            {loading ? <Loader size={16} className="animate-spin" /> : null}
             {loading ? 'Aguarde...' : isLogin ? (isRestaurant ? 'Entrar como restaurante' : 'Entrar') : (isRestaurant ? 'Criar conta de restaurante' : 'Criar conta')}
-          </button>
+          </Button>
 
           {isLogin && (
           <>

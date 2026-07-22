@@ -33,7 +33,19 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(helmet({
-    contentSecurityPolicy: false,
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "https://www.gstatic.com", "https://www.googleapis.com", "https://js.sentry-cdn.com"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "wss://*.firebaseio.com", "https://sentry.io", "https://*.sentry.io"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
+      },
+    },
     crossOriginEmbedderPolicy: false,
   }));
   app.use(cors({
@@ -43,11 +55,19 @@ async function startServer() {
   }));
   app.use(express.json({ limit: '1mb' }));
 
-  // Simple in-memory rate limiter
+  // Simple in-memory rate limiter with periodic cleanup
   const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+  const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of rateLimitMap.entries()) {
+      if (now > entry.resetAt) rateLimitMap.delete(key);
+    }
+  }, CLEANUP_INTERVAL);
   function rateLimit(maxRequests: number, windowMs: number) {
     return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      const key = req.ip || (req.headers['x-forwarded-for'] as string) || 'unknown';
+      const rawIp = req.ip || req.socket.remoteAddress || 'unknown';
+      const key = rawIp.replace(/^::ffff:/, '');
       const now = Date.now();
       const entry = rateLimitMap.get(key);
       if (!entry || now > entry.resetAt) {
@@ -66,16 +86,13 @@ async function startServer() {
 
   // API key authentication for AI/costly endpoints
   function requireApiKey(req: express.Request, res: express.Response, next: express.NextFunction) {
-    if (process.env.NODE_ENV !== 'production') {
-      return next();
-    }
     const apiKey = req.headers['x-api-key'] as string;
     const validKey = process.env.API_SECRET_KEY || process.env.GEMINI_API_KEY;
     if (!validKey) {
-      return res.status(500).json({ error: 'Server misconfigured — API_SECRET_KEY not set' });
+      return res.status(500).json({ error: 'Server misconfigured' });
     }
     if (apiKey !== validKey) {
-      return res.status(401).json({ error: 'Unauthorized — invalid or missing x-api-key header' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
     next();
   }
@@ -99,6 +116,17 @@ async function startServer() {
   app.use('/api/blog', requireApiKey);
   app.use('/api/newsletter', requireApiKey);
 
+  // Input sanitization helpers
+  const MAX_STRING_LEN = 500;
+  function sanitizeString(input: unknown, maxLen = MAX_STRING_LEN): string {
+    if (typeof input !== 'string') return '';
+    return input.trim().slice(0, maxLen);
+  }
+  const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+  function isAllowedMimeType(mt: string): boolean {
+    return ALLOWED_MIME_TYPES.includes(mt);
+  }
+
   /**
    * AI Menu Document Parser
    * Uses Gemini 2.5 Flash Lite to extract categories and products from an uploaded image or PDF
@@ -108,12 +136,15 @@ async function startServer() {
     if (!fileData || !mimeType) {
       return res.status(400).json({ error: "fileData and mimeType are required" });
     }
+    if (!isAllowedMimeType(mimeType)) {
+      return res.status(400).json({ error: "Invalid mimeType" });
+    }
 
     try {
       const filePart = {
         inlineData: {
           mimeType: mimeType,
-          data: fileData,
+          data: sanitizeString(fileData, 2000000),
         }
       };
 
@@ -171,7 +202,9 @@ async function startServer() {
    * Generates a full menu with categories and items based on cuisine type
    */
   app.post("/api/ai/generate-menu", async (req, res) => {
-    const { cuisine, restaurantName, slogan } = req.body;
+    const cuisine = sanitizeString(req.body.cuisine);
+    const restaurantName = sanitizeString(req.body.restaurantName);
+    const slogan = sanitizeString(req.body.slogan, 200);
     if (!cuisine || !restaurantName) {
       return res.status(400).json({ error: "cuisine and restaurantName are required" });
     }
@@ -234,7 +267,8 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
    * Generates a single product/plate for a given category
    */
   app.post("/api/ai/generate-product", async (req, res) => {
-    const { categoryName, prompt: userPrompt } = req.body;
+    const categoryName = sanitizeString(req.body.categoryName);
+    const userPrompt = sanitizeString(req.body.prompt, 300);
     if (!categoryName) {
       return res.status(400).json({ error: "categoryName is required" });
     }
@@ -326,8 +360,10 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
    * Newsletter subscription simulation
    */
   app.post("/api/newsletter/subscribe", async (req, res) => {
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Email is required" });
+    const email = sanitizeString(req.body.email, 254);
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: "Valid email is required" });
+    }
 
     try {
       const response = await ai.models.generateContent({
@@ -418,12 +454,18 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
    */
   app.post("/api/whatsapp/webhook", async (req, res) => {
     try {
+      // Verify webhook authenticity
+      const webhookSecret = process.env.WEBHOOK_SECRET;
+      const authHeader = (req.headers['x-webhook-secret'] as string) || (req.headers['x-hub-signature-256'] as string) || '';
+      if (webhookSecret && authHeader !== webhookSecret) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
       const db = getFirestore();
       const result = await handleWebhook(ai, db, req.body);
       res.json(result);
     } catch (error: any) {
       console.error("[WhatsApp Webhook] Error:", error);
-      res.status(500).json({ success: false, message: error?.message || "Internal error" });
+      res.status(500).json({ success: false, message: "Internal error" });
     }
   });
 

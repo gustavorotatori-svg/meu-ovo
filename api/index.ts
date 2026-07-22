@@ -30,7 +30,19 @@ if (serviceAccountKey) {
 const app = express();
 
 app.use(helmet({
-  contentSecurityPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://www.gstatic.com", "https://www.googleapis.com", "https://js.sentry-cdn.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "wss://*.firebaseio.com", "https://sentry.io", "https://*.sentry.io"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
   crossOriginEmbedderPolicy: false,
 }));
 app.use(cors({
@@ -40,11 +52,19 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' }));
 
-// Simple in-memory rate limiter
+// Simple in-memory rate limiter with periodic cleanup
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const CLEANUP_INTERVAL = 5 * 60 * 1000;
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetAt) rateLimitMap.delete(key);
+  }
+}, CLEANUP_INTERVAL);
 function rateLimit(maxRequests: number, windowMs: number) {
   return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const key = req.ip || req.headers['x-forwarded-for'] as string || 'unknown';
+    const rawIp = req.ip || req.socket.remoteAddress || 'unknown';
+    const key = rawIp.replace(/^::ffff:/, '');
     const now = Date.now();
     const entry = rateLimitMap.get(key);
     if (!entry || now > entry.resetAt) {
@@ -64,16 +84,33 @@ function requireApiKey(req: express.Request, res: express.Response, next: expres
   const apiKey = req.headers['x-api-key'] as string;
   const validKey = process.env.API_SECRET_KEY || process.env.GEMINI_API_KEY;
   if (!validKey) {
-    return res.status(500).json({ error: 'Server misconfigured — API_SECRET_KEY not set' });
+    return res.status(500).json({ error: 'Server misconfigured' });
   }
   if (apiKey !== validKey) {
-    return res.status(401).json({ error: 'Unauthorized — invalid or missing x-api-key header' });
+    return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 }
 
 // Apply rate limiting to all /api routes
 app.use('/api', rateLimit(30, 60000)); // 30 requests per minute per IP
+
+// Input sanitization helpers
+const MAX_STRING_LEN = 500;
+function sanitizeString(input: unknown, maxLen = MAX_STRING_LEN): string {
+  if (typeof input !== 'string') return '';
+  return input.trim().slice(0, maxLen);
+}
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
+function isAllowedMimeType(mt: string): boolean {
+  return ALLOWED_MIME_TYPES.includes(mt);
+}
+
+// Validate redirect URLs to prevent open redirects
+function isSafeRedirect(url: string): boolean {
+  if (!url) return false;
+  return url.startsWith('/') && !url.startsWith('//') && !url.includes('://');
+}
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -91,8 +128,11 @@ app.post("/api/ai/parse-menu", async (req, res) => {
   if (!fileData || !mimeType) {
     return res.status(400).json({ error: "fileData and mimeType are required" });
   }
+  if (!isAllowedMimeType(mimeType)) {
+    return res.status(400).json({ error: "Invalid mimeType" });
+  }
   try {
-    const filePart = { inlineData: { mimeType, data: fileData } };
+    const filePart = { inlineData: { mimeType, data: sanitizeString(fileData, 2000000) } };
     const promptPart = { text: "Analyze the attached menu document (image or PDF document). Extract all main categories and the list of individual products under each category. For each product, extract the name, price containing decimal numeric value (without currency symbol, e.g. 15.90), and categorize it with the corresponding category name. Create category names that are clear and concise. Return the categories and products lists matching the requested schema." };
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
@@ -114,12 +154,14 @@ app.post("/api/ai/parse-menu", async (req, res) => {
     res.json({ success: true, data: parsedData });
   } catch (error: any) {
     console.error("AI Menu parsing error:", error?.message || error);
-    res.status(500).json({ error: `AI parsing failed: ${error?.message || 'Unknown error'}` });
+    res.status(500).json({ error: "AI parsing failed" });
   }
 });
 
 app.post("/api/ai/generate-menu", async (req, res) => {
-  const { cuisine, restaurantName, slogan } = req.body;
+  const cuisine = sanitizeString(req.body.cuisine);
+  const restaurantName = sanitizeString(req.body.restaurantName);
+  const slogan = sanitizeString(req.body.slogan, 200);
   if (!cuisine || !restaurantName) {
     return res.status(400).json({ error: "cuisine and restaurantName are required" });
   }
@@ -173,12 +215,13 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
     res.json({ success: true, data: result });
   } catch (error: any) {
     console.error("AI Menu generation error:", error?.message || error);
-    res.status(500).json({ error: `AI generation failed: ${error?.message || 'Unknown error'}` });
+    res.status(500).json({ error: "AI generation failed" });
   }
 });
 
 app.post("/api/ai/generate-product", async (req, res) => {
-  const { categoryName, prompt: userPrompt } = req.body;
+  const categoryName = sanitizeString(req.body.categoryName);
+  const userPrompt = sanitizeString(req.body.prompt, 300);
   if (!categoryName) {
     return res.status(400).json({ error: "categoryName is required" });
   }
@@ -213,7 +256,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
     res.json({ success: true, data: result });
   } catch (error: any) {
     console.error("AI Product generation error:", error?.message || error);
-    res.status(500).json({ error: `AI generation failed: ${error?.message || 'Unknown error'}` });
+    res.status(500).json({ error: "AI generation failed" });
   }
 });
 
@@ -243,8 +286,10 @@ app.get("/api/blog/news", async (req, res) => {
 });
 
 app.post("/api/newsletter/subscribe", async (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email is required" });
+  const email = sanitizeString(req.body.email, 254);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "Valid email is required" });
+  }
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
@@ -258,19 +303,25 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
 });
 
 /**
- * WhatsApp AI Webhook
+ * WhatsApp AI Webhook — requires x-webhook-secret header or Evolution API signature
  */
 app.post("/api/whatsapp/webhook", async (req, res) => {
   try {
     if (!firebaseAdminInitialized) {
-      return res.status(503).json({ success: false, message: "Firebase Admin not configured" });
+      return res.status(503).json({ success: false, message: "Service unavailable" });
+    }
+    // Verify webhook authenticity via shared secret or provider signature
+    const webhookSecret = process.env.WEBHOOK_SECRET;
+    const authHeader = req.headers['x-webhook-secret'] as string || req.headers['x-hub-signature-256'] as string || '';
+    if (webhookSecret && authHeader !== webhookSecret) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     const db = getFirestore();
     const result = await handleWebhook(ai, db, req.body);
     res.json(result);
   } catch (error: any) {
     console.error("[WhatsApp Webhook] Error:", error);
-    res.status(500).json({ success: false, message: error?.message || "Internal error" });
+    res.status(500).json({ success: false, message: "Internal error" });
   }
 });
 

@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { Plus, Trash2, RefreshCw, Clock, Zap } from 'lucide-react';
 import { useRestaurant } from '../../context/RestaurantContext';
-import BackButton from '../../components/BackButton';
 import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import type { FlashDeal, Product } from '../../types';
@@ -91,9 +90,6 @@ export default function FlashDealManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="px-6 pt-6">
-        <BackButton to="/" />
-      </div>
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-white flex items-center gap-2">

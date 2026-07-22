@@ -16,7 +16,6 @@ import {
 } from 'firebase/firestore';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Button } from '../../components/Button';
-import BackButton from '../../components/BackButton';
 import { Coupon, Order } from '../../types';
 import { toast } from 'react-hot-toast';
 import { cn, formatCurrency } from '../../lib/utils';
@@ -320,9 +319,6 @@ export default function CouponManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="px-6 pt-6">
-        <BackButton to="/" />
-      </div>
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-[#111] italic uppercase tracking-tighter">Cupons de Desconto</h2>
@@ -949,7 +945,8 @@ export default function CouponManagement() {
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{order.customerPhone}</p>
                         </div>
                       </div>
-                      
+import BackButton from '../../components/BackButton';
+
                       <div className="text-right flex items-center gap-6">
                         <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-end gap-1">

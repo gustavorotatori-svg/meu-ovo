@@ -9,6 +9,7 @@ import { Product, AllergenKey, LabelRecord } from '../../types';
 import { ALLERGENS, ALLERGEN_MAP, STORAGE_OPTIONS } from '../../data/allergens';
 import { motion } from 'motion/react';
 import { toast } from 'react-hot-toast';
+import { escapeHtml } from '../../lib/utils';
 
 function generateBatch(): string {
   const date = new Date();
@@ -378,18 +379,18 @@ function printLabelHTML(label: LabelRecord): string {
 </style></head><body>
 <div class="label">
   <div class="header">
-    ${label.restaurantLogo ? `<img src="${label.restaurantLogo}" alt="Logo" />` : ''}
-    <div class="restaurant">${label.restaurantName || ''}</div>
+    ${label.restaurantLogo ? `<img src="${escapeHtml(label.restaurantLogo)}" alt="Logo" />` : ''}
+    <div class="restaurant">${escapeHtml(label.restaurantName || '')}</div>
   </div>
-  <div class="product-name">${label.productName}</div>
+  <div class="product-name">${escapeHtml(label.productName)}</div>
   <div class="info">
     <div class="info-row"><span class="info-label">Preparo</span><span class="info-value">${formatDate(new Date(label.prepDate))}</span></div>
     <div class="info-row"><span class="info-label">Validade</span><span class="info-value">${label.expiryDate ? formatDate(new Date(label.expiryDate)) : '—'}</span></div>
-    <div class="info-row"><span class="info-label">Lote</span><span class="info-value">${label.batchNumber}</span></div>
-    <div class="info-row"><span class="info-label">Operador</span><span class="info-value">${label.operatorName}</span></div>
+    <div class="info-row"><span class="info-label">Lote</span><span class="info-value">${escapeHtml(label.batchNumber)}</span></div>
+    <div class="info-row"><span class="info-label">Operador</span><span class="info-value">${escapeHtml(label.operatorName)}</span></div>
   </div>
   ${allergensHtml ? `<div class="allergens"><div class="allergens-title">Alérgenos</div><div class="allergens-list">${allergensHtml}</div></div>` : ''}
-  <div class="storage">${label.storageInstructions || storageLabel}</div>
+  <div class="storage">${escapeHtml(label.storageInstructions || storageLabel)}</div>
   <div class="footer">Gerado por Meu OVO • ${new Date(label.printedAt).toLocaleString('pt-BR')}</div>
 </div>
 </body></html>`;

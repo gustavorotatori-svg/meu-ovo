@@ -175,7 +175,8 @@ export default function InstallAppPage() {
     }
     if (mountedRef.current) {
       const nextParam = new URLSearchParams(window.location.search).get('next');
-      const destination = nextParam || (user?.role === 'restaurant' ? '/cadastro-restaurante' : '/busca');
+      const safeNext = nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : '';
+      const destination = safeNext || (user?.role === 'restaurant' ? '/cadastro-restaurante' : '/busca');
       setTimeout(() => { if (mountedRef.current) navigate(destination); }, 1500);
     }
   };
@@ -226,7 +227,7 @@ export default function InstallAppPage() {
 
   if (confirmed) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white flex items-center justify-center p-6">
+      <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white flex items-center justify-center p-6 install-app-page">
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -243,7 +244,7 @@ export default function InstallAppPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white install-app-page">
       <SEO title="Instalar App" description="Instale o MEU OVO na tela inicial do seu celular ou computador para pedir mais rápido." url="/install-app" />
       <div className="max-w-lg mx-auto px-6 py-12">
         <div className="mb-6">

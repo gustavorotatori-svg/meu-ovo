@@ -229,7 +229,7 @@
 .admin-theme .text-gray-950,
 .admin-theme .text-gray-900,
 .admin-theme .text-gray-800,
-.admin-theme .text-[#111],
+.admin-theme .text-\[\#111\],
 .admin-theme .text-brand-black {
   color: #f8fafc !important;
 }
@@ -315,6 +315,213 @@
 .dark .checkout-dark input::placeholder,
 .dark .checkout-dark textarea::placeholder {
   color: #64748b !important;
+}
+
+/* ForRestaurantsPage dark mode */
+.dark .for-restaurants-page .bg-white {
+  background-color: #121212 !important;
+}
+
+.dark .for-restaurants-page .border-gray-100 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .for-restaurants-page .text-\[\#111\] {
+  color: #f8fafc !important;
+}
+
+.dark .for-restaurants-page .shadow-2xl {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* CustomerProfilePage dark mode */
+.dark .customer-profile-page .bg-slate-50,
+.dark .customer-profile-page .bg-slate-50\/50 {
+  background-color: #1a1a1a !important;
+}
+
+.dark .customer-profile-page .bg-white {
+  background-color: #121212 !important;
+}
+
+.dark .customer-profile-page .border-slate-200,
+.dark .customer-profile-page .border-gray-100,
+.dark .customer-profile-page .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .customer-profile-page .text-slate-900,
+.dark .customer-profile-page .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .customer-profile-page .text-slate-500,
+.dark .customer-profile-page .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .customer-profile-page .shadow-sm,
+.dark .customer-profile-page .shadow-md {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dark .customer-profile-page input,
+.dark .customer-profile-page select,
+.dark .customer-profile-page textarea {
+  background-color: #161616 !important;
+  color: #f8fafc !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .customer-profile-page input::placeholder,
+.dark .customer-profile-page textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* OrderStatusPage dark mode */
+.dark .order-status-page {
+  background-color: #121212 !important;
+}
+
+.dark .order-status-page .bg-white {
+  background-color: #1a1a1a !important;
+}
+
+.dark .order-status-page .bg-slate-50 {
+  background-color: #161616 !important;
+}
+
+.dark .order-status-page .border-slate-100,
+.dark .order-status-page .border-gray-100,
+.dark .order-status-page .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .order-status-page .text-slate-500,
+.dark .order-status-page .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+.dark .order-status-page .text-slate-900,
+.dark .order-status-page .text-slate-800 {
+  color: #f8fafc !important;
+}
+
+.dark .order-status-page .shadow-xl,
+.dark .order-status-page .shadow-lg,
+.dark .order-status-page .shadow-sm {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dark .order-status-page .border-emerald-100 {
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.dark .order-status-page .border-amber-200,
+.dark .order-status-page .border-amber-100 {
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+.dark .order-status-page .border-rose-200 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+.dark .order-status-page .bg-emerald-50 {
+  background-color: rgba(52, 211, 153, 0.1) !important;
+}
+
+.dark .order-status-page .bg-amber-50 {
+  background-color: rgba(251, 191, 36, 0.1) !important;
+}
+
+.dark .order-status-page .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.1) !important;
+}
+
+.dark .order-status-page .text-emerald-600 {
+  color: #34d399 !important;
+}
+
+.dark .order-status-page .text-amber-600 {
+  color: #fbbf24 !important;
+}
+
+.dark .order-status-page .text-rose-600 {
+  color: #fb7185 !important;
+}
+
+/* MarketplacePage dark mode */
+.dark .marketplace-page {
+  background-color: #121212 !important;
+}
+
+.dark .marketplace-page .bg-white {
+  background-color: #1a1a1a !important;
+}
+
+.dark .marketplace-page .border-gray-100,
+.dark .marketplace-page .border-gray-200 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .marketplace-page .text-gray-600,
+.dark .marketplace-page .text-gray-700 {
+  color: #94a3b8 !important;
+}
+
+.dark .marketplace-page .text-gray-400 {
+  color: #64748b !important;
+}
+
+.dark .marketplace-page .shadow-xl,
+.dark .marketplace-page .shadow-2xl,
+.dark .marketplace-page .shadow-sm {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+.dark .marketplace-page .hover\:bg-gray-50:hover {
+  background-color: #1e1e1e !important;
+}
+
+.dark .marketplace-page .ring-offset-2 {
+  --tw-ring-offset-color: #121212 !important;
+}
+
+/* InstallAppPage dark mode */
+.dark .install-app-page {
+  background: #121212 !important;
+}
+
+.dark .install-app-page .bg-white {
+  background-color: #1a1a1a !important;
+}
+
+.dark .install-app-page .bg-slate-50,
+.dark .install-app-page .bg-slate-50\/80,
+.dark .install-app-page .bg-slate-50\/50 {
+  background-color: #161616 !important;
+}
+
+.dark .install-app-page .border-gray-100,
+.dark .install-app-page .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .install-app-page .text-slate-600 {
+  color: #94a3b8 !important;
+}
+
+.dark .install-app-page .text-gray-700 {
+  color: #cbd5e1 !important;
+}
+
+.dark .install-app-page .shadow-xl {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* NotFoundPage dark mode */
+.dark .not-found-page {
+  background: #121212 !important;
 }
 
 

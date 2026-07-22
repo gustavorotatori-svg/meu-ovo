@@ -108,7 +108,8 @@ export function listenForegroundNotifications(): () => void {
   foregroundUnsub = onMessage(msg, (payload) => {
     const title = payload.notification?.title || 'Meu OVO';
     const body = payload.notification?.body || '';
-    const clickAction = (payload as { webpush?: { fcmOptions?: { link?: string } } })?.webpush?.fcmOptions?.link || '';
+    const rawClickAction = (payload as { webpush?: { fcmOptions?: { link?: string } } })?.webpush?.fcmOptions?.link || '';
+    const clickAction = rawClickAction && rawClickAction.startsWith('/') && !rawClickAction.startsWith('//') ? rawClickAction : '';
     toast.custom((t) => (
       <div
         onClick={() => { if (clickAction) window.location.href = clickAction; toast.dismiss(t.id); }}

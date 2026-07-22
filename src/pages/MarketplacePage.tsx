@@ -321,7 +321,7 @@ export default function MarketplacePage() {
   return (
     <>
       {user && user.role === 'customer' && !user.onboardingComplete && <OnboardingTutorial />}
-      <div className="min-h-screen bg-[#F5F5F5]">
+      <div className="min-h-screen bg-[#F5F5F5] marketplace-page">
       <SEO 
         title="Busca de Restaurantes"
         description="Encontre os melhores restaurantes perto de você. Peça direto, sem intermediários e com impacto social real."

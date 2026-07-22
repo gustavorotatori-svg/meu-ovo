@@ -3,7 +3,7 @@ import { ChefHat } from 'lucide-react';
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8 not-found-page">
       <div className="text-center max-w-md">
         <div className="w-20 h-20 bg-[#FFC928]/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
           <ChefHat size={40} className="text-[#FFC928]" />

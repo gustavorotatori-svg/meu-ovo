@@ -8,7 +8,7 @@ import ScrollReveal from '../components/ScrollReveal';
 
 export default function ForRestaurantsPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white for-restaurants-page">
       <SEO 
         title="Para Restaurantes - Cadastro Grátis"
         description="Crie seu cardápio digital grátis, receba pedidos direto no WhatsApp e venda sem comissão. Junte-se ao Meu Ovo e seja dono do seu negócio."

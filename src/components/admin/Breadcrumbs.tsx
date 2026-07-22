@@ -23,6 +23,7 @@ export default function Breadcrumbs() {
     delivery: 'Delivery',
     relatorios: t('nav.reports'),
     configuracoes: t('nav.settings'),
+    'whatsapp-ai': 'WhatsApp AI',
     'impacto-social': 'Impacto Social',
     'para-restaurantes': 'Para Restaurantes',
     plataforma: 'Plataforma Master',

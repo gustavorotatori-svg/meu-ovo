@@ -10,7 +10,7 @@ import { awardLoyaltyPoints } from '../../services/loyaltyService';
 import { triggerAutomaticNotification, WA_NUMBER } from '../../services/whatsappService';
 import { getCustomerStats, submitCustomerRating, CustomerStats } from '../../services/customerRatingService';
 import { toast } from 'react-hot-toast';
-import { sanitizeCSVCell } from '../../lib/utils';
+import { sanitizeCSVCell, escapeHtml } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
@@ -218,7 +218,7 @@ export default function AdminOrders() {
         </head>
         <body onload="window.print(); window.close();">
           <div class="center bold text-transform: uppercase;">MEU OVO - TESTE IMPRESSORA</div>
-          <p class="center font-size: ${printerSettings.fontSize === 'large' ? '11px' : '9px'};">${printerSettings.customHeader || 'Demonstração de Cabeçalho'}</p>
+          <p class="center font-size: ${printerSettings.fontSize === 'large' ? '11px' : '9px'};">${escapeHtml(printerSettings.customHeader || 'Demonstração de Cabeçalho')}</p>
           <div class="divider"></div>
           <p class="bold">IMPRESSÃO CONFIGURADA:</p>
           <p>Largura: ${printerSettings.paperWidth}</p>
@@ -226,7 +226,7 @@ export default function AdminOrders() {
           <p>Cópias: ${printerSettings.numCopies}</p>
           <p>Modo Auto: ${printerSettings.autoPrintNew ? 'Sim (Novos Pedidos)' : 'Não'}</p>
           <div class="divider"></div>
-          <p class="center">${printerSettings.customFooter}</p>
+          <p class="center">${escapeHtml(printerSettings.customFooter)}</p>
         </body>
       </html>
     `;
@@ -317,25 +317,25 @@ export default function AdminOrders() {
 
     const itemsHtml = order.items.map(item => `
       <div style="display: flex; justify-content: space-between; margin-bottom: 3px; font-weight: bold;">
-        <span>${item.quantity}x ${item.productName}</span>
+        <span>${item.quantity}x ${escapeHtml(item.productName)}</span>
         <span>R$ ${(item.quantity * item.unitPrice).toFixed(2)}</span>
       </div>
-      ${settings.showComments && item.observations ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px;">* OBS: ${item.observations}</div>` : ''}
-      ${(item.additionals?.length ?? 0) > 0 ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px; color: #333;">+ ${item.additionals.map(a => a.name).join(', ')}</div>` : ''}
+      ${settings.showComments && item.observations ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px;">* OBS: ${escapeHtml(item.observations)}</div>` : ''}
+      ${(item.additionals?.length ?? 0) > 0 ? `<div style="font-size: 0.9em; margin-left: 8px; margin-bottom: 3px; color: #333;">+ ${escapeHtml(item.additionals.map(a => a.name).join(', '))}</div>` : ''}
     `).join('');
 
     let singleReceiptHtml = `
       <div style="page-break-after: always; margin-bottom: 20px;">
         <div class="header">
-          ${settings.customHeader ? `<h3 style="margin: 0; font-size: 1.1em;">${settings.customHeader}</h3>` : ''}
-          <h2 style="margin: 3px 0; font-size: 1.4em;">${restaurant?.name || 'MEU OVO'}</h2>
+          ${settings.customHeader ? `<h3 style="margin: 0; font-size: 1.1em;">${escapeHtml(settings.customHeader)}</h3>` : ''}
+          <h2 style="margin: 3px 0; font-size: 1.4em;">${escapeHtml(restaurant?.name || 'MEU OVO')}</h2>
           <p style="margin: 3px 0;">${type === 'account' ? '*** CONTA DE CONSUMO ***' : '*** TICKET DE PEDIDO ***'}</p>
           <p style="margin: 3px 0;">PEDIDO: #${order.id.slice(-6).toUpperCase()}</p>
           <p style="margin: 0;">${new Date(order.createdAt).toLocaleString('pt-BR')}</p>
         </div>
         <div class="customer">
-          CLIENTE: ${order.customerName}<br/>
-          FONE: ${order.customerPhone}<br/>
+          CLIENTE: ${escapeHtml(order.customerName)}<br/>
+          FONE: ${escapeHtml(order.customerPhone)}<br/>
           TIPO: ${order.type === 'dine-in' ? 'MESA' : order.type === 'delivery' ? 'DELIVERY' : 'RETIRADA'}<br/>
           ${order.tableNumber ? `MESA: ${order.tableNumber}<br/>` : ''}
         </div>
@@ -348,7 +348,7 @@ export default function AdminOrders() {
         ${order.type === 'delivery' && order.deliveryAddress && settings.showAddress ? `
           <div class="section" style="font-size: 0.95em;">
             <strong>ENDEREÇO DE ENTREGA:</strong><br/>
-            ${order.deliveryAddress}
+            ${escapeHtml(order.deliveryAddress)}
           </div>
         ` : ''}
 
@@ -366,7 +366,7 @@ export default function AdminOrders() {
           PAGAMENTO: ${order.paymentMethod === 'pix' ? 'PIX' : order.paymentMethod === 'cash' ? 'DINHEIRO' : order.paymentMethod === 'card-on-delivery' ? 'CARTÃO' : 'NO LOCAL'}
         </div>
         
-        ${settings.customFooter ? `<p style="text-align: center; font-size: 0.95em; margin-top: 10px; border-top: 1px dotted #000; padding-top: 5px;">${settings.customFooter}</p>` : ''}
+        ${settings.customFooter ? `<p style="text-align: center; font-size: 0.95em; margin-top: 10px; border-top: 1px dotted #000; padding-top: 5px;">${escapeHtml(settings.customFooter)}</p>` : ''}
         <div class="watermark">MEU OVO - CONTROLE DE PEDIDOS</div>
       </div>
     `;
@@ -509,7 +509,7 @@ export default function AdminOrders() {
       <tr style="border-bottom: 1px solid #e2e8f0;">
         <td style="padding: 10px; font-weight: bold;">#${o.id.slice(-6).toUpperCase()}</td>
         <td style="padding: 10px;">${new Date(o.createdAt).toLocaleString('pt-BR')}</td>
-        <td style="padding: 10px;">${o.customerName}</td>
+        <td style="padding: 10px;">${escapeHtml(o.customerName)}</td>
         <td style="padding: 10px;">${typeLabels[o.type] || o.type}</td>
         <td style="padding: 10px;">${paymentLabels[o.paymentMethod] || o.paymentMethod}</td>
         <td style="padding: 10px;"><span class="badge badge-${o.status}">${STATUS_LABELS[o.status] || o.status}</span></td>

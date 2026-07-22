@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap, Sticker } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap, Sticker, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../../components/Logo';
 import LanguageSwitcher from '../../components/LanguageSwitcher';
+import BackButton from '../../components/BackButton';
 import Breadcrumbs from '../../components/admin/Breadcrumbs';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
@@ -68,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { to: '/admin/relatorios', label: t('nav.reports'), icon: <FileText size={18} /> },
     { to: '/admin/flash-deals', label: 'Flash Deals ⚡', icon: <Zap size={18} /> },
     { to: '/admin/ovos-de-ouro', label: 'Ovos de Ouro 🏆', icon: <Trophy size={18} /> },
+    { to: '/admin/whatsapp-ai', label: 'WhatsApp AI', icon: <MessageSquare size={18} /> },
     { to: '/admin/configuracoes', label: t('nav.settings'), icon: <Settings size={18} /> },
   ];
 
@@ -214,6 +216,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </header>
 
         <main className="flex-1 p-4 pb-28 lg:pb-6 lg:p-6 overflow-auto">
+          <div className="mb-4">
+            <BackButton to="/admin" />
+          </div>
           <Breadcrumbs />
           <motion.div
             key={pathname}

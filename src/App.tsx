@@ -53,6 +53,7 @@ const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const OvosDeOuro = lazy(() => import('./pages/admin/OvosDeOuro'));
 const FlashDealManagement = lazy(() => import('./pages/admin/FlashDealManagement'));
 const LabelManagement = lazy(() => import('./pages/admin/LabelManagement'));
+const AdminWhatsAppAI = lazy(() => import('./pages/admin/AdminWhatsAppAI'));
 const OrderStatusPage = lazy(() => import('./pages/OrderStatusPage'));
 
 const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'));
@@ -187,6 +188,11 @@ export default function App() {
                     <Route path="/admin/etiquetas" element={
                       <ProtectedRoute roles={['restaurant', 'admin']}>
                         <PageSuspense><LabelManagement /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/whatsapp-ai" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminWhatsAppAI /></PageSuspense>
                       </ProtectedRoute>
                     } />
 

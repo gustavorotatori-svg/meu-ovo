@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 import { QrCode as QrIcon, Copy, Settings, Store, Truck, MapPin, Phone, Plus, Trash2, Clock, Download, Volume2, Printer, Zap, Smartphone, XCircle, FileText, Upload, Shield, Key, Star, AlertTriangle, Check, FileSpreadsheet, Search, ChevronDown, ChevronUp, Eye, CreditCard } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Skeleton } from '../../components/Skeleton';
-import { cn, sanitizeCSVCell } from '../../lib/utils';
+import { cn, sanitizeCSVCell, escapeHtml } from '../../lib/utils';
 import AdminLayout from './AdminLayout';
 import { validateFiscalXML, generateDemoValidFiscalXML, isValidCNPJ } from '../../services/fiscalValidationService';
 
@@ -197,7 +197,7 @@ export default function StoreSettings() {
         </head>
         <body onload="window.print(); window.close();">
           <div class="header">
-            ${settings.customHeader ? `<h3 style="margin: 0; font-size: 1.1em;">${settings.customHeader}</h3>` : ''}
+            ${settings.customHeader ? `<h3 style="margin: 0; font-size: 1.1em;">${escapeHtml(settings.customHeader)}</h3>` : ''}
             <h2 style="margin: 3px 0;">${restaurant?.name || 'TESTE DE LOJA'}</h2>
             <p style="margin: 3px 0;">*** TESTE DE IMPRESSORA TÉRMICA ***</p>
             <p style="margin: 3px 0;">LARGURA BOBINA: ${settings.paperWidth}</p>
@@ -233,7 +233,7 @@ export default function StoreSettings() {
             VIAS (COPIAS): ${settings.numCopies}x<br/>
             AUTO-PRINT: ${settings.autoPrintNew ? 'ATIVADO' : 'DESATIVADO'}
           </div>
-          ${settings.customFooter ? `<p style="text-align: center; font-size: 0.9em; margin-top: 10px; border-top: 1px dotted #000; padding-top: 5px;">${settings.customFooter}</p>` : ''}
+          ${settings.customFooter ? `<p style="text-align: center; font-size: 0.9em; margin-top: 10px; border-top: 1px dotted #000; padding-top: 5px;">${escapeHtml(settings.customFooter)}</p>` : ''}
           <div class="watermark">MEU OVO IMPRESSÃO TÉRMICA</div>
         </body>
       </html>

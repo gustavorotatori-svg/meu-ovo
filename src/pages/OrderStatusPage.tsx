@@ -14,6 +14,8 @@ import { generatePixPayload } from '../lib/pix';
 import { WA_NUMBER } from '../services/whatsappService';
 import { toast } from 'react-hot-toast';
 import SEO from '../components/SEO';
+import { OrderSkeleton } from '../components/Skeleton';
+import { QRCodeSVG } from 'qrcode.react';
 
 const MEU_OVO_PIX_KEY = import.meta.env.VITE_PLATFORM_PIX_KEY || 'meuovo@example.com';
 
@@ -216,16 +218,12 @@ export default function OrderStatusPage() {
   }, [restaurant, order]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <ChefHat size={48} className="text-[#FFC928] animate-bounce" />
-      </div>
-    );
+    return <OrderSkeleton />;
   }
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center order-status-page">
         <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-4">Pedido não encontrado</h2>
         <button 
           onClick={() => navigate('/')}
@@ -239,7 +237,7 @@ export default function OrderStatusPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-12">
+    <div className="min-h-screen bg-slate-50 pb-12 order-status-page">
       {/* Header */}
       <div className="bg-[#111111] text-white p-8 rounded-b-[3rem] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] rounded-full blur-[100px] opacity-20 -mr-32 -mt-32" />
@@ -344,14 +342,15 @@ export default function OrderStatusPage() {
               <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Pague via PIX</h3>
                 <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative mx-auto mb-4">
-                  <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
-                    {Array.from({ length: 36 }).map((_, i) => (
-                      <div key={i} className={Math.random() > 0.5 ? 'bg-slate-800' : 'bg-transparent'} />
-                    ))}
-                  </div>
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg">
-                    <Smartphone size={20} className="text-[#FFC928]" />
-                  </div>
+                  {dynamicPixCode ? (
+                    <QRCodeSVG value={dynamicPixCode} size={170} />
+                  ) : (
+                    <div className="grid grid-cols-6 grid-rows-6 gap-1 w-full h-full opacity-80">
+                      {Array.from({ length: 36 }).map((_, i) => (
+                        <div key={i} className={Math.random() > 0.5 ? 'bg-slate-800' : 'bg-transparent'} />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {dynamicPixCode && (
@@ -468,27 +467,30 @@ export default function OrderStatusPage() {
                   ))}
                 </div>
 
-                <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                    Pague via PIX para o MEU OVO
-                  </h3>
-                  <p className="text-xs font-bold text-amber-600 mb-4">
-                    Chave PIX: <strong className="text-amber-800">{MEU_OVO_PIX_KEY}</strong>
-                  </p>
-                  <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative">
-                    <div className="truncate pr-8">00020126360014br.gov.bcb.pix0114{MEU_OVO_PIX_KEY}52040000530398654{caixinhaAmount.toFixed(2).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9</div>
+                  <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+                      Pague via PIX para o MEU OVO
+                    </h3>
+                    <p className="text-xs font-bold text-amber-600 mb-4">
+                      Chave PIX: <strong className="text-amber-800">{MEU_OVO_PIX_KEY}</strong>
+                    </p>
+                    <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-4">
+                      {(() => {
+                        const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: caixinhaAmount, txid: 'CAIXINHA' + order.id.slice(-20) });
+                        return <QRCodeSVG value={pixCode} size={130} />;
+                      })()}
+                    </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`00020126360014br.gov.bcb.pix0114${MEU_OVO_PIX_KEY}52040000530398654${String(caixinhaAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9`).catch(() => {});
+                        const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: caixinhaAmount, txid: 'CAIXINHA' + order.id.slice(-20) });
+                        navigator.clipboard.writeText(pixCode).catch(() => {});
                         toast.success('Código PIX da caixinha copiado!');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-amber-500 text-white rounded-lg shadow-sm"
-                      aria-label="Visualizar ingresso"
+                      className="text-[10px] font-black text-amber-600 uppercase tracking-widest hover:text-amber-800 transition-colors"
                     >
-                      <Ticket size={14} />
+                      Copiar código PIX
                     </button>
                   </div>
-                </div>
 
                 <div className="space-y-3">
                   <button
@@ -552,27 +554,30 @@ export default function OrderStatusPage() {
                   ))}
                 </div>
 
-                <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
-                  <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                    Doe via PIX para o MEU OVO
-                  </h3>
-                  <p className="text-xs font-bold text-rose-600 mb-4">
-                    Chave PIX: <strong className="text-rose-800">{MEU_OVO_PIX_KEY}</strong>
-                  </p>
-                  <div className="p-4 bg-white border border-slate-100 rounded-xl font-mono text-[10px] break-all text-slate-500 relative">
-                    <div className="truncate pr-8">00020126360014br.gov.bcb.pix0114{MEU_OVO_PIX_KEY}52040000530398654{String(socialAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9</div>
+                  <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+                      Doe via PIX para o MEU OVO
+                    </h3>
+                    <p className="text-xs font-bold text-rose-600 mb-4">
+                      Chave PIX: <strong className="text-rose-800">{MEU_OVO_PIX_KEY}</strong>
+                    </p>
+                    <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-4">
+                      {(() => {
+                        const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: socialAmount, txid: 'DOACAO' + order.id.slice(-20) });
+                        return <QRCodeSVG value={pixCode} size={130} />;
+                      })()}
+                    </div>
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`00020126360014br.gov.bcb.pix0114${MEU_OVO_PIX_KEY}52040000530398654${String(socialAmount.toFixed(2)).replace('.', '')}5802BR5925MEU%20OVO6009SAO%20PAULO62070503***6304E3F9`).catch(() => {});
+                        const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: socialAmount, txid: 'DOACAO' + order.id.slice(-20) });
+                        navigator.clipboard.writeText(pixCode).catch(() => {});
                         toast.success('Código PIX de doação copiado!');
                       }}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-rose-500 text-white rounded-lg shadow-sm"
-                      aria-label="Visualizar ingresso"
+                      className="text-[10px] font-black text-rose-600 uppercase tracking-widest hover:text-rose-800 transition-colors"
                     >
-                      <Ticket size={14} />
+                      Copiar código PIX
                     </button>
                   </div>
-                </div>
 
                 <div className="space-y-3">
                   <button

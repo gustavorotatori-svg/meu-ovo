@@ -14,18 +14,18 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
     const styleVariants = {
       primary:
-        'bg-brand-egg text-brand-black hover:bg-yellow-400 focus:ring-brand-egg shadow-[0_2px_0_0_#D97706]',
-      secondary: 'bg-brand-black text-white hover:bg-zinc-800 focus:ring-brand-black shadow-sm',
-      outline: 'border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-sm',
-      ghost: 'bg-transparent hover:bg-slate-100 text-slate-600',
-      danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500 shadow-sm',
+        'bg-[#FFC928] text-[#111] hover:bg-yellow-400 font-black shadow-sm',
+      secondary: 'bg-[#111] text-white hover:bg-zinc-800 font-bold shadow-sm',
+      outline: 'border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold',
+      ghost: 'bg-transparent hover:bg-white/10 text-white font-bold',
+      danger: 'bg-red-500 text-white hover:bg-red-600 font-bold shadow-sm',
     };
 
     const sizes = {
-      sm: 'px-2.5 py-2.5 text-xs font-semibold tracking-wide uppercase',
-      md: 'px-3.5 py-2 text-sm',
-      lg: 'px-5 py-2.5 text-base',
-      icon: 'p-2',
+      sm: 'px-4 py-2.5 text-[10px] uppercase tracking-widest',
+      md: 'px-6 py-3 text-xs uppercase tracking-widest',
+      lg: 'px-8 py-4 text-sm uppercase tracking-widest',
+      icon: 'p-3',
     };
 
     return (
@@ -35,8 +35,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         whileTap={{ scale: 0.97, transition: springSnap }}
         disabled={disabled || isLoading}
         className={cn(
-          'inline-flex items-center justify-center rounded-md font-medium transition-colors duration-[var(--duration-fast)] focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed',
-          variant === 'primary' && 'hover:shadow-[var(--glow-golden-soft)]',
+          'inline-flex items-center justify-center rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#FFC928]/50 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed',
           isLoading && "animate-pulse",
           styleVariants[variant],
           sizes[size],
@@ -44,7 +43,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {...props}
       >
-        {isLoading ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : null}
+        {isLoading ? <Loader2 className="mr-2 h-3 w-3 animate-spin shrink-0" /> : null}
         {children}
       </motion.button>
     );

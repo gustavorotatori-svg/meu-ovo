@@ -18,7 +18,7 @@ import {
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../components/Button';
-import BackButton from '../../components/BackButton';
+
 import { Category, Product, AllergenKey, LabelInfo, StorageType } from '../../types';
 import { ALLERGENS, STORAGE_OPTIONS } from '../../data/allergens';
 import { toast } from 'react-hot-toast';
@@ -595,9 +595,6 @@ export default function MenuManagement() {
   }, []);
 
   return (    <div className="space-y-6">
-      <div className="px-6 pt-6">
-        <BackButton to="/" />
-      </div>
       <div className="flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">

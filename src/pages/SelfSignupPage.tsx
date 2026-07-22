@@ -6,6 +6,8 @@ import { auth } from '../lib/firebase-auth';
 import { db } from '../lib/firebase';
 import { toast } from 'react-hot-toast';
 import { ArrowRight, Check, Loader2 } from 'lucide-react';
+import { Button } from '../components/Button';
+import BackButton from '../components/BackButton';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -108,6 +110,10 @@ export default function SelfSignupPage() {
       <SEO title="Criar Conta Grátis - Meu OVO" description="Crie seu restaurante no Meu OVO grátis. Cardápio digital, pedidos no WhatsApp, zero taxas." />
       <Navbar />
 
+      <div className="px-6 pt-6">
+        <BackButton />
+      </div>
+
       <div className="flex items-center justify-center px-4 py-24">
         <div className="w-full max-w-md">
           {step === 0 && (
@@ -168,13 +174,15 @@ export default function SelfSignupPage() {
                   <Link to="/privacidade" className="text-[#FFC928] hover:underline">Política de Privacidade</Link>.
                 </p>
 
-                <button
+                <Button
                   onClick={handleSubmit}
+                  size="lg"
                   disabled={!canSubmit || loading}
-                  className="w-full bg-[#FFC928] text-black font-black py-4 rounded-2xl text-sm uppercase tracking-widest hover:bg-[#ffe083] transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  isLoading={loading}
+                  className="w-full"
                 >
-                  {loading ? <Loader2 size={16} className="animate-spin" /> : <><Check size={16} /> Criar conta grátis</>}
-                </button>
+                  <Check size={16} /> Criar conta grátis
+                </Button>
 
                 <p className="text-center text-[10px] text-gray-500 font-bold">
                   Já tem conta?{' '}
