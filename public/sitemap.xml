@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://meu-ovo-pi.vercel.app/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/busca</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/cadastro</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/para-restaurantes</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/sobre</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/impacto-social</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/ovos-de-ouro</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/blog</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/termos</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/privacidade</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://meu-ovo-pi.vercel.app/login</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+</urlset>

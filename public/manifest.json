@@ -1,0 +1,27 @@
+{
+  "name": "Meu Ovo",
+  "short_name": "Meu Ovo",
+  "description": "Cardápio digital gratuito para restaurantes. Receba pedidos direto no WhatsApp, sem comissão.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#FFC928",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["food", "business"],
+  "lang": "pt-BR",
+  "dir": "ltr"
+}
