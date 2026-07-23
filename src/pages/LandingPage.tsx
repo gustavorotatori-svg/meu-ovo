@@ -694,22 +694,19 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Trust Badges ─── */}
-      <section className={`py-16 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
+      <section className={`py-16 border-y transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-gray-200'}`}>
         <div className="max-w-5xl mx-auto px-4">
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
             {[
-              { icon: Shield, label: 'Dados protegidos com criptografia' },
-              { icon: Banknote, label: 'Sem cartão de crédito necessário' },
-              { icon: CheckCircle, label: 'Cancelamento a qualquer momento' },
-              { icon: Smartphone, label: 'Suporte via WhatsApp' },
-            ].map((badge, i) => (
+              'Dados protegidos com criptografia',
+              'Sem cartão de crédito necessário',
+              'Cancelamento a qualquer momento',
+              'Suporte via WhatsApp',
+            ].map((label, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 60}>
-                <div className="flex items-center gap-2">
-                  <badge.icon size={16} className="text-[#FFC928] shrink-0" />
-                  <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {badge.label}
-                  </span>
-                </div>
+                <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {label}
+                </span>
               </ScrollReveal>
             ))}
           </div>
