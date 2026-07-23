@@ -169,6 +169,7 @@ export interface Product {
   notes?: string;
   stock?: number;
   minStockAlert?: number;
+  orderCount?: number;
 }
 
 export interface LabelRecord {

@@ -306,6 +306,7 @@ export default function MenuManagement() {
           optionGroups: newProd.optionGroups,
           stock: stockNum,
           minStockAlert: minStockNum,
+          orderCount: 0,
         });
         productId = docRef.id;
       }

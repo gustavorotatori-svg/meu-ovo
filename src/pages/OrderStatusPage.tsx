@@ -614,61 +614,82 @@ export default function OrderStatusPage() {
           </motion.div>
         )}
 
-        {/* Status Stepper */}
-        <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
-          <div className="space-y-8">
-            {steps.filter(s => order.type === 'dine-in' ? s.status !== 'out-for-delivery' : true).map((step, idx) => {
-              const actualIdx = steps.findIndex(s => s.status === step.status);
-              const isCompleted = actualIdx <= currentStep;
-              const isCurrent = actualIdx === currentStep;
-              const maxVisibleIdx = order.type === 'dine-in' ? steps.filter(s => s.status !== 'out-for-delivery').length - 1 : steps.length - 1;
+        {/* Horizontal Progress Bar */}
+        {order.status !== 'cancelled' && (
+          <div className="bg-white rounded-3xl p-6 shadow-xl border border-slate-100">
+            {(() => {
+              const visibleSteps = steps.filter(s => order.type === 'dine-in' ? s.status !== 'out-for-delivery' : true);
+              const maxIdx = visibleSteps.length - 1;
+              const pct = maxIdx > 0 ? Math.round((currentStep / maxIdx) * 100) : 0;
 
               return (
-                <div key={step.status} className="flex gap-4 relative">
-                  {actualIdx < (order.type === 'dine-in' ? 4 : 5) && step.status !== 'finished' && (
-                    <div className={cn(
-                      "absolute left-4 top-10 w-0.5 h-6 -ml-[1px]",
-                      idx < currentStep ? "bg-green-500" : "bg-slate-100"
-                    )} />
-                  )}
-                  
-                  <div className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 z-10",
-                    isCompleted ? "bg-green-500 text-white" : "bg-slate-100 text-slate-300",
-                    isCurrent && "ring-4 ring-green-500/20 scale-110"
-                  )}>
-                    {isCompleted ? <CheckCircle2 size={18} /> : step.icon}
+                <>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progresso do Pedido</span>
+                    <span className="text-xs font-black text-green-600">{pct}%</span>
                   </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full"
+                    />
+                  </div>
+                  <div className="flex justify-between relative">
+                    {visibleSteps.map((step, idx) => {
+                      const actualIdx = steps.findIndex(s => s.status === step.status);
+                      const isCompleted = actualIdx <= currentStep;
+                      const isCurrent = actualIdx === currentStep;
 
-                   <div>
-                    <h3 className={cn(
-                      "font-black text-sm uppercase tracking-widest flex items-center gap-2",
-                      isCompleted ? "text-green-600" : "text-slate-400"
-                    )}>
-                      {step.label}
-                      {step.time && isCompleted && (
-                        <span className="text-[10px] font-mono text-slate-400 font-normal normal-case tracking-normal">
-                          {format(new Date(step.time), "HH:mm", { locale: ptBR })}
-                        </span>
-                      )}
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">{step.description}</p>
-                    {isCurrent && (
-                      <motion.div 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="mt-2 inline-flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100"
-                      >
-                         <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                         <span className="text-[10px] font-black uppercase text-green-700 tracking-widest">Atualizado agora</span>
-                      </motion.div>
-                    )}
+                      return (
+                        <div key={step.status} className="flex flex-col items-center flex-1 relative">
+                          <motion.div
+                            animate={isCurrent ? { scale: [1, 1.2, 1] } : {}}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                            className={cn(
+                              "w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 z-10 border-2",
+                              isCompleted
+                                ? "bg-green-500 text-white border-green-500"
+                                : isCurrent
+                                  ? "bg-white text-green-500 border-green-400 shadow-lg shadow-green-500/20"
+                                  : "bg-white text-slate-300 border-slate-200"
+                            )}
+                          >
+                            {isCompleted ? <CheckCircle2 size={16} /> : step.icon}
+                          </motion.div>
+                          <span className={cn(
+                            "mt-2 text-[8px] font-black uppercase tracking-widest text-center leading-tight",
+                            isCompleted ? "text-green-600" : isCurrent ? "text-green-500" : "text-slate-300"
+                          )}>
+                            {step.label}
+                          </span>
+                          {step.time && isCompleted && (
+                            <span className="text-[8px] font-mono text-slate-400 mt-0.5">
+                              {format(new Date(step.time), "HH:mm", { locale: ptBR })}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                </div>
+                  {order.status !== 'finished' && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-5 flex items-center gap-2 bg-green-50 px-4 py-2.5 rounded-2xl border border-green-100"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-[10px] font-black uppercase text-green-700 tracking-widest">
+                        {steps[currentStep]?.description || 'Acompanhamento em tempo real'}
+                      </span>
+                    </motion.div>
+                  )}
+                </>
               );
-            })}
+            })()}
           </div>
-        </div>
+        )}
 
         {/* Order Details Card */}
         <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">

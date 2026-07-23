@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, SlidersHorizontal, Star, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2 } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Star, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2, RotateCcw } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import OptimizedImage from '../components/OptimizedImage';
@@ -13,7 +13,7 @@ import SectionHeader from '../components/SectionHeader';
 import SEO from '../components/SEO';
 import { RestaurantCardSkeleton } from '../components/Skeleton';
 import { cuisineTypes, cuisineEmojis } from '../data/mockData';
-import { Restaurant } from '../types';
+import { Restaurant, Order } from '../types';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -62,11 +62,35 @@ export default function MarketplacePage() {
 
   const [selectedCuisine, setSelectedCuisine] = useState<string | null>(searchParams.get('cuisine'));
   const [filterPriceRange, setFilterPriceRange] = useState<string | null>(null);
+  const [lastOrder, setLastOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 800);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch last order for reorder card
+  useEffect(() => {
+    if (!user?.id) return;
+    const fetchLastOrder = async () => {
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('userId', '==', user.id),
+          firestoreOrderBy('createdAt', 'desc'),
+          limit(1)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const doc = snap.docs[0];
+          setLastOrder({ id: doc.id, ...doc.data() } as Order);
+        }
+      } catch (err) {
+        console.error('[Marketplace] Failed to fetch last order:', err);
+      }
+    };
+    fetchLastOrder();
+  }, [user?.id]);
 
   // Fetch from Firestore with pagination
   const fetchPage = useCallback(async (lastDocSnapshot?: QueryDocumentSnapshot | null, append = false) => {
@@ -656,6 +680,58 @@ export default function MarketplacePage() {
               </span>
             </div>
           </Link>
+        )}
+
+        {/* Quick Reorder Card */}
+        {lastOrder && lastOrder.status === 'finished' && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <SectionHeader
+              subtitle="Pedir de novo 🔄"
+              title="Seu último pedido"
+              description={`${lastOrder.items.length} ${lastOrder.items.length === 1 ? 'item' : 'itens'} • R$ ${lastOrder.total.toFixed(2)}`}
+              align="left"
+              subtitleClass="text-emerald-600"
+              className="mb-4"
+            />
+            <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden">
+              <div className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-sm text-[#111] uppercase tracking-tight truncate">
+                      {contextRestaurants.find(r => r.id === lastOrder.restaurantId)?.name || 'Restaurante'}
+                    </p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
+                      {new Date(lastOrder.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} • {lastOrder.items.length} {lastOrder.items.length === 1 ? 'item' : 'itens'}
+                    </p>
+                  </div>
+                  <span className="text-xs font-black text-emerald-600">R$ {lastOrder.total.toFixed(2)}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mb-4">
+                  {lastOrder.items.slice(0, 4).map((item, i) => (
+                    <span key={i} className="text-[10px] font-bold text-gray-600 bg-gray-50 px-2.5 py-1 rounded-lg">
+                      {item.quantity}x {item.productName}
+                    </span>
+                  ))}
+                  {lastOrder.items.length > 4 && (
+                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
+                      +{lastOrder.items.length - 4} mais
+                    </span>
+                  )}
+                </div>
+                <Link
+                  to={`/r/${contextRestaurants.find(r => r.id === lastOrder.restaurantId)?.slug || ''}`}
+                  className="w-full bg-emerald-50 text-emerald-700 font-black py-3 rounded-2xl hover:bg-emerald-100 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-emerald-200"
+                >
+                  <RotateCcw size={14} />
+                  Pedir de novo
+                </Link>
+              </div>
+            </div>
+          </motion.div>
         )}
 
         {/* Personalized shelf */}

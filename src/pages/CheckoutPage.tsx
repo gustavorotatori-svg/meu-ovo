@@ -395,6 +395,22 @@ export default function CheckoutPage() {
     }
     setOrderId(id);
 
+    // Increment orderCount for each product (for "Mais pedido" badge)
+    try {
+      const { writeBatch } = await import('firebase/firestore');
+      const batch = writeBatch(db);
+      const productCounts = new Map<string, number>();
+      orderItems.forEach(item => {
+        productCounts.set(item.productId, (productCounts.get(item.productId) || 0) + item.quantity);
+      });
+      productCounts.forEach((qty, productId) => {
+        batch.update(doc(db, 'products', productId), { orderCount: increment(qty) });
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error('[Checkout] Failed to increment orderCount:', err);
+    }
+
     // Update loyalty profile if reward was used
     if (selectedReward && loyaltyProfile) {
       try {

@@ -1176,10 +1176,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, fl
                 OFERTA RELÂMPAGO
               </span>
             )}
-            {product.bestSeller && !flashDeal && (
+            {((product.bestSeller) || ((product.orderCount ?? 0) >= 10)) && !flashDeal && (
               <span className="bg-[#FFC928] text-black text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
                 <Star size={8} className="fill-[#111] text-[#111]" />
-                MAIS PEDIDO
+                {(product.orderCount ?? 0) >= 20 ? 'TOP VENDAS' : 'MAIS PEDIDO'}
               </span>
             )}
             {product.onPromotion && !flashDeal && (
