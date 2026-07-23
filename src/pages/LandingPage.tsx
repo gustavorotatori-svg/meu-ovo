@@ -27,8 +27,8 @@ const faqData = [
     a: 'Não. O cadastro leva menos de 10 minutos. Você adiciona seus produtos, fotos e preços pelo painel administrativo, que é simples e intuitivo. Se precisar de ajuda, nossa equipe acompanha por WhatsApp.'
   },
   {
-    q: 'E se eu já uso iFood ou Rappi?',
-    a: 'Pode usar os dois ao mesmo tempo. O Meu Ovo não substitui — complementa. Enquanto as plataformas cobram 27-35% de comissão, seus pedidos diretos pelo Meu Ovo saem com taxa zero. É dinheiro que fica no seu bolso.'
+    q: 'E se eu já uso aplicativos de delivery?',
+    a: 'Pode usar ao mesmo tempo. O Meu Ovo não substitui — complementa. Enquanto os grandes aplicativos cobram 27-35% de comissão, seus pedidos diretos pelo Meu Ovo saem com taxa zero. É dinheiro que fica no seu bolso.'
   },
   {
     q: 'Meus clientes precisam baixar algum app?',
@@ -332,7 +332,7 @@ export default function LandingPage() {
                 <div className={`mt-4 pt-4 border-t flex items-center gap-6 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
                   <span className="text-xs font-bold text-[#FFC928]">R$ 0 por pedido</span>
                   <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>vs</span>
-                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>27–35% iFood/Rappi</span>
+                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>27–35% grandes apps</span>
                 </div>
               </div>
             </ScrollReveal>
@@ -416,7 +416,7 @@ export default function LandingPage() {
                   <div className={`text-[10px] font-bold uppercase ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Cardápio Digital Próprio</div>
                 </div>
                 <div className={`p-6 md:p-8 text-center transition-colors ${isDark ? 'bg-white/5' : 'bg-gray-100'}`}>
-                  <div className={`text-xs font-black uppercase tracking-widest mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>iFood / Rappi</div>
+                  <div className={`text-xs font-black uppercase tracking-widest mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Grandes Apps</div>
                   <div className={`text-[10px] font-bold uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Marketplace</div>
                 </div>
               </div>
