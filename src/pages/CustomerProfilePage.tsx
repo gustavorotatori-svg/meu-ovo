@@ -142,10 +142,28 @@ export default function CustomerProfilePage() {
     }
   };
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleAuthSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!authEmail || !authPassword || (!isLogin && !authName)) {
-      toast.error('Por favor, preencha todos os campos obrigatórios.');
+    if (!authEmail.trim()) {
+      toast.error('Digite seu e-mail.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(authEmail.trim())) {
+      toast.error('E-mail inválido. Use o formato: nome@provedor.com');
+      return;
+    }
+    if (!authPassword) {
+      toast.error('Digite sua senha.');
+      return;
+    }
+    if (authPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (!isLogin && !authName.trim()) {
+      toast.error('Digite seu nome.');
       return;
     }
     if (!isLogin && !lgpdConsent) {
@@ -156,10 +174,10 @@ export default function CustomerProfilePage() {
     setAuthLoading(true);
     try {
       if (isLogin) {
-        await signIn(authEmail, authPassword);
+        await signIn(authEmail.trim(), authPassword);
         toast.success('Bem-vindo de volta!');
       } else {
-        await signUp(authEmail, authPassword, authName, 'customer');
+        await signUp(authEmail.trim(), authPassword, authName.trim(), 'customer');
         toast.success('Conta de cliente criada com sucesso!');
       }
     } catch (error) {
@@ -203,13 +221,15 @@ export default function CustomerProfilePage() {
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome Completo</label>
+                  <label htmlFor="profile-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Nome Completo</label>
                   <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
                     <input
+                      id="profile-name"
                       type="text"
                       autoFocus
                       required
+                      autoComplete="name"
                       value={authName}
                       onChange={(e) => setAuthName(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"
@@ -220,13 +240,15 @@ export default function CustomerProfilePage() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">E-mail</label>
+                <label htmlFor="profile-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">E-mail</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
                   <input
+                    id="profile-email"
                     type="email"
                     required
                     autoFocus={isLogin}
+                    autoComplete="email"
                     value={authEmail}
                     onChange={(e) => setAuthEmail(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"
@@ -236,13 +258,15 @@ export default function CustomerProfilePage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</label>
+                <label htmlFor="profile-password" className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Senha</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" aria-hidden="true" />
                   <input
+                    id="profile-password"
                     type="password"
                     required
                     minLength={6}
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
                     value={authPassword}
                     onChange={(e) => setAuthPassword(e.target.value)}
                     className="w-full pl-11 pr-4 py-3 bg-slate-50/50 border border-gray-100 rounded-xl text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all placeholder:text-gray-400"

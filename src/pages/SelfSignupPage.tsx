@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -18,6 +18,12 @@ export default function SelfSignupPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ name: '', whatsapp: '', email: '', password: '' });
   const [created, setCreated] = useState(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
 
   const update = (field: string, value: string) => setForm(f => ({ ...f, [field]: value }));
 
@@ -38,11 +44,9 @@ export default function SelfSignupPage() {
   const canSubmit = valid.name && valid.whatsapp && valid.email && valid.password;
 
   const handleSubmit = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || loading) return;
     setLoading(true);
     try {
-      const raw = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      const slug = raw.replace(/\s+/g, '-').replace(/[^\w-]+/g, '') || `rest-${Date.now()}`;
       const whatsappClean = form.whatsapp.replace(/\D/g, '');
 
       const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
@@ -50,49 +54,26 @@ export default function SelfSignupPage() {
 
       await setDoc(doc(db, 'users', cred.user.uid), {
         full_name: form.name,
-        role: 'restaurant',
+        role: 'customer',
         createdAt: new Date().toISOString(),
-        onboardingComplete: true,
+        onboardingComplete: false,
         customerRating: 5,
         customerRatingCount: 0,
       });
 
-      await setDoc(doc(db, 'restaurants', slug), {
-        id: slug,
-        name: form.name,
-        slug,
-        ownerId: cred.user.uid,
-        whatsapp: whatsappClean,
-        email: form.email,
-        logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&h=400&fit=crop',
-        coverImage: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&h=400&fit=crop',
-        cuisineType: 'Brasileira',
-        priceRange: 'medium',
-        isOpen: true,
-        deliveryEnabled: true,
-        pickupEnabled: true,
-        dineInEnabled: false,
-        estimatedTime: 30,
-        deliveryFee: 0,
-        minimumOrder: 10,
-        rating: 5.0,
-        reviewCount: 0,
-        address: '',
-        neighborhood: '',
-        city: '',
-        description: '',
-        createdAt: new Date().toISOString(),
-        deliverySettings: { fee: 0, estimatedTime: '30 min', minOrder: 10, feeByNeighborhood: [] },
-        orderSettings: { autoAccept: true, soundAlert: true, thermalPrinterEnabled: false, whatsappNotificationsEnabled: true },
-        loyaltySettings: { enabled: false, pointsPerReal: 1, accumulationType: 'amount', redemptionRules: [] },
-      });
+      if (!mountedRef.current) return;
 
       setCreated(true);
       setStep(2);
-      toast.success('Restaurante criado com sucesso!');
+      toast.success('Conta criada com sucesso!');
 
-      setTimeout(() => navigate('/admin'), 1500);
+      setTimeout(() => {
+        if (mountedRef.current) {
+          navigate(`/cadastro-restaurante?whatsapp=${encodeURIComponent(whatsappClean)}&name=${encodeURIComponent(form.name)}&email=${encodeURIComponent(form.email)}`);
+        }
+      }, 1500);
     } catch (err: any) {
+      if (!mountedRef.current) return;
       if (err.code === 'auth/email-already-in-use') {
         toast.error('Este email já está cadastrado. Faça login.');
       } else if (err.code === 'auth/weak-password') {
@@ -101,7 +82,7 @@ export default function SelfSignupPage() {
         toast.error(err?.message || 'Erro ao criar conta');
       }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -127,45 +108,75 @@ export default function SelfSignupPage() {
                 </p>
               </div>
 
-              <div className="bg-[#111] border border-white/5 rounded-3xl p-6 space-y-5">
+              <form onSubmit={e => { e.preventDefault(); handleSubmit(); }} className="bg-[#111] border border-white/5 rounded-3xl p-6 space-y-5">
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nome do restaurante</label>
+                  <label htmlFor="signup-name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nome do restaurante</label>
                   <input
+                    id="signup-name"
                     autoFocus
+                    autoComplete="organization"
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
                     placeholder="Ex: Restaurante Sabor"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
+                    aria-required="true"
+                    aria-invalid={form.name.length > 0 && !valid.name}
                   />
+                  {form.name.length > 0 && !valid.name && (
+                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Nome deve ter pelo menos 2 caracteres</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp</label>
+                  <label htmlFor="signup-whatsapp" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp</label>
                   <input
+                    id="signup-whatsapp"
+                    inputMode="tel"
+                    autoComplete="tel"
                     value={form.whatsapp}
                     onChange={e => update('whatsapp', maskPhone(e.target.value))}
                     placeholder="(11) 99999-9999"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
+                    aria-required="true"
+                    aria-invalid={form.whatsapp.length > 0 && !valid.whatsapp}
                   />
+                  {form.whatsapp.length > 0 && !valid.whatsapp && (
+                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Informe um número de WhatsApp válido (mínimo 10 dígitos)</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email</label>
+                  <label htmlFor="signup-email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email</label>
                   <input
+                    id="signup-email"
                     type="email"
+                    autoComplete="email"
                     value={form.email}
                     onChange={e => update('email', e.target.value)}
                     placeholder="seu@email.com"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
+                    aria-required="true"
+                    aria-invalid={form.email.length > 0 && !valid.email}
                   />
+                  {form.email.length > 0 && !valid.email && (
+                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Informe um email válido</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Senha</label>
+                  <label htmlFor="signup-password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Senha</label>
                   <input
+                    id="signup-password"
                     type="password"
+                    autoComplete="new-password"
+                    minLength={6}
                     value={form.password}
                     onChange={e => update('password', e.target.value)}
                     placeholder="Mínimo 6 caracteres"
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
+                    aria-required="true"
+                    aria-invalid={form.password.length > 0 && !valid.password}
                   />
+                  {form.password.length > 0 && !valid.password && (
+                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Senha deve ter pelo menos 6 caracteres</p>
+                  )}
                 </div>
 
                 <p className="text-[9px] text-gray-500 font-medium text-center leading-relaxed">
@@ -175,7 +186,7 @@ export default function SelfSignupPage() {
                 </p>
 
                 <Button
-                  onClick={handleSubmit}
+                  type="submit"
                   size="lg"
                   disabled={!canSubmit || loading}
                   isLoading={loading}
@@ -188,7 +199,7 @@ export default function SelfSignupPage() {
                   Já tem conta?{' '}
                   <Link to="/login" className="text-[#FFC928] hover:underline">Entrar</Link>
                 </p>
-              </div>
+              </form>
 
               <div className="grid grid-cols-3 gap-3 text-center">
                 {['Zero taxa', 'Cardápio digital', 'Pedidos WhatsApp'].map((item, i) => (
@@ -202,20 +213,20 @@ export default function SelfSignupPage() {
           )}
 
           {step === 1 && (
-            <div className="text-center space-y-6 py-12">
-              <Loader2 size={40} className="animate-spin text-[#FFC928] mx-auto" />
+            <div className="text-center space-y-6 py-12" role="status" aria-live="polite">
+              <Loader2 size={40} className="animate-spin text-[#FFC928] mx-auto" aria-hidden="true" />
               <p className="text-white font-bold text-lg">Criando seu restaurante...</p>
               <p className="text-gray-400 text-sm">Só um instante</p>
             </div>
           )}
 
           {step === 2 && (
-            <div className="text-center space-y-6 py-12">
+            <div className="text-center space-y-6 py-12" role="alert" aria-live="assertive">
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
                 <Check size={32} className="text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-black text-white">Restaurante criado!</h2>
-              <p className="text-gray-400 text-sm">Redirecionando para o painel...</p>
+              <h2 className="text-2xl font-black text-white">Conta criada!</h2>
+              <p className="text-gray-400 text-sm">Redirecionando para configuração do restaurante...</p>
             </div>
           )}
         </div>

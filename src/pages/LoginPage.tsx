@@ -192,62 +192,77 @@ export default function LoginPage() {
 
           {!isLogin && (
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{isRestaurant ? 'Responsável' : 'Nome completo'}</label>
+              <label htmlFor="login-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">{isRestaurant ? 'Responsável' : 'Nome completo'}</label>
               <div className="relative">
-                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true" />
                 <input
+                  id="login-name"
                   type="text"
                   name="name"
                   autoFocus={!isLogin}
+                  autoComplete="name"
                   value={formData.name}
                   onChange={handleChange}
                   placeholder={isRestaurant ? 'Seu nome (responsável)' : 'Seu nome'}
+                  aria-required={!isLogin}
+                  aria-invalid={!!fieldErrors.name}
+                  aria-describedby={fieldErrors.name ? 'login-name-error' : undefined}
                   className={`w-full border bg-slate-50/50 rounded-xl pl-11 pr-4 py-3 text-sm font-bold focus:outline-none focus:bg-white transition-all ${fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-gray-100 focus:border-[#FFC928]'}`}
                 />
               </div>
-              {fieldErrors.name && <p className="text-red-500 text-[10px] font-bold ml-1">{fieldErrors.name}</p>}
+              {fieldErrors.name && <p id="login-name-error" className="text-red-500 text-[10px] font-bold ml-1" role="alert">{fieldErrors.name}</p>}
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">E-mail</label>
+            <label htmlFor="login-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">E-mail</label>
             <div className="relative">
-              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+              <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true" />
               <input
+                id="login-email"
                 type="email"
                 name="email"
                 autoFocus={isLogin}
+                autoComplete="email"
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="seu@email.com"
                 required
+                aria-required="true"
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
                 className={`w-full border bg-slate-50/50 rounded-xl pl-11 pr-4 py-3 text-sm font-bold focus:outline-none focus:bg-white transition-all ${fieldErrors.email ? 'border-red-300 focus:border-red-400' : 'border-gray-100 focus:border-[#FFC928]'}`}
               />
             </div>
-            {fieldErrors.email && <p className="text-red-500 text-[10px] font-bold ml-1">{fieldErrors.email}</p>}
+            {fieldErrors.email && <p id="login-email-error" className="text-red-500 text-[10px] font-bold ml-1" role="alert">{fieldErrors.email}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Senha</label>
+            <label htmlFor="login-password" className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Senha</label>
             <div className="relative">
-              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+              <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" aria-hidden="true" />
               <input
+                id="login-password"
                 type={showPassword ? 'text' : 'password'}
                 name="password"
+                autoComplete={isLogin ? 'current-password' : 'new-password'}
                 value={formData.password}
                 onChange={handleChange}
                 placeholder={isLogin ? 'Sua senha' : 'Mínimo 6 caracteres'}
                 required
                 minLength={6}
+                aria-required="true"
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
                 className={`w-full border bg-slate-50/50 rounded-xl pl-11 pr-11 py-3 text-sm font-bold focus:outline-none focus:bg-white transition-all ${fieldErrors.password ? 'border-red-300 focus:border-red-400' : 'border-gray-100 focus:border-[#FFC928]'}`}
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 text-gray-300 hover:text-gray-500">
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
-            {fieldErrors.password && <p className="text-red-500 text-[10px] font-bold ml-1">{fieldErrors.password}</p>}
+            {fieldErrors.password && <p id="login-password-error" className="text-red-500 text-[10px] font-bold ml-1" role="alert">{fieldErrors.password}</p>}
             {!isLogin && !fieldErrors.password && formData.password.length > 0 && (
-              <div className="flex gap-1 ml-1 mt-1">
+              <div className="flex gap-1 ml-1 mt-1" aria-live="polite">
                 <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${formData.password.length >= 6 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
                   {formData.password.length >= 6 ? '✓ 6+ caracteres' : 'Mín. 6 caracteres'}
                 </span>

@@ -100,9 +100,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const timeout = setTimeout(() => setLoading(false), 5000);
 
+    // Periodically refresh email verification status (every 30s while logged in)
+    const verificationInterval = setInterval(async () => {
+      if (auth.currentUser) {
+        try {
+          await auth.currentUser.reload();
+          setEmailVerified(auth.currentUser.emailVerified);
+        } catch { /* noop */ }
+      }
+    }, 30000);
+
     return () => {
       unsub();
       clearTimeout(timeout);
+      clearInterval(verificationInterval);
     };
   }, []);
 
@@ -241,9 +252,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         emailVerified: false,
         refreshUserProfile,
       }}>
-        <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="min-h-screen bg-white flex items-center justify-center" role="status" aria-live="polite">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-[#FFC928] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-10 h-10 border-4 border-[#FFC928] border-t-transparent rounded-full animate-spin mx-auto mb-4" aria-hidden="true" />
             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Carregando...</p>
           </div>
         </div>
