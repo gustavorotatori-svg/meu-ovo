@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Zap, Heart, Plus, Smartphone, TrendingUp, Star, QrCode, Trophy, Shield, ChevronLeft, ChevronRight, Quote, Egg, Sticker, ChevronDown, Banknote, Clock, Users, TrendingDown, X, Minus } from 'lucide-react';
+import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X } from 'lucide-react';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
@@ -138,17 +138,7 @@ export default function LandingPage() {
           ? 'bg-gradient-to-b from-[#0e0e11] to-black'
           : 'bg-gradient-to-b from-gray-50 to-white'
       }`}>
-        <div className="absolute inset-0 pointer-events-none overflow-hidden select-none">
-          <div className="absolute top-[10%] left-[5%] opacity-[0.04] animate-float" style={{ animationDuration: '7s' }}>
-            <Egg size={48} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
-          </div>
-          <div className="absolute top-[30%] right-[8%] opacity-[0.03] animate-float" style={{ animationDuration: '9s', animationDelay: '2s' }}>
-            <Egg size={36} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
-          </div>
-          <div className="absolute bottom-[15%] left-[12%] opacity-[0.03] animate-drift" style={{ animationDuration: '12s', animationDelay: '1s' }}>
-            <Egg size={32} className={isDark ? 'text-white' : 'text-[#FFC928]'} />
-          </div>
-        </div>
+
 
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <ScrollReveal direction="up" delay={0} className="text-left">
@@ -238,18 +228,7 @@ export default function LandingPage() {
                       Finalizar pedido
                     </button>
                   </div>
-                  <div className="absolute top-10 right-[-10px] bg-[#FFC928] text-black text-[10px] font-black px-4 py-1.5 rounded-full shadow-lg rotate-12">
-                    Zero comissão
-                  </div>
                 </div>
-              </div>
-              <div className="absolute -left-12 top-1/4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-2xl animate-float">
-                <CheckCircle className="text-[#FFC928] mb-2" size={24} />
-                <div className="text-white font-bold text-sm">Zero comissão</div>
-              </div>
-              <div className="absolute -right-8 bottom-1/4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 shadow-2xl animate-float" style={{ animationDelay: '3s' }}>
-                <QrCode className="text-[#FFC928] mb-2" size={24} />
-                <div className="text-white font-bold text-sm">QR Code</div>
               </div>
             </div>
           </ScrollReveal>
@@ -285,9 +264,6 @@ export default function LandingPage() {
                   <div className="w-full bg-[#FFC928] text-black font-black py-2.5 rounded-xl text-[9px] text-center">Finalizar pedido</div>
                 </div>
               </div>
-              <div className="absolute -top-2 -right-3 bg-[#FFC928] text-black text-[8px] font-black px-3 py-1 rounded-full shadow-lg rotate-12">
-                Zero comissão
-              </div>
             </div>
           </ScrollReveal>
         </div>
@@ -312,20 +288,19 @@ export default function LandingPage() {
       </div>
 
       {/* ─── Stats Bar ─── */}
-      <section className={`py-16 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F5F5F5]'}`}>
+      <section className={`py-16 border-y transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
             {[
-              { value: `+${Math.max(liveRestaurantCount, 500)}`, label: 'Restaurantes ativos', icon: Users },
-              { value: '0%', label: 'Comissão por pedido', icon: Banknote },
-              { value: '<10min', label: 'Tempo de cadastro', icon: Clock },
-              { value: '24h', label: 'Suporte via WhatsApp', icon: Smartphone },
+              { value: `+${Math.max(liveRestaurantCount, 500)}`, label: 'restaurantes ativos' },
+              { value: '0%', label: 'comissão por pedido' },
+              { value: '<10', label: 'minutos para cadastrar' },
+              { value: '24h', label: 'suporte via WhatsApp' },
             ].map((stat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 80}>
-                <div className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-colors ${isDark ? 'bg-white/5' : 'bg-white'}`}>
-                  <stat.icon size={20} className="text-[#FFC928]" />
-                  <div className={`text-2xl md:text-3xl font-display font-black ${isDark ? 'text-white' : 'text-[#111]'}`}>{stat.value}</div>
-                  <div className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{stat.label}</div>
+                <div className={`text-center py-6 ${i < 3 ? `border-r ${isDark ? 'border-white/5' : 'border-gray-200'}` : ''}`}>
+                  <div className={`text-4xl md:text-5xl font-display font-black leading-none mb-2 ${isDark ? 'text-white' : 'text-[#111]'}`}>{stat.value}</div>
+                  <div className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{stat.label}</div>
                 </div>
               </ScrollReveal>
             ))}
@@ -346,44 +321,68 @@ export default function LandingPage() {
             />
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
-            {[
-              { icon: CheckCircle, color: 'text-[#FFC928]', title: '100% Gratuito', desc: 'Sem mensalidade, sem taxa de setup e sem comissão por pedido. Para sempre.' },
-              { icon: Zap, color: 'text-[#FF7A00]', title: 'Link próprio', desc: 'Compartilhe seu cardápio pelo WhatsApp e Instagram em segundos.' },
-              { icon: QrCode, color: 'text-[#FFC928]', title: t('landing.qrCodeTitle'), desc: t('landing.qrCodeDesc') },
-              { icon: Sticker, color: 'text-[#FFC928]', title: 'Etiquetas Inteligentes', desc: 'Validade, alérgenos e lote — etiquetas automáticas para seus produtos.' },
-            ].map((feat, i) => (
-              <ScrollReveal key={i} direction="up" delay={i * 80}>
-                <div className={`group p-8 rounded-[2.5rem] text-left transition-all hover:shadow-2xl cursor-default h-full ${isDark ? 'bg-[#111] border border-white/5 hover:border-white/10' : 'bg-white border border-gray-100 hover:shadow-gray-200/50'}`}>
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 transition-transform group-hover:scale-110 ${isDark ? 'bg-white/5' : 'bg-gray-50'}`}>
-                    <feat.icon className={feat.color} size={24} />
-                  </div>
-                  <h3 className={`text-xl font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
-                  <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {feat.desc}
-                  </p>
+          <div className="mt-16 space-y-6">
+            <ScrollReveal direction="up" delay={0}>
+              <div className={`p-8 lg:p-10 rounded-[2rem] text-left transition-all cursor-default ${isDark ? 'bg-[#111] border border-white/5' : 'bg-white border border-gray-100 shadow-sm'}`}>
+                <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>01 / Comissão</div>
+                <h3 className={`text-2xl md:text-3xl font-display font-black mb-3 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>100% Gratuito</h3>
+                <p className={`text-sm font-medium leading-relaxed max-w-2xl ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Sem mensalidade, sem taxa de setup e sem comissão por pedido. Para sempre. O dinheiro fica no seu bolso.
+                </p>
+                <div className={`mt-4 pt-4 border-t flex items-center gap-6 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
+                  <span className="text-xs font-bold text-[#FFC928]">R$ 0 por pedido</span>
+                  <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>vs</span>
+                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>27–35% iFood/Rappi</span>
                 </div>
-              </ScrollReveal>
-            ))}
+              </div>
+            </ScrollReveal>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { num: '02', title: 'Link próprio', desc: 'Compartilhe seu cardápio pelo WhatsApp e Instagram em segundos.' },
+                { num: '03', title: t('landing.qrCodeTitle'), desc: t('landing.qrCodeDesc') },
+              ].map((feat, i) => (
+                <ScrollReveal key={i} direction="up" delay={(i + 1) * 80}>
+                  <div className={`p-8 rounded-[2rem] text-left transition-all cursor-default h-full ${isDark ? 'bg-[#111] border border-white/5' : 'bg-white border border-gray-100 shadow-sm'}`}>
+                    <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{feat.num}</div>
+                    <h3 className={`text-xl font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
+                    <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{feat.desc}</p>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
+            <ScrollReveal direction="up" delay={240}>
+              <div className={`p-8 rounded-[2rem] text-left transition-all cursor-default ${isDark ? 'bg-[#FFC928]/[0.04] border border-[#FFC928]/10' : 'bg-[#FFF8E1] border border-[#FFC928]/10'}`}>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC928] mb-3">04 / Etiquetas</div>
+                    <h3 className={`text-xl font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Etiquetas Inteligentes</h3>
+                    <p className={`text-sm font-medium leading-relaxed max-w-lg ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      Validade, alérgenos e lote — etiquetas automáticas para seus produtos.
+                    </p>
+                  </div>
+                  <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-white text-[#111]'}`}>
+                    <Sticker size={14} className="text-[#FFC928]" />
+                    Incluído
+                  </div>
+                </div>
+              </div>
+            </ScrollReveal>
           </div>
         </div>
       </section>
 
       {/* ─── Secondary Features (3 cards) ─── */}
-      <section className={`py-16 transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F9F9F9]'}`}>
+      <section className={`py-16 border-y transition-colors ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#F9F9F9] border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-solid">
             {[
-              { icon: Smartphone, title: t('landing.deliveryTitle'), desc: t('landing.deliveryDesc') },
-              { icon: TrendingUp, title: t('landing.dashboardTitle'), desc: t('landing.dashboardDesc') },
-              { icon: Heart, title: t('landing.socialTitle'), desc: t('landing.socialDesc') },
+              { title: t('landing.deliveryTitle'), desc: t('landing.deliveryDesc') },
+              { title: t('landing.dashboardTitle'), desc: t('landing.dashboardDesc') },
+              { title: t('landing.socialTitle'), desc: t('landing.socialDesc') },
             ].map((feat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 100}>
-                <div className={`group p-8 rounded-[2.5rem] text-left hover:shadow-xl transition-all cursor-default h-full ${isDark ? 'bg-[#111] border border-white/5 hover:border-white/10' : 'bg-white border border-gray-100'}`}>
-                  <div className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform">
-                    <feat.icon className="text-[#FFC928]" size={32} />
-                  </div>
-                  <h3 className={`text-xl font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
+                <div className={`p-8 md:p-10 text-left cursor-default ${isDark ? 'divide-white/5' : 'divide-gray-200'}`}>
+                  <h3 className={`text-lg font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
                   <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     {feat.desc}
                   </p>
@@ -500,28 +499,22 @@ export default function LandingPage() {
       <section className={`py-20 border-y transition-colors ${isDark ? 'bg-zinc-950/40 border-white/5' : 'bg-amber-50/40 border-amber-100'}`}>
         <div className="max-w-7xl mx-auto px-6">
           <ScrollReveal direction="up" delay={0}>
-            <div className="bg-gradient-to-br from-[#111] via-[#1a1a1a] to-[#121212] border border-[#FFC928]/30 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden text-left shadow-2xl text-white">
-              <div className="absolute top-0 right-0 w-80 h-80 bg-[#FFC928]/5 rounded-full blur-3xl" />
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative z-10">
+            <div className={`border-l-4 border-[#FFC928] rounded-r-[2rem] p-8 md:p-12 text-left text-white ${isDark ? 'bg-[#111]' : 'bg-[#1a1a1a]'}`}>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
                 <div className="lg:col-span-2 space-y-4">
-                  <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wider">
-                    <span className="bg-gradient-to-r from-[#FFC928] via-yellow-300 to-[#FFC928] bg-clip-text text-transparent">🏆 Competição Anual Meu Ovo</span>
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC928]">
+                    Competição Anual
                   </div>
-                  <h2 className="text-2xl md:text-4xl font-display font-black leading-none uppercase italic tracking-tighter">
+                  <h2 className="text-2xl md:text-4xl font-display font-black leading-none">
                     Prêmio Ovos de Ouro
                   </h2>
                   <p className="text-gray-400 font-medium text-sm max-w-xl leading-relaxed">
                     Buscamos os melhores sabores do Brasil com integridade total. As avaliações acumuladas do campeonato são sigilosas e privadas. Apenas os 3 melhores de cada ano são revelados.
                   </p>
                   <div className="flex flex-wrap gap-4 pt-2">
-                    <div className="flex items-center gap-2">
-                      <Shield className="text-[#FFC928]" size={16} />
-                      <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Sigilo absoluto</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Trophy className="text-[#FFC928]" size={16} />
-                      <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Top 3 divulgado</span>
-                    </div>
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Sigilo absoluto</span>
+                    <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>•</span>
+                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Top 3 divulgado</span>
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
@@ -566,9 +559,7 @@ export default function LandingPage() {
                 }`}
               >
                 <div className="flex-1 space-y-5 relative">
-                  <div className="absolute -top-4 -left-4 opacity-5 text-[#FFC928]">
-                    <Quote size={64} />
-                  </div>
+                  <div className="absolute -top-2 -left-1 text-6xl font-display font-black leading-none text-[#FFC928]/20 select-none">&ldquo;</div>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <div className="flex gap-0.5">
                       {[1, 2, 3, 4, 5].map(s => (
