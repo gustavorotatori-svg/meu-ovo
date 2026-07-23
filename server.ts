@@ -28,6 +28,18 @@ if (serviceAccountKey) {
   console.log('FIREBASE_SERVICE_ACCOUNT_KEY not set — push notifications disabled');
 }
 
+// ─── Env Validation ─────────────────────────────────────
+const requiredEnv = ['GEMINI_API_KEY', 'APP_URL'];
+const optionalEnv = ['API_SECRET_KEY', 'WEBHOOK_SECRET', 'FIREBASE_SERVICE_ACCOUNT_KEY', 'VITE_PLATFORM_PIX_KEY', 'VITE_SENTRY_DSN'];
+const missingRequired = requiredEnv.filter(v => !process.env[v]);
+const missingOptional = optionalEnv.filter(v => !process.env[v]);
+if (missingRequired.length > 0) {
+  console.error(`[ENV] CRITICAL: Missing required vars: ${missingRequired.join(', ')}`);
+}
+if (missingOptional.length > 0) {
+  console.warn(`[ENV] Optional vars not set: ${missingOptional.join(', ')}`);
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -109,7 +121,17 @@ async function startServer() {
 
   // API Routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      env: {
+        gemini: !!process.env.GEMINI_API_KEY,
+        firebase: firebaseAdminInitialized,
+        pix: !!process.env.VITE_PLATFORM_PIX_KEY,
+        sentry: !!process.env.VITE_SENTRY_DSN,
+        webhook: !!process.env.WEBHOOK_SECRET,
+      },
+    });
   });
 
   // Protect costly endpoints with API key auth

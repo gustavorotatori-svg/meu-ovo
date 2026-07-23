@@ -27,6 +27,21 @@ if (serviceAccountKey) {
   console.log('[Vercel API] FIREBASE_SERVICE_ACCOUNT_KEY not set');
 }
 
+// ─── Env Validation ─────────────────────────────────────
+const requiredEnv = ['GEMINI_API_KEY', 'APP_URL'];
+const optionalEnv = ['API_SECRET_KEY', 'WEBHOOK_SECRET', 'FIREBASE_SERVICE_ACCOUNT_KEY', 'VITE_PLATFORM_PIX_KEY', 'VITE_SENTRY_DSN'];
+const missingRequired = requiredEnv.filter(v => !process.env[v]);
+const missingOptional = optionalEnv.filter(v => !process.env[v]);
+if (missingRequired.length > 0) {
+  console.error(`[ENV] CRITICAL: Missing required vars: ${missingRequired.join(', ')}`);
+}
+if (missingOptional.length > 0) {
+  console.warn(`[ENV] Optional vars not set: ${missingOptional.join(', ')}`);
+}
+if (missingRequired.length === 0) {
+  console.log('[ENV] All required variables loaded');
+}
+
 const app = express();
 
 app.use(helmet({
@@ -91,6 +106,21 @@ function requireApiKey(req: express.Request, res: express.Response, next: expres
   }
   next();
 }
+
+// Health check (no rate limit)
+app.get('/api/health', (_req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: {
+      gemini: !!process.env.GEMINI_API_KEY,
+      firebase: firebaseAdminInitialized,
+      pix: !!process.env.VITE_PLATFORM_PIX_KEY,
+      sentry: !!process.env.VITE_SENTRY_DSN,
+      webhook: !!process.env.WEBHOOK_SECRET,
+    },
+  });
+});
 
 // Apply rate limiting to all /api routes
 app.use('/api', rateLimit(30, 60000)); // 30 requests per minute per IP
