@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TrendingUp, ShoppingBag, DollarSign, Users, Plus, QrCode, Eye, Sparkles, Wallet, X, Clock, ChefHat, Package, Bike, CheckCircle, XCircle, Sticker, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Plus, QrCode, Eye, Sparkles, Wallet, X, Clock, ChefHat, Package, Bike, CheckCircle, XCircle, Sticker, AlertTriangle } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { db } from '../../lib/firebase';
@@ -279,36 +279,37 @@ export default function AdminDashboard() {
         )}
 
         {/* ─── KPIs ─── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-0 divide-x divide-zinc-800">
           {[
-            { label: 'Pedidos hoje', value: todayOrders.length.toString(), icon: <ShoppingBag size={20} className="text-[#FFC928]" />, sub: `${inProgress.length} em andamento` },
-            { label: 'Faturamento hoje', value: `R$ ${todayRevenue.toFixed(2)}`, icon: <DollarSign size={20} className="text-emerald-400" />, sub: `${todayOrders.length} pedidos` },
-            { label: 'Ticket médio', value: `R$ ${avgTicket.toFixed(2)}`, icon: <TrendingUp size={20} className="text-blue-400" />, sub: 'Média do dia' },
-            { label: 'Produtos ativos', value: products.filter(p => p.isActive).length.toString(), icon: <Package size={20} className="text-[#FF7A00]" />, sub: `${products.length} total` },
+            { label: 'Pedidos hoje', value: todayOrders.length.toString(), sub: `${inProgress.length} em andamento`, accent: false },
+            { label: 'Faturamento', value: `R$ ${todayRevenue.toFixed(2)}`, sub: `${todayOrders.length} pedidos`, accent: true },
+            { label: 'Ticket médio', value: `R$ ${avgTicket.toFixed(2)}`, sub: 'Média do dia', accent: false },
+            { label: 'Produtos ativos', value: products.filter(p => p.isActive).length.toString(), sub: `${products.length} total`, accent: false },
           ].map((k, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors"
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              className={`p-5 ${i === 0 ? 'rounded-l-2xl' : ''} ${i === 3 ? 'rounded-r-2xl' : ''}`}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">{k.icon}</div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{k.label}</span>
-              </div>
-              <p className="text-2xl font-black text-white">{k.value}</p>
-              <p className="text-[10px] text-gray-500 mt-1">{k.sub}</p>
+              <div className={`text-[10px] font-black uppercase tracking-[0.15em] mb-2 ${k.accent ? 'text-emerald-400' : 'text-gray-500'}`}>{k.label}</div>
+              <p className={`text-2xl md:text-3xl font-black leading-none mb-1 ${k.accent ? 'text-emerald-400' : 'text-white'}`}>{k.value}</p>
+              <p className="text-[10px] text-gray-500">{k.sub}</p>
             </motion.div>
           ))}
         </div>
 
         {/* ─── QUICK ACTIONS ─── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <motion.button onClick={() => navigate('/admin/cardapio?add_product=true')} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+            className="bg-[#FFC928] text-black rounded-2xl py-4 px-6 flex items-center gap-3 text-xs font-black uppercase tracking-widest transition-all md:col-span-2"
+          >
+            <Plus size={18} /> Novo Produto
+          </motion.button>
           {[
-            { label: 'Novo produto', icon: <Plus size={18} />, onClick: () => navigate('/admin/cardapio?add_product=true'), color: 'bg-[#FFC928] text-black' },
-            { label: 'Gerar com IA', icon: <Sparkles size={18} />, onClick: () => navigate('/admin/cardapio?generate=true'), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
-            { label: 'Ver cardápio', icon: <Eye size={18} />, onClick: () => navigate(`/r/${currentRestaurant?.slug}`), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
-            { label: 'QR Code', icon: <QrCode size={18} />, onClick: () => navigate('/admin/mesas'), color: 'bg-zinc-800 text-gray-300 border border-zinc-700' },
+            { label: 'Gerar com IA', icon: <Sparkles size={16} />, onClick: () => navigate('/admin/cardapio?generate=true') },
+            { label: 'Ver cardápio', icon: <Eye size={16} />, onClick: () => navigate(`/r/${currentRestaurant?.slug}`) },
+            { label: 'QR Code', icon: <QrCode size={16} />, onClick: () => navigate('/admin/mesas') },
           ].map((a, i) => (
-            <motion.button key={i} onClick={a.onClick} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              className={`${a.color} rounded-xl py-3 px-4 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest transition-all`}
+            <motion.button key={i} onClick={a.onClick} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className="bg-zinc-900 border border-zinc-800 text-gray-300 rounded-2xl py-4 px-5 flex items-center gap-2 text-[11px] font-black uppercase tracking-widest hover:border-zinc-700 transition-all"
             >
               {a.icon} {a.label}
             </motion.button>
@@ -354,14 +355,11 @@ export default function AdminDashboard() {
         })()}
 
         {/* ─── ETIQUETAS REMINDER ─── */}
-        <div className="bg-gradient-to-r from-[#FFC928]/10 via-[#FFC928]/5 to-transparent border border-[#FFC928]/20 rounded-2xl p-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Sticker size={18} className="text-[#FFC928]" />
-            <h3 className="text-sm font-black uppercase tracking-tight text-white">Etiquetas para seus Produtos</h3>
-          </div>
+        <div className="border-l-4 border-[#FFC928] bg-zinc-900/50 rounded-r-2xl p-6">
+          <h3 className="text-sm font-black uppercase tracking-tight text-white mb-1">Etiquetas para seus Produtos</h3>
           <p className="text-xs text-gray-400 mb-4">Crie etiquetas automáticas com data de validade, alérgenos e informações de armazenamento para imprimir e colar nos seus produtos.</p>
-          <button onClick={() => navigate('/admin/etiquetas')} className="bg-[#FFC928] text-black font-black px-5 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all flex items-center gap-2">
-            <Sticker size={16} /> Gerenciar Etiquetas
+          <button onClick={() => navigate('/admin/etiquetas')} className="bg-[#FFC928] text-black font-black px-5 py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all">
+            Gerenciar Etiquetas
           </button>
         </div>
 

@@ -820,8 +820,7 @@ export default function MarketplacePage() {
           </div>
 
           {/* Section 2: Proprietários Independentes */}
-          <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 blur-[100px] rounded-full bg-[#FFC928]/5 -z-10" />
+          <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 border-l-4 border-[#FFC928]">
             <SectionHeader
               subtitle="Soberania Local 👤"
               title="Apoie Empreendedores Independentes"
@@ -918,7 +917,7 @@ const RestaurantCard: React.FC<{
           <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
             <button 
               onClick={onShare}
-              className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg hover:scale-110"
+              className="p-3 bg-black/50 rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg"
               aria-label="Compartilhar restaurante"
             >
               <Share2 size={14} />
@@ -929,10 +928,10 @@ const RestaurantCard: React.FC<{
                 e.stopPropagation();
                 toggleFavorite(r.id);
               }}
-              className={`p-3 backdrop-blur-md rounded-full transition-all shadow-lg hover:scale-110 ${
+              className={`p-3 rounded-full transition-all shadow-lg ${
                 isFav 
-                  ? 'bg-red-500/90 text-white hover:bg-red-600' 
-                  : 'bg-white/20 text-white hover:bg-red-500 hover:text-white'
+                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                  : 'bg-black/50 text-white hover:bg-red-500 hover:text-white'
               }`}
               title={isFav ? "Remover dos favoritos" : "Favoritar"}
               aria-label="Favoritar restaurante"
@@ -947,7 +946,7 @@ const RestaurantCard: React.FC<{
                 <h3 className="font-black text-white text-xl leading-tight drop-shadow-lg">{r.name}</h3>
                 <p className="text-gray-200 text-xs font-semibold drop-shadow">{r.cuisineType} • {r.neighborhood}</p>
               </div>
-              <div className="bg-white/20 backdrop-blur-md rounded-full p-1.5 shadow-lg ring-2 ring-white/30">
+              <div className="bg-black/50 rounded-full p-1 shadow-lg">
                 <OptimizedImage
                   src={r.logo}
                   alt={r.name}
