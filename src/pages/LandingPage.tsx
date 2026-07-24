@@ -28,7 +28,7 @@ const faqData = [
   },
   {
     q: 'E se eu já uso aplicativos de delivery?',
-    a: 'Pode usar ao mesmo tempo. O Meu Ovo não substitui — complementa. Enquanto os grandes aplicativos cobram 27-35% de comissão, seus pedidos diretos pelo Meu Ovo saem com taxa zero. É dinheiro que fica no seu bolso.'
+    a: 'Pode usar ao mesmo tempo. O Meu Ovo não substitui — complementa. Enquanto os grandes aplicativos cobram até 27% de comissão por pedido, seus pedidos diretos pelo Meu Ovo saem com taxa zero. É dinheiro que fica no seu bolso.'
   },
   {
     q: 'Meus clientes precisam baixar algum app?',
@@ -332,7 +332,7 @@ export default function LandingPage() {
                 <div className={`mt-4 pt-4 border-t flex items-center gap-6 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
                   <span className="text-xs font-bold text-[#FFC928]">R$ 0 por pedido</span>
                   <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>vs</span>
-                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>27–35% grandes apps</span>
+                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>12–27%+ grandes apps</span>
                 </div>
               </div>
             </ScrollReveal>
@@ -423,7 +423,7 @@ export default function LandingPage() {
 
               {/* Rows */}
               {[
-                { feature: 'Comissão por pedido', meuOvo: '0%', competitor: '27-35%', highlight: true },
+                { feature: 'Comissão por pedido', meuOvo: '0%', competitor: '12–27%+', highlight: true },
                 { feature: 'Mensalidade', meuOvo: 'Grátis', competitor: 'Variável', highlight: false },
                 { feature: 'Pedido chega no WhatsApp', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Cliente é do restaurante', meuOvo: true, competitor: false, highlight: true },
