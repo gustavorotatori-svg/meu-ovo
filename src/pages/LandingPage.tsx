@@ -393,6 +393,30 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Reversal: Restaurante avalia o cliente ─── */}
+      <section className={`py-24 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
+        <div className="max-w-5xl mx-auto px-4">
+          <ScrollReveal direction="up" delay={0}>
+            <div className={`border-l-4 border-[#FFC928] pl-8 md:pl-12 py-4`}>
+              <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>O equilíbrio mudou</div>
+              <h2 className={`text-3xl md:text-5xl lg:text-6xl font-display font-black leading-[1.1] mb-6 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                Cansado de ser escravo<br className="hidden md:block" /> da nota?
+              </h2>
+              <p className={`text-lg md:text-xl font-medium leading-relaxed max-w-3xl mb-8 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Aqui o restaurante avalia o cliente, não o contrário. Você vê a reputação de quem pede e decide se aceita. Sem comissão, sem refém de avaliação pública, sem algoritmo que te suga.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {['Você avalia o cliente', 'Reputação visível no pedido', 'Aceita ou recusa — suas regras'].map((tag, i) => (
+                  <span key={i} className={`text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full ${isDark ? 'bg-white/5 text-white' : 'bg-[#111] text-white'}`}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
       {/* ─── Comparison: Meu Ovo vs Plataformas ─── */}
       <section className={`py-24 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="max-w-5xl mx-auto px-4">
@@ -427,6 +451,7 @@ export default function LandingPage() {
                 { feature: 'Mensalidade', meuOvo: 'Grátis', competitor: 'Variável', highlight: false },
                 { feature: 'Pedido chega no WhatsApp', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Cliente é do restaurante', meuOvo: true, competitor: false, highlight: true },
+                { feature: 'Restaurante avalia o cliente', meuOvo: true, competitor: false, highlight: true },
                 { feature: 'QR Code para mesa', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Cardápio digital próprio', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Doação no checkout', meuOvo: true, competitor: false, highlight: false },
