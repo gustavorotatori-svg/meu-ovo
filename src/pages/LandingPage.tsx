@@ -394,26 +394,45 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Reversal: Restaurante avalia o cliente ─── */}
-      <section className={`py-24 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
-        <div className="max-w-5xl mx-auto px-4">
-          <ScrollReveal direction="up" delay={0}>
-            <div className={`border-l-4 border-[#FFC928] pl-8 md:pl-12 py-4`}>
-              <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>O equilíbrio mudou</div>
-              <h2 className={`text-3xl md:text-5xl lg:text-6xl font-display font-black leading-[1.1] mb-6 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Cansado de ser escravo<br className="hidden md:block" /> da nota?
-              </h2>
-              <p className={`text-lg md:text-xl font-medium leading-relaxed max-w-3xl mb-8 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Aqui o restaurante avalia o cliente, não o contrário. Você vê a reputação de quem pede e decide se aceita. Sem comissão, sem refém de avaliação pública, sem algoritmo que te suga.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                {['Você avalia o cliente', 'Reputação visível no pedido', 'Aceita ou recusa — suas regras'].map((tag, i) => (
-                  <span key={i} className={`text-xs font-bold uppercase tracking-widest px-4 py-2 rounded-full ${isDark ? 'bg-white/5 text-white' : 'bg-[#111] text-white'}`}>
-                    {tag}
-                  </span>
-                ))}
-              </div>
+      <section className={`py-0 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
+        <div className={`transition-colors ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#F5F5F5]'}`}>
+          <div className="max-w-7xl mx-auto px-4 py-20 md:py-28">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <ScrollReveal direction="left" delay={0}>
+                <div>
+                  <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>O equilíbrio mudou</div>
+                  <h2 className={`text-4xl md:text-5xl lg:text-6xl font-display font-black leading-[1.05] mb-6 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
+                    Cansado de ser<br />escravo da <span className="text-[#FFC928]">nota</span>?
+                  </h2>
+                  <p className={`text-base md:text-lg font-medium leading-relaxed max-w-xl transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    Aqui o restaurante avalia o cliente, não o contrário. Você vê a reputação de quem pede e decide se aceita. Sem comissão, sem refém de avaliação pública, sem algoritmo que te suga.
+                  </p>
+                </div>
+              </ScrollReveal>
+              <ScrollReveal direction="right" delay={120}>
+                <div className="space-y-4">
+                  <div className={`p-6 md:p-8 rounded-[1.5rem] border transition-colors ${isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-100 shadow-sm'}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <X size={18} className="text-red-400" />
+                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Nos grandes apps</span>
+                    </div>
+                    <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      Qualquer cliente dá nota. Um pedido atrasado, uma reclamação injusta, e o restaurante cai no algoritmo. <span className="line-through">Refém de avaliação pública.</span>
+                    </p>
+                  </div>
+                  <div className={`p-6 md:p-8 rounded-[1.5rem] border-l-4 border-[#FFC928] transition-colors ${isDark ? 'bg-[#FFC928]/[0.04] border border-[#FFC928]/10' : 'bg-[#FFF8E1] border border-[#FFC928]/10'}`}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <CheckCircle size={18} className="text-[#FFC928]" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC928]">No Meu Ovo</span>
+                    </div>
+                    <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      Você vê a reputação do cliente antes de aceitar. Cliente bom, bem-vindo. Cliente difícil, suas regras. <span className="font-bold">Sua cozinha, seu julgamento.</span>
+                    </p>
+                  </div>
+                </div>
+              </ScrollReveal>
             </div>
-          </ScrollReveal>
+          </div>
         </div>
       </section>
 
