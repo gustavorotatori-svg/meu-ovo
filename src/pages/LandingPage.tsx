@@ -183,7 +183,7 @@ export default function LandingPage() {
                 <span className={isDark ? 'text-white' : 'text-black'}>+{Math.max(liveRestaurantCount, 500)} restaurantes já usam o Meu Ovo</span>
               </p>
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
-                Grátis para sempre
+                Grátis
               </span>
             </div>
           </ScrollReveal>
@@ -327,7 +327,7 @@ export default function LandingPage() {
                 <div className={`text-[10px] font-black uppercase tracking-[0.2em] mb-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>01 / Comissão</div>
                 <h3 className={`text-2xl md:text-3xl font-display font-black mb-3 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>100% Gratuito</h3>
                 <p className={`text-sm font-medium leading-relaxed max-w-2xl ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  Sem mensalidade, sem taxa de setup e sem comissão por pedido. Para sempre. O dinheiro fica no seu bolso.
+                  Sem mensalidade, sem taxa de setup e sem comissão por pedido. O dinheiro fica no seu bolso.
                 </p>
                 <div className={`mt-4 pt-4 border-t flex items-center gap-6 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
                   <span className="text-xs font-bold text-[#FFC928]">R$ 0 por pedido</span>

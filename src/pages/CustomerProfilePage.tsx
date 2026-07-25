@@ -704,10 +704,6 @@ export default function CustomerProfilePage() {
                           <h4 className="text-lg font-black text-[#111] uppercase tracking-tight truncate leading-tight">{r.name}</h4>
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mt-0.5">{r.cuisineType} • {r.neighborhood}</p>
                         </div>
-                        <div className="flex items-center gap-1 mt-2">
-                          <Star size={12} className="text-[#FFC928] fill-[#FFC928]" />
-                          <span className="text-xs font-bold text-[#111]">{r.rating}</span>
-                        </div>
                       </div>
                       <div className="flex flex-col justify-between items-end shrink-0">
                         <button 

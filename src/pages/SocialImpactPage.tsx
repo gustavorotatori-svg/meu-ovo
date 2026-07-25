@@ -132,7 +132,7 @@ export default function SocialImpactPage() {
             </div>
             <div className="px-4">
               <div className="text-3xl lg:text-5xl font-black text-black">100%</div>
-              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Gratuito para sempre</div>
+              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Grátis</div>
             </div>
           </div>
           </ScrollReveal>

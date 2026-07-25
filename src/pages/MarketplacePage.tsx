@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, SlidersHorizontal, Star, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2, RotateCcw } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2, RotateCcw } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import OptimizedImage from '../components/OptimizedImage';
@@ -112,7 +112,7 @@ export default function MarketplacePage() {
       if (filterPriceRange) {
         constraints.push(where('priceRange', '==', filterPriceRange));
       }
-      constraints.push(firestoreOrderBy('rating', 'desc'));
+      constraints.push(firestoreOrderBy('createdAt', 'desc'));
       constraints.push(limit(PAGE_SIZE));
       if (lastDocSnapshot) {
         constraints.push(startAfter(lastDocSnapshot));
@@ -152,7 +152,6 @@ export default function MarketplacePage() {
         if (filterPriceRange) {
           results = results.filter(r => r.priceRange === filterPriceRange);
         }
-        results.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
 
         if (append) {
           setPageRestaurants(prev => [...prev, ...results]);
@@ -304,7 +303,6 @@ export default function MarketplacePage() {
       if (filterNeighbourhood && r.neighborhood !== filterNeighbourhood) return false;
       return true;
     }).sort((a, b) => {
-      if (sortBy === 'rating') return (b.rating ?? 0) - (a.rating ?? 0);
       if (sortBy === 'delivery') return (a.estimatedTime ?? 999) - (b.estimatedTime ?? 999);
       if (sortBy === 'name') return (a.name ?? '').localeCompare(b.name ?? '');
       return 0;
@@ -644,7 +642,6 @@ export default function MarketplacePage() {
               className="text-sm font-bold bg-white border border-gray-200 rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
               <option value="relevance">Relevância</option>
-              <option value="rating">Melhor avaliação</option>
               <option value="delivery">Entrega mais rápida</option>
               <option value="name">A-Z</option>
             </select>
@@ -969,13 +966,8 @@ const RestaurantCard: React.FC<{
 
         <div className="p-5">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-1.5">
-              <div className="flex items-center gap-0.5">
-                <Star size={14} className="text-[#FFC928] fill-[#FFC928]" />
-                <span className="font-bold text-sm text-[#111]">{r.rating}</span>
-              </div>
-              <span className="text-gray-200">|</span>
-              <span className="text-gray-400 text-xs font-medium">{r.reviewCount} avaliações</span>
+            <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+              <span className="font-semibold">{r.priceRange === 'low' ? '$' : r.priceRange === 'medium' ? '$$' : '$$$'}</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-500 text-xs bg-gray-50 px-2.5 py-1 rounded-full">
               <Clock size={12} />

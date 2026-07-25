@@ -9,7 +9,6 @@ import {
   Coffee,
   Beer,
   Gift,
-  Star,
   Share2
 } from 'lucide-react';
 import { Button } from '../components/Button';
@@ -321,17 +320,10 @@ export default function Home() {
                             <p className={`text-xs font-bold transition-colors ${isDark ? 'text-white' : 'text-black'}`}>
                                {res.deliveryFee === 0 ? 'Grátis' : `R$ ${res.deliveryFee.toFixed(2)}`}
                             </p>
-                         </div>
-                         <div className="space-y-1">
-                            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Avaliação</p>
-                            <div className="flex items-center gap-1">
-                               <Star size={10} className="fill-[#FFC928] text-[#FFC928]" />
-                               <span className={`text-xs font-bold transition-colors ${isDark ? 'text-white' : 'text-black'}`}>{res.rating}</span>
-                            </div>
-                         </div>
-                      </div>
-                   </div>
-                </div>
+                          </div>
+                       </div>
+                    </div>
+                 </div>
               </Link>
             ))}
          </div>

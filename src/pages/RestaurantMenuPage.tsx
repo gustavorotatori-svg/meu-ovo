@@ -745,22 +745,7 @@ export default function RestaurantMenuPage() {
           </div>
 
           {/* Quick Stats Grid with Beautiful Bento Frames */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
-            <div className={cn(
-              "p-4 rounded-2xl border relative overflow-hidden",
-              isDark ? "bg-gradient-to-br from-[#1c1e28] to-[#161722] border-white/5" : "bg-gradient-to-br from-amber-50 to-white border-amber-100"
-            )}>
-              <div className="absolute top-0 right-0 w-16 h-16 bg-amber-500/5 rounded-full blur-xl" />
-              <div className="flex items-center gap-1.5 relative">
-                <Star size={14} className="text-[#FFC928] fill-[#FFC928]" />
-                <span className="text-[10px] text-gray-400 font-black uppercase tracking-wider">Avaliação</span>
-              </div>
-              <p className="text-xl font-display font-black italic tracking-tight mt-1 relative">
-                {restaurant.rating}{" "}
-                <span className="text-xs font-bold text-gray-400">({restaurant.reviewCount})</span>
-              </p>
-            </div>
-
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
             <div className={cn(
               "p-4 rounded-2xl border relative overflow-hidden",
               isDark ? "bg-gradient-to-br from-[#1c1e28] to-[#161722] border-white/5" : "bg-gradient-to-br from-blue-50 to-white border-blue-100"
