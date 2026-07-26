@@ -127,7 +127,7 @@ export default function SocialImpactPage() {
               <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2 font-display">Taxa por pedido</div>
             </div>
             <div className="px-4">
-              <div className="text-3xl lg:text-5xl font-black text-black">3 cliques</div>
+              <div className="text-3xl lg:text-5xl font-black text-black">5 passos</div>
               <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Para fazer um pedido</div>
             </div>
             <div className="px-4">

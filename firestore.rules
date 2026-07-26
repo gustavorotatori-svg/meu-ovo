@@ -135,7 +135,8 @@ service cloud.firestore {
     }
 
     match /dish_ratings/{ratingId} {
-      allow get, list: if isSignedIn();
+      allow get: if isOwnerOrAdmin(resource.data.restaurantId);
+      allow list: if isPlatformAdmin();
       allow create: if isSignedIn()
         && incoming().userId == request.auth.uid
         && incoming().dishId is string
@@ -146,7 +147,7 @@ service cloud.firestore {
     }
 
     match /ovos_de_ouro_votes/{voteId} {
-      allow get: if true;
+      allow get: if isSignedIn();
       allow list: if isOwnerOrAdmin(resource.data.restaurantId) || isPlatformAdmin();
       allow create: if isSignedIn()
         && incoming().userId == request.auth.uid

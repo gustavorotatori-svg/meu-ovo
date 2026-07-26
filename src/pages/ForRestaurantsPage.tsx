@@ -175,7 +175,7 @@ export default function ForRestaurantsPage() {
               {[
                 'Fotos em alta qualidade',
                 'Categorias personalizadas',
-                'Adicionais e combos',
+                'Adicionais e extras',
                 'Promoções e destaques'
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3 text-[#111] font-bold">

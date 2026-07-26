@@ -180,7 +180,7 @@ export default function LandingPage() {
                 ))}
               </div>
               <p className={`text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <span className={isDark ? 'text-white' : 'text-black'}>+{Math.max(liveRestaurantCount, 500)} restaurantes já usam o Meu Ovo</span>
+                <span className={isDark ? 'text-white' : 'text-black'}>+{liveRestaurantCount > 0 ? liveRestaurantCount.toLocaleString('pt-BR') : 'Vários'} restaurantes já usam o Meu Ovo</span>
               </p>
               <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
                 Grátis
@@ -292,10 +292,9 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
             {[
-              { value: `+${Math.max(liveRestaurantCount, 500)}`, label: 'restaurantes ativos' },
+              { value: liveRestaurantCount > 0 ? `+${liveRestaurantCount.toLocaleString('pt-BR')}` : 'Vários', label: 'restaurantes ativos' },
               { value: '0%', label: 'comissão por pedido' },
               { value: '<10', label: 'minutos para cadastrar' },
-              { value: '24h', label: 'suporte via WhatsApp' },
             ].map((stat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 80}>
                 <div className={`text-center py-6 ${i < 3 ? `border-r ${isDark ? 'border-white/5' : 'border-gray-200'}` : ''}`}>
