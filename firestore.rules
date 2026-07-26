@@ -119,7 +119,10 @@ service cloud.firestore {
         isOwnerOrAdmin(existing().restaurantId)
         && incoming().restaurantId == existing().restaurantId
       ) || (
+        // Client increments usageCount: must be active, within limit, increment by exactly 1
         incoming().diff(existing()).affectedKeys().hasOnly(['usageCount'])
+        && existing().isActive == true
+        && (existing().usageLimit == null || existing().usageCount < existing().usageLimit)
         && incoming().usageCount == existing().usageCount + 1
       );
       allow delete: if isOwnerOrAdmin(existing().restaurantId);
@@ -149,9 +152,12 @@ service cloud.firestore {
     match /ovos_de_ouro_votes/{voteId} {
       allow get: if isSignedIn();
       allow list: if isOwnerOrAdmin(resource.data.restaurantId) || isPlatformAdmin();
+      // Document ID = orderId (guarantees one vote per order per user)
       allow create: if isSignedIn()
         && incoming().userId == request.auth.uid
+        && incoming().orderId == voteId
         && incoming().orderId is string
+        && incoming().restaurantId is string
         && incoming().restaurantRating is number
         && incoming().restaurantRating >= 1 && incoming().restaurantRating <= 5
         && incoming().year == request.time.date().year();

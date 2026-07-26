@@ -415,7 +415,7 @@ export default function ForRestaurantsPage() {
                 <li>Notas visíveis apenas para o admin</li>
                 <li>Antifraude contra votos falsos</li>
                 <li>Apenas pratos reais (sem bebidas)</li>
-                <li>Selo do vencedor válido por 1 ano</li>
+                <li>Selo exclusivo para os vencedores</li>
               </ul>
               <Link 
                 to="/ovos-de-ouro" 

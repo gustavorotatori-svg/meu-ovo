@@ -744,7 +744,6 @@ export default function LandingPage() {
               'Dados protegidos com criptografia',
               'Sem cartão de crédito necessário',
               'Cancelamento a qualquer momento',
-              'Suporte via WhatsApp',
             ].map((label, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 60}>
                 <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
