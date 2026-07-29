@@ -45,8 +45,8 @@ export async function getStreak(userId: string): Promise<StreakData> {
 
 export async function updateStreak(userId: string): Promise<UpdateStreakResult> {
   const streak = await getStreak(userId);
-  const today = new Date().toISOString().split('T')[0];
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv-SE');
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE');
 
   let newStreak = 1;
   if (streak.lastOrderDate === today) {
@@ -75,7 +75,7 @@ const STREAK_REMINDER_KEY = 'meuovo_streak_reminded';
 
 export function shouldRemindStreak(streak: StreakData): boolean {
   if (streak.currentStreak === 0) return false;
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('sv-SE');
   if (streak.lastOrderDate === today) return false;
   try {
     const lastReminded = localStorage.getItem(STREAK_REMINDER_KEY);
@@ -86,7 +86,7 @@ export function shouldRemindStreak(streak: StreakData): boolean {
 
 export function markStreakReminded(): void {
   try {
-    localStorage.setItem(STREAK_REMINDER_KEY, new Date().toISOString().split('T')[0]);
+    localStorage.setItem(STREAK_REMINDER_KEY, new Date().toLocaleDateString('sv-SE'));
   } catch { }
 }
 

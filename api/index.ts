@@ -340,10 +340,14 @@ app.post("/api/whatsapp/webhook", async (req, res) => {
     if (!firebaseAdminInitialized) {
       return res.status(503).json({ success: false, message: "Service unavailable" });
     }
-    // Verify webhook authenticity via shared secret or provider signature
+    // Verify webhook authenticity — WEBHOOK_SECRET is required
     const webhookSecret = process.env.WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error('[WhatsApp Webhook] WEBHOOK_SECRET not configured');
+      return res.status(500).json({ success: false, message: "Server not configured" });
+    }
     const authHeader = req.headers['x-webhook-secret'] as string || req.headers['x-hub-signature-256'] as string || '';
-    if (webhookSecret && authHeader !== webhookSecret) {
+    if (authHeader !== webhookSecret) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     const db = getFirestore();

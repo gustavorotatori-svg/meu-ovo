@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, query, where, getDocs, updateDoc, doc, addDoc, arrayUnion, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, addDoc, arrayUnion, increment, runTransaction } from 'firebase/firestore';
 import { Restaurant, Order, LoyaltyProfile } from '../types';
 
 export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) => {
@@ -17,20 +17,13 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
   if (pointsToEarn <= 0) return;
 
   try {
-    // Find or create loyalty profile for this customer
     const q = query(
-      collection(db, 'loyalty_profiles'), 
+      collection(db, 'loyalty_profiles'),
       where('restaurantId', '==', restaurant.id),
       where('customerPhone', '==', order.customerPhone)
     );
-    
     const snapshot = await getDocs(q);
 
-    // Idempotency: check if this orderId already earned points
-    if (!snapshot.empty) {
-      const profileData = snapshot.docs[0].data();
-      if (profileData.history?.some((h: any) => h.orderId === order.id)) return;
-    }
     const historyItem = {
       type: 'earn' as const,
       points: pointsToEarn,
@@ -40,7 +33,6 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
     };
 
     if (snapshot.empty) {
-      // Create new profile
       await addDoc(collection(db, 'loyalty_profiles'), {
         restaurantId: restaurant.id,
         customerPhone: order.customerPhone,
@@ -49,11 +41,17 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
         history: [historyItem]
       });
     } else {
-      // Update existing profile
       const profileDoc = snapshot.docs[0];
-      await updateDoc(doc(db, 'loyalty_profiles', profileDoc.id), {
-        pointsBalance: increment(pointsToEarn),
-        history: arrayUnion(historyItem)
+      const profileRef = doc(db, 'loyalty_profiles', profileDoc.id);
+      await runTransaction(db, async (transaction) => {
+        const tDoc = await transaction.get(profileRef);
+        if (!tDoc.exists()) return;
+        const tData = tDoc.data();
+        if (tData.history?.some((h: any) => h.orderId === order.id)) return;
+        transaction.update(profileRef, {
+          pointsBalance: increment(pointsToEarn),
+          history: arrayUnion(historyItem)
+        });
       });
     }
   } catch (error) {
@@ -73,30 +71,36 @@ export const redeemLoyaltyPoints = async (
       where('restaurantId', '==', restaurantId),
       where('customerPhone', '==', customerPhone)
     );
-    
     const snapshot = await getDocs(q);
     if (snapshot.empty) throw new Error('Perfil de fidelidade não encontrado');
 
     const profileDoc = snapshot.docs[0];
-    const profile = profileDoc.data() as LoyaltyProfile;
+    const profileRef = doc(db, 'loyalty_profiles', profileDoc.id);
 
-    if (profile.pointsBalance < pointsToRedeem) {
-      throw new Error('Saldo de pontos insuficiente');
-    }
+    const result = await runTransaction(db, async (transaction) => {
+      const tDoc = await transaction.get(profileRef);
+      if (!tDoc.exists()) throw new Error('Perfil de fidelidade não encontrado');
+      const tData = tDoc.data() as LoyaltyProfile;
 
-    const historyItem = {
-      type: 'redeem' as const,
-      points: pointsToRedeem,
-      description: `Resgate: ${description}`,
-      createdAt: new Date().toISOString()
-    };
+      if (tData.pointsBalance < pointsToRedeem) {
+        throw new Error('Saldo de pontos insuficiente');
+      }
 
-    await updateDoc(doc(db, 'loyalty_profiles', profileDoc.id), {
-      pointsBalance: increment(-pointsToRedeem),
-      history: arrayUnion(historyItem)
+      const historyItem = {
+        type: 'redeem' as const,
+        points: pointsToRedeem,
+        description: `Resgate: ${description}`,
+        createdAt: new Date().toISOString()
+      };
+
+      transaction.update(profileRef, {
+        pointsBalance: increment(-pointsToRedeem),
+        history: arrayUnion(historyItem)
+      });
+      return true;
     });
 
-    return true;
+    return result;
   } catch (error) {
     console.error('Error redeeming loyalty points:', error);
     throw error;

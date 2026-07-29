@@ -214,6 +214,30 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ─── STREAKS (daily order streaks) ────────────────────────────────────────
+    match /streaks/{userId} {
+      allow read: if request.auth.uid == userId || isPlatformAdmin();
+      allow write: if request.auth.uid == userId;
+    }
+
+    // ─── ACHIEVEMENTS ─────────────────────────────────────────────────────────
+    match /achievements/{userId} {
+      allow read: if request.auth.uid == userId || isPlatformAdmin();
+      allow write: if request.auth.uid == userId;
+    }
+
+    // ─── PLATFORM LOYALTY ──────────────────────────────────────────────────────
+    match /platform_loyalty/{userId} {
+      allow read: if request.auth.uid == userId || isPlatformAdmin();
+      allow write: if request.auth.uid == userId;
+    }
+
+    // ─── WHATSAPP CONVERSATIONS (server-side only via Admin SDK) ──────────────
+    match /whatsapp_conversations/{convId} {
+      allow read: if isPlatformAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
     // ─── TEST (connection health check) ──────────────────────────────────────
     match /test/{document} {
       allow read: if true;

@@ -476,10 +476,14 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
    */
   app.post("/api/whatsapp/webhook", async (req, res) => {
     try {
-      // Verify webhook authenticity
+      // Verify webhook authenticity — WEBHOOK_SECRET is required
       const webhookSecret = process.env.WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        console.error('[WhatsApp Webhook] WEBHOOK_SECRET not configured');
+        return res.status(500).json({ success: false, message: "Server not configured" });
+      }
       const authHeader = (req.headers['x-webhook-secret'] as string) || (req.headers['x-hub-signature-256'] as string) || '';
-      if (webhookSecret && authHeader !== webhookSecret) {
+      if (authHeader !== webhookSecret) {
         return res.status(401).json({ success: false, message: "Unauthorized" });
       }
       const db = getFirestore();
