@@ -7,6 +7,7 @@ import BackButton from '../components/BackButton';
 import { Logo } from '../components/Logo';
 import SEO from '../components/SEO';
 import { auth } from '../lib/firebase-auth';
+import { sendEmailVerification } from 'firebase/auth';
 import { getFirebaseErrorMessage } from '../lib/utils';
 import { Button } from '../components/Button';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -101,11 +102,22 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (isLogin) {
-        await signIn(formData.email.trim(), formData.password);
-        toast.success('Bem-vindo de volta!');
-        if (!isRestaurant && !auth.currentUser?.emailVerified) {
-          toast('Verifique seu email antes de fazer pedidos', { icon: '✉️' });
+        try {
+          await signIn(formData.email.trim(), formData.password);
+        } catch (signInErr: unknown) {
+          if (signInErr instanceof Error && signInErr.message === 'EMAIL_NOT_VERIFIED') {
+            toast.error('Confirme seu email antes de acessar. Verifique sua caixa de entrada.');
+            try { await auth.currentUser?.reload(); } catch {}
+            if (auth.currentUser && !auth.currentUser.emailVerified) {
+              if (auth.currentUser) await sendEmailVerification(auth.currentUser);
+              toast.success('Novo email de verificação enviado!');
+            }
+            setLoading(false);
+            return;
+          }
+          throw signInErr;
         }
+        toast.success('Bem-vindo de volta!');
         navigate(safeRedirect || (isRestaurant ? '/admin' : '/busca'));
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
@@ -337,7 +349,7 @@ export default function LoginPage() {
         </div>
 
         <div className="flex justify-center mt-6">
-          <BackButton to="/" />
+          <BackButton />
         </div>
       </div>
     </div>

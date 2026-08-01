@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
-import { buildMenuContext, buildSystemPrompt, processMessage } from "./whatsappAI";
-import { sendMessage, ProviderConfig } from "./whatsappProvider";
+import { buildMenuContext, buildSystemPrompt, processMessage } from "./whatsappAI.ts";
+import { sendMessage, ProviderConfig } from "./whatsappProvider.ts";
 
 const AI_MODEL = "gemini-3.1-flash-lite";
 

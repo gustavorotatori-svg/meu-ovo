@@ -40,7 +40,14 @@ export default function RestaurantOnboarding() {
   const loadSavedProgress = () => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.savedAt && Date.now() - parsed.savedAt > 24 * 60 * 60 * 1000) {
+          localStorage.removeItem(STORAGE_KEY);
+          return null;
+        }
+        return parsed;
+      }
     } catch {}
     return null;
   };
@@ -53,6 +60,7 @@ export default function RestaurantOnboarding() {
   const [isAiParsing, setIsAiParsing] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [finalSlug, setFinalSlug] = useState<string | null>(null);
   
   const [form, setForm] = useState(savedProgress?.form ?? {
     name: '', responsible: '', whatsapp: '', email: '',
@@ -89,6 +97,19 @@ export default function RestaurantOnboarding() {
     if (digits.length <= 2) return `(${digits}`;
     if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  };
+
+  const maskCnpjCpf = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 14);
+    if (digits.length <= 11) {
+      if (digits.length <= 3) return digits;
+      if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+      if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+      return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
+    }
+    if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+    if (digits.length <= 14) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+    return digits;
   };
 
   const handleCepBlur = async (cep: string) => {
@@ -148,9 +169,11 @@ export default function RestaurantOnboarding() {
     if (!form.whatsapp.trim()) { toast.error('WhatsApp é obrigatório'); return; }
     if (form.whatsapp.replace(/\D/g, '').length < 10) { toast.error('WhatsApp inválido'); return; }
 
-    const validProducts = products.filter(p => p.name.trim() && p.price);
-    if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome e preço'); return; }
+    const validProducts = products.filter(p => p.name.trim() && p.price && p.category);
+    if (validProducts.length === 0) { toast.error('Adicione pelo menos um produto válido com nome, preço e categoria'); return; }
     if (categories.length === 0) { toast.error('Adicione pelo menos uma categoria'); return; }
+    const invalidCatProducts = products.filter(p => p.name.trim() && p.price && !p.category);
+    if (invalidCatProducts.length > 0) { toast.error('Todos os produtos com nome e preço precisam ter uma categoria selecionada'); return; }
 
     setLoading(true);
     try {
@@ -221,7 +244,9 @@ export default function RestaurantOnboarding() {
         image: p.image || 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&h=300&fit=crop'
       }));
 
-      await registerRestaurant(restaurantData, categories, cleanedProducts);
+      const registeredSlug = await registerRestaurant(restaurantData, categories, cleanedProducts);
+      if (!registeredSlug) { setLoading(false); return; }
+      setFinalSlug(registeredSlug);
       localStorage.removeItem(STORAGE_KEY);
       setStep(2);
       toast.success('Restaurante cadastrado com sucesso!');
@@ -317,10 +342,15 @@ export default function RestaurantOnboarding() {
           })
         });
 
-        const result = await response.json();
         if (!response.ok) {
-          throw new Error(result.error || 'Erro na extração');
+          if (response.status === 404) {
+            throw new Error('Endpoint de IA não configurado. Crie uma serverless function em /api/ai/parse-menu com a Gemini API ou configure manualmente o cardápio.');
+          }
+          const errText = await response.text().catch(() => '');
+          throw new Error(errText || `Erro HTTP ${response.status}`);
         }
+
+        const result = await response.json();
 
         if (result.success && result.data) {
           const { categories: loadedCategories, products: loadedProducts } = result.data;
@@ -520,8 +550,9 @@ export default function RestaurantOnboarding() {
                   <label className="text-[10px] font-black uppercase tracking-wider text-gray-500 block mb-1">CPF / CNPJ</label>
                   <input 
                     value={form.cnpj} 
-                    onChange={e => update('cnpj', e.target.value)} 
+                    onChange={e => update('cnpj', maskCnpjCpf(e.target.value))} 
                     placeholder="000.000.000-00" 
+                    maxLength={18}
                     className={`w-full bg-white border ${fieldErrors.cnpj ? 'border-red-300 focus:ring-red-400' : 'border-gray-200 focus:ring-[#FFC928]'} rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-gray-400 font-medium focus:outline-none focus:ring-2 focus:border-transparent outline-none transition-all`}
                   />
                   {fieldErrors.cnpj && <p className="text-[10px] text-red-500 font-bold mt-1">{fieldErrors.cnpj}</p>}
@@ -835,11 +866,10 @@ export default function RestaurantOnboarding() {
               <div className="bg-white rounded-2xl p-6 mb-6 text-left">
                 <h3 className="font-bold text-[#111] mb-4">Seu link de cardápio</h3>
                 <div className="bg-[#F5F5F5] rounded-xl p-4 flex items-center justify-between">
-                  <span className="text-sm font-mono text-[#111]">meuovo.com.br/r/{form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}</span>
+                  <span className="text-sm font-mono text-[#111]">meuovo.com.br/r/{finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}</span>
                   <button
                     onClick={() => {
-                      const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-                      navigator.clipboard.writeText(`${window.location.origin}/r/${slug}`);
+                      navigator.clipboard.writeText(`${window.location.origin}/r/${finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`);
                       toast.success('Link copiado!');
                     }}
                     className="bg-[#FFC928] text-[#111] font-bold text-xs px-3 py-2 rounded-lg"
@@ -856,10 +886,10 @@ export default function RestaurantOnboarding() {
               </div>
               <div className="flex justify-center">
                 <div className="bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
-                  {(form.name.trim()) ? (
+                  {(finalSlug || form.name.trim()) ? (
                     <QRCodeCanvas
                       id="onboarding-qrcode"
-                      value={`${window.location.origin}/r/${form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`}
+                      value={`${window.location.origin}/r/${finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`}
                       size={160}
                       bgColor="#FFFFFF"
                       fgColor="#111111"
@@ -875,7 +905,7 @@ export default function RestaurantOnboarding() {
                   const canvas = document.getElementById('onboarding-qrcode') as HTMLCanvasElement;
                   if (canvas) {
                     const link = document.createElement('a');
-                    const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+                    const slug = finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
                     link.download = `qrcode-${slug}.png`;
                     link.href = canvas.toDataURL();
                     link.click();
@@ -897,8 +927,7 @@ export default function RestaurantOnboarding() {
               </button>
               <button
                 onClick={() => {
-                  const slug = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
-                  navigate(`/r/${slug}`);
+                  navigate(`/r/${finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`);
                 }}
                 className="w-full border border-gray-200 text-gray-600 font-bold py-4 rounded-2xl hover:bg-gray-50"
               >

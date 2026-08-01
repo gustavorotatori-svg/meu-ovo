@@ -9,6 +9,7 @@ import {
   where, 
   getDocs, 
   addDoc, 
+  setDoc,
   updateDoc, 
   deleteDoc, 
   doc, 
@@ -101,12 +102,11 @@ export default function MenuManagement() {
     const qCat = query(collection(db, 'categories'), where('restaurantId', '==', restaurant.id), orderBy('order', 'asc'));
     const unsubscribeCat = onSnapshot(qCat, (snapshot) => {
       const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
-      // Only update categories from server if we are not currently dragging
-      // For simplicity, we check if the length or IDs changed, but local order is handled by state
       setCategories(prev => {
-        const serverIds = cats.map(c => c.id).join(',');
-        const localIds = prev.map(c => c.id).join(',');
-        if (serverIds !== localIds) return cats;
+        const serverIds = new Set(cats.map(c => c.id));
+        const localIds = new Set(prev.map(c => c.id));
+        if (serverIds.size !== localIds.size) return cats;
+        for (const id of serverIds) { if (!localIds.has(id)) return cats; }
         return prev;
       });
     }, (error) => {
@@ -282,35 +282,10 @@ export default function MenuManagement() {
     } : undefined;
 
     try {
+      const productId = editingProduct?.id || crypto.randomUUID();
       let finalImageUrl = newProd.imageUrl;
-      let productId = editingProduct?.id;
 
-      // For new products, create the doc first to get a real ID for image upload
-      if (!productId) {
-        const docRef = await addDoc(collection(db, 'products'), {
-          restaurantId: restaurant.id,
-          categoryId: newProd.categoryId,
-          name: newProd.name,
-          description: newProd.description,
-          price: priceNum,
-          imageUrl: newProd.imageUrl || '',
-          estimatedPrepTime: prepTimeNum,
-          notes: newProd.notes,
-          ingredients: newProd.ingredients || '',
-          allergens: newProd.allergens || '',
-          selectedAllergens: newProd.selectedAllergens,
-          labelInfo,
-          isActive: newProd.isActive,
-          isAvailable: newProd.isAvailable,
-          isFeatured: false,
-          optionGroups: newProd.optionGroups,
-          stock: stockNum,
-          minStockAlert: minStockNum,
-          orderCount: 0,
-        });
-        productId = docRef.id;
-      }
-
+      // Upload image first (if any) so Firestore write is final
       if (imageFile) {
         setUploadingImage(true);
         if (fileInputRef.current) fileInputRef.current.value = '';
@@ -319,7 +294,7 @@ export default function MenuManagement() {
         setUploadingImage(false);
       }
 
-      await updateDoc(doc(db, 'products', productId), {
+      await setDoc(doc(db, 'products', productId), {
         restaurantId: restaurant.id,
         categoryId: newProd.categoryId,
         name: newProd.name,
@@ -338,6 +313,7 @@ export default function MenuManagement() {
         optionGroups: newProd.optionGroups,
         stock: stockNum,
         minStockAlert: minStockNum,
+        orderCount: editingProduct ? undefined : 0,
       });
 
       toast.success(editingProduct ? t('menu.productUpdated') : t('menu.productCreated'));

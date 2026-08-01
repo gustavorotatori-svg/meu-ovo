@@ -9,7 +9,7 @@ dotenv.config();
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { handleWebhook } from '../src/lib/whatsappWebhook';
+import { handleWebhook } from '../src/lib/whatsappWebhook.ts';
 
 // Initialize Firebase Admin SDK
 let firebaseAdminInitialized = false;

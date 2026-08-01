@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   const todayOrders = orders.filter(o => o.createdAt && new Date(o.createdAt).toDateString() === todayStr);
   const todayRevenue = todayOrders.reduce((s, o) => s + (o.total || 0), 0);
   const avgTicket = todayOrders.length > 0 ? todayRevenue / todayOrders.length : 0;
-  const inProgress = orders.filter(o => ['received', 'preparing', 'ready', 'out-for-delivery'].includes(o.status));
+  const inProgress = orders.filter(o => ['received', 'accepted', 'preparing', 'ready', 'out-for-delivery'].includes(o.status));
 
   // Chart data
   const salesTrend = useMemo(() => {
@@ -319,8 +319,9 @@ export default function AdminDashboard() {
         {/* ─── NEAR EXPIRY ─── */}
         {(() => {
           const nearExpiry = products.filter(p => {
-            if (!p.labelInfo?.shelfLifeDays || !p.selectedAllergens?.length) return false;
-            return true;
+            if (!p.labelInfo?.shelfLifeDays) return false;
+            const daysLeft = p.labelInfo.shelfLifeDays;
+            return daysLeft <= 7 && daysLeft > 0;
           }).slice(0, 5);
           return nearExpiry.length > 0 ? (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">

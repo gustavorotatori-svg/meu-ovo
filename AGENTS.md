@@ -135,3 +135,69 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 ### Build
 - `npx tsc --noEmit` — 0 erros
 - `npm run build` — sucesso completo
+
+---
+
+## Sessão (30/07/2026) — Auditoria operacional completa + 15 correções
+
+### Auditoria: 24 issues encontradas (4 BLOCKER, 4 CRITICAL, 6 HIGH, 7 MEDIUM, 3 LOW)
+
+### BLOCKER corrigidos
+1. **AuthContext.tsx**: `signIn` agora chama `refreshUserProfile()` para sincronizar role do Firestore
+2. **LandingPage.tsx**: Redireciona usuários logados por role (restaurant → /admin, admin → /plataforma, customer → /busca)
+3. **RestaurantOnboarding.tsx**: Valida que produtos tenham categoria antes de submit
+4. **RestaurantContext.tsx + RestaurantOnboarding.tsx**: `registerRestaurant` retorna o slug final (com sufixo se houve colisão); step 2 do onboarding usa `finalSlug` em vez de recalcular
+
+### CRITICAL corrigidos
+5. **AuthContext.tsx + LoginPage.tsx**: `signIn` bloqueia se `!emailVerified`; LoginPage exibe toast e reenvia email de verificação automaticamente
+6. **RestaurantOnboarding.tsx**: AI endpoint retorna erro 404 com mensagem clara de configuração pendente
+7. **SelfSignupPage.tsx**: Guard redireciona se `auth.currentUser` existir
+
+### HIGH corrigidos
+8. **AdminDashboard.tsx**: Status `accepted` adicionado ao filtro `inProgress`
+9. **MenuManagement.tsx**: Criação de produto refatorada para `setDoc` atômico (remove `addDoc`+`updateDoc` non-atomic)
+10. **RestaurantOnboarding.tsx**: Progresso do onboarding expira após 24h no localStorage
+
+### MEDIUM corrigidos
+11. **LandingPage.tsx**: 4º stat item adicionado ("100% dos pedidos direto no zap")
+12. **LoginPage.tsx**: BackButton usa `navigate(-1)` em vez de `to="/"`
+13. **MenuManagement.tsx**: `onSnapshot` de categorias compara por Set de IDs (ignora ordem), evitando sobrescrever reordenação
+
+### LOW corrigidos
+14. **LandingPage.tsx**: Contagem de restaurantes filtra `isActive == true`
+15. **AdminDashboard.tsx**: Near expiry mostra apenas produtos com ≤7 dias de validade
+
+### Build
+- `npx tsc --noEmit` — 0 erros
+- `npm run build` — 0 erros
+
+---
+
+## Sessão (01/08/2026) — Deploy Vercel: fix serverless ESM + correções finais
+
+### CRÍTICO: API quebrada em produção (FUNCTION_INVOCATION_FAILED)
+- **Causa**: `api/index.ts` importava `../src/lib/whatsappWebhook` sem extensão — o runtime ESM serverless da Vercel não resolve imports relativos extensionless (`ERR_MODULE_NOT_FOUND`)
+- **Solução**:
+  - Fonte movida `api/index.ts` → `server/api.ts`
+  - Novo `scripts/build-api.mjs`: bundle auto-contido com esbuild (`--bundle --format=esm --packages=external`) → `api/index.js`
+  - `vercel.json` buildCommand: `vite build && node scripts/build-api.mjs`
+  - `package.json` build inclui `node scripts/build-api.mjs`
+  - `api/index.js` adicionado ao `.gitignore` (gerado no build)
+  - Extensões `.ts` adicionadas aos imports em `server/api.ts` e `src/lib/whatsappWebhook.ts` (permite tsc + esbuild)
+- **Resultado**: `/api/health` 200 ✅, `/api/ai/generate-menu` 200 com dados reais do Gemini ✅, rotas SPA 200 ✅, sitemap 200 ✅
+
+### Fix C8 — deliverySettings default doc
+- **RestaurantContext.tsx**: quando `onSnapshot` não encontra o doc `deliverySettings`, agora cria o doc default (com campos corretos da interface `DeliverySettings`: `restaurantId`, `enabled`, `radiusKm`, `fee`, `estimatedTime`, `minimumOrder`, `observation`, `feeByNeighborhood`)
+
+### Fix L20 — máscara CNPJ/CPF no onboarding
+- **RestaurantOnboarding.tsx**: `maskCnpjCpf` adicionada (CPF `000.000.000-00` ou CNPJ `00.000.000/0000-00`, máx 14 dígitos, input `maxLength=18`)
+
+### Arquitetura da API (importante)
+- `server.ts` — servidor Express completo (dev local com Vite middleware, prod serve dist/)
+- `server/api.ts` — fonte da API serverless (Vercel), bundlada para `api/index.js`
+- `api/sitemap.xml.ts` — função serverless independente
+
+### Build
+- `npx tsc --noEmit` — 0 erros
+- `npm run build` — 0 erros
+- `vercel --prod` — READY, alias em https://meu-ovo-pi.vercel.app

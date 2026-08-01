@@ -52,7 +52,7 @@
     { "source": "/api/(.*)", "destination": "/api/index" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "buildCommand": "vite build",
+  "buildCommand": "vite build && node scripts/build-api.mjs",
   "outputDirectory": "dist",
   "installCommand": "npm install"
 }

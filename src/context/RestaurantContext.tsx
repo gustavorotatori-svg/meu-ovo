@@ -43,7 +43,7 @@ interface RestaurantContextType {
   deleteCategory: (id: string) => Promise<void>;
   reorderProducts: (products: Product[]) => void;
   reorderCategories: (categories: Category[]) => void;
-  registerRestaurant: (restaurant: Restaurant, categories: string[], products: any[]) => Promise<void>;
+  registerRestaurant: (restaurant: Restaurant, categories: string[], products: any[]) => Promise<string | undefined>;
   addTable: (t: Table) => Promise<void>;
   updateTable: (t: Table) => Promise<void>;
   deleteTable: (id: string) => Promise<void>;
@@ -219,6 +219,20 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     const unsubDelivery = onSnapshot(doc(db, 'deliverySettings', currentRestaurant.id), (snapshot) => {
       if (snapshot.exists()) {
         setDeliverySettings(snapshot.data() as DeliverySettings);
+      } else {
+        const defaults: DeliverySettings = {
+          restaurantId: currentRestaurant.id,
+          enabled: true,
+          radiusKm: 10,
+          fee: 0,
+          estimatedTime: 0,
+          minimumOrder: 0,
+          observation: '',
+          feeByNeighborhood: []
+        };
+        setDeliverySettings(defaults);
+        setDoc(doc(db, 'deliverySettings', currentRestaurant.id), defaults)
+          .catch(() => {});
       }
     }, () => {});
 
@@ -305,11 +319,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     setCategories(newCategories);
   }, []);
 
-  const registerRestaurant = useCallback(async (restaurant: Restaurant, categoryNames: string[], productData: any[]) => {
+  const registerRestaurant = useCallback(async (restaurant: Restaurant, categoryNames: string[], productData: any[]): Promise<string | undefined> => {
     try {
       if (!auth.currentUser?.uid) {
         toast.error('Você precisa estar logado para cadastrar um restaurante');
-        return;
+        return undefined;
       }
       // 1. Create Restaurant with unique slug
       let { id: rId, ...rData } = restaurant;
@@ -365,6 +379,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       }
 
       setCurrentRestaurant({ ...restaurant, ...finalRData });
+      return rId;
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'restaurants/multi');
       throw error;

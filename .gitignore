@@ -11,3 +11,4 @@ firebase-applet-config.json
 firebase.json
 .firebaserc
 .vercel
+api/index.js

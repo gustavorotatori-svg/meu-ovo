@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X } from 'lucide-react';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
@@ -7,11 +7,12 @@ import Footer from '../components/Footer';
 import SectionHeader from '../components/SectionHeader';
 import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 import OptimizedImage from '../components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState, useEffect, useCallback } from 'react';
 import { db } from '../lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 const faqData = [
   {
@@ -49,10 +50,20 @@ const faqData = [
 ];
 
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [liveRestaurantCount, setLiveRestaurantCount] = useState(0);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
+    if (authLoading) return;
+    if (!user) return;
+    if (user.role === 'restaurant') navigate('/admin', { replace: true });
+    else if (user.role === 'admin') navigate('/plataforma', { replace: true });
+    else if (user.role === 'customer') navigate('/busca', { replace: true });
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(query(collection(db, 'restaurants'), where('isActive', '==', true)), (snapshot) => {
       setLiveRestaurantCount(snapshot.size);
     }, () => {});
     return () => unsub();
@@ -295,6 +306,7 @@ export default function LandingPage() {
               { value: liveRestaurantCount > 0 ? `+${liveRestaurantCount.toLocaleString('pt-BR')}` : 'Vários', label: 'restaurantes ativos' },
               { value: '0%', label: 'comissão por pedido' },
               { value: '<10', label: 'minutos para cadastrar' },
+              { value: '100%', label: 'dos pedidos direto no zap' },
             ].map((stat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 80}>
                 <div className={`text-center py-6 ${i < 3 ? `border-r ${isDark ? 'border-white/5' : 'border-gray-200'}` : ''}`}>

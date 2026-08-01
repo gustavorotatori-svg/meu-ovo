@@ -21,6 +21,12 @@ export default function SelfSignupPage() {
   const mountedRef = useRef(true);
 
   useEffect(() => {
+    if (auth.currentUser) {
+      navigate('/busca', { replace: true });
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
   }, []);
@@ -45,6 +51,11 @@ export default function SelfSignupPage() {
 
   const handleSubmit = async () => {
     if (!canSubmit || loading) return;
+    if (auth.currentUser) {
+      toast.error('Você já está logado');
+      navigate('/busca', { replace: true });
+      return;
+    }
     setLoading(true);
     try {
       const whatsappClean = form.whatsapp.replace(/\D/g, '');

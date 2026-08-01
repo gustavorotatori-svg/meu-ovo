@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await sendEmailVerification(res.user);
     } catch (_e) {
-      // Non-critical — user can still use the app
+      console.error('[Auth] Failed to send verification email:', _e);
     }
 
     setUser({
@@ -181,7 +181,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signIn(email: string, password: string) {
     const cred = await signInWithEmailAndPassword(auth, email, password);
+    if (!cred.user.emailVerified) {
+      throw new Error('EMAIL_NOT_VERIFIED');
+    }
     registerFCMAndActivity(cred.user.uid);
+    await refreshUserProfile();
   }
 
   async function signInWithGoogleFn() {
