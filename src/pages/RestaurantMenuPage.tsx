@@ -356,7 +356,7 @@ export default function RestaurantMenuPage() {
     toggleFavorite
   } = useRestaurant();
   
-  const { addItem, itemCount, total, setTableNumber } = useCart();
+  const { addItem, itemCount, subtotal, setTableNumber } = useCart();
   const [activeCategory, setActiveCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -1083,7 +1083,7 @@ export default function RestaurantMenuPage() {
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mr-1">Total:</span>
-                <span className="text-[#FFC928] font-display font-black italic text-lg">R$ {total.toFixed(2)}</span>
+                <span className="text-[#FFC928] font-display font-black italic text-lg">R$ {subtotal.toFixed(2)}</span>
                 <ChevronRight size={16} className="text-[#FFC928]" strokeWidth={2.5} />
               </div>
             </motion.button>

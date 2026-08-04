@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, QrCode, Sparkles, Loader2, Info, AlertCircle, MapPin } from 'lucide-react';
@@ -20,16 +20,6 @@ export default function RestaurantOnboarding() {
   const { registerRestaurant } = useRestaurant();
   const isDark = theme === 'dark';
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate('/login?redirect=/cadastro-restaurante', { replace: true });
-    } else if (user?.role === 'restaurant') {
-      // Already has a restaurant — redirect to admin
-      navigate('/admin', { replace: true });
-    }
-    // 'customer' (post-signup, awaiting onboarding) and 'admin' (creating for others) allowed through
-  }, [isAuthenticated, user?.role, navigate]);
-  
   const STEPS = [
     'Dados essenciais', 
     'Seu cardápio', 
@@ -76,6 +66,7 @@ export default function RestaurantOnboarding() {
   const [categories, setCategories] = useState<string[]>(savedProgress?.categories ?? ['Mais Vendidos', 'Bebidas']);
   const [newCat, setNewCat] = useState('');
   const [products, setProducts] = useState(savedProgress?.products ?? [{ name: '', price: '', category: '', image: '' }]);
+  const registeringRef = useRef(false);
 
   const saveProgress = () => {
     try {
@@ -89,6 +80,16 @@ export default function RestaurantOnboarding() {
   useEffect(() => {
     saveProgress();
   }, [step, form, logoBase64, latLng, lgpdConsent, categories, products]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login?redirect=/cadastro-restaurante', { replace: true });
+    } else if (user?.role === 'restaurant' && step < 2 && !registeringRef.current) {
+      // Already has a restaurant and hasn't finished onboarding — redirect to admin
+      navigate('/admin', { replace: true });
+    }
+    // 'customer' (post-signup, awaiting onboarding) and 'admin' (creating for others) allowed through
+  }, [isAuthenticated, user?.role, step, navigate]);
 
   const update = (field: string, value: string | boolean) => setForm(f => ({ ...f, [field]: value }));
 
@@ -176,6 +177,7 @@ export default function RestaurantOnboarding() {
     if (invalidCatProducts.length > 0) { toast.error('Todos os produtos com nome e preço precisam ter uma categoria selecionada'); return; }
 
     setLoading(true);
+    registeringRef.current = true;
     try {
       const raw = form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       const slug = raw.replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -254,6 +256,7 @@ export default function RestaurantOnboarding() {
       console.error(e);
       toast.error('Erro ao cadastrar restaurante');
     } finally {
+      registeringRef.current = false;
       setLoading(false);
     }
   };

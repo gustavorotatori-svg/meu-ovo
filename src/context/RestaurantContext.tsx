@@ -54,6 +54,22 @@ interface RestaurantContextType {
 
 const RestaurantContext = createContext<RestaurantContextType | null>(null);
 
+function sanitizeForFirestore<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map(sanitizeForFirestore) as unknown as T;
+  }
+  if (value && typeof value === 'object') {
+    const clean: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) {
+      if (v !== undefined) {
+        clean[k] = sanitizeForFirestore(v);
+      }
+    }
+    return clean as T;
+  }
+  return value;
+}
+
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { user, refreshUserProfile } = useAuth();
   const [restaurants, setRestaurants] = useState<Restaurant[]>(mockRestaurants);
@@ -274,10 +290,11 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const addOrder = useCallback(async (o: Order) => {
     try {
       const { id, ...data } = o;
+      const clean = sanitizeForFirestore(data);
       if (id) {
-        await setDoc(doc(db, 'orders', id), data);
+        await setDoc(doc(db, 'orders', id), clean);
       } else {
-        await addDoc(collection(db, 'orders'), data);
+        await addDoc(collection(db, 'orders'), clean);
       }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'orders');
@@ -338,7 +355,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
         ownerId: auth.currentUser.uid,
         createdAt: new Date().toISOString()
       };
-      await setDoc(doc(db, 'restaurants', rId), finalRData);
+      await setDoc(doc(db, 'restaurants', rId), sanitizeForFirestore(finalRData));
 
       // 2. Update user role to 'restaurant'
       await updateDoc(doc(db, 'users', auth.currentUser.uid), {
@@ -365,7 +382,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       for (const p of productData) {
         const prodId = Math.random().toString(36).substr(2, 9);
         const productPrice = parseFloat(p.price);
-        await setDoc(doc(db, 'products', prodId), {
+        await setDoc(doc(db, 'products', prodId), sanitizeForFirestore({
           id: prodId,
           restaurantId: rId,
           name: p.name,
@@ -375,7 +392,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
           description: p.description || undefined,
           isActive: true,
           isAvailable: true
-        });
+        }));
       }
 
       setCurrentRestaurant({ ...restaurant, ...finalRData });

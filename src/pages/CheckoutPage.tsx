@@ -191,9 +191,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (!restaurant || items.length === 0) {
-      navigate('/carrinho');
+      if (!submitted) {
+        navigate('/carrinho');
+      }
     }
-  }, [restaurant, items.length, navigate]);
+  }, [restaurant, items.length, navigate, submitted]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;

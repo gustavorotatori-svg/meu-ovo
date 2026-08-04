@@ -91,7 +91,7 @@ service cloud.firestore {
         && incoming().customerPhone is string
         && (incoming().userId == request.auth.uid
             || !incoming().keys().contains('userId'))
-        && incoming().createdAt == request.time;
+        && incoming().createdAt is string;
       allow update: if (
         isOwnerOrAdmin(existing().restaurantId)
         && incoming().diff(existing()).affectedKeys().hasOnly([
