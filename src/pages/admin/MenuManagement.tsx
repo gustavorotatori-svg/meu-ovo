@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, SVGProps } from 'react';
+import { useState, useEffect, useRef, type DragEvent, SVGProps } from 'react';
 import { Plus, Search,  Edit2, Trash2, GripVertical, Check, X, Trash, Clock, Sparkles, Eye, EyeOff, Upload } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { db } from '../../lib/firebase';
 import { uploadProductImage } from '../../services/storageService';
+import { processImageFile } from '../../lib/imageProcessor';
 import { 
   collection, 
   query, 
@@ -92,6 +93,7 @@ export default function MenuManagement() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [processingImage, setProcessingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Listen to restaurants and data
@@ -264,6 +266,33 @@ export default function MenuManagement() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleImageFile = async (file: File) => {
+    if (processingImage) return;
+    if (!file) return;
+    try {
+      setProcessingImage(true);
+      const processed = await processImageFile(file);
+      setImageFile(processed);
+      const objectUrl = URL.createObjectURL(processed);
+      setNewProd((prev) => {
+        if (prev.imageUrl.startsWith('blob:')) URL.revokeObjectURL(prev.imageUrl);
+        return { ...prev, imageUrl: objectUrl };
+      });
+      if (errors.imageUrl) setErrors(prev => { const n = { ...prev }; delete n.imageUrl; return n; });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao processar a imagem');
+    } finally {
+      setProcessingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImageDrop = (e: DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleImageFile(file);
   };
 
   const handleCreateProduct = async () => {
@@ -1111,8 +1140,16 @@ export default function MenuManagement() {
                           if (errors.imageUrl) setErrors(prev => { const n = {...prev}; delete n.imageUrl; return n; });
                         }}
                       />
-                      <label className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-md text-xs font-bold cursor-pointer transition-colors flex items-center justify-center shrink-0 border border-slate-200">
-                        {uploadingImage ? 'ENVIANDO...' : 'UPLOAD'}
+                      <label
+                        className={cn(
+                          "bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-md text-xs font-bold cursor-pointer transition-colors flex items-center justify-center shrink-0 border border-slate-200 select-none",
+                          processingImage && "opacity-60 pointer-events-none"
+                        )}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={handleImageDrop}
+                        title="Clique ou arraste uma imagem aqui"
+                      >
+                        {processingImage ? 'PROCESSANDO...' : uploadingImage ? 'ENVIANDO...' : 'UPLOAD'}
                         <input 
                           type="file" 
                           ref={fileInputRef}
@@ -1120,12 +1157,7 @@ export default function MenuManagement() {
                           accept="image/*"
                           onChange={(e) => {
                             const file = e.target.files?.[0];
-                            if (file) {
-                              setImageFile(file);
-                              const objectUrl = URL.createObjectURL(file);
-                              setNewProd({...newProd, imageUrl: objectUrl});
-                              if (errors.imageUrl) setErrors(prev => { const n = {...prev}; delete n.imageUrl; return n; });
-                            }
+                            if (file) handleImageFile(file);
                           }}
                         />
                       </label>
@@ -1523,8 +1555,8 @@ export default function MenuManagement() {
                 setImageFile(null);
                 setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], shelfLifeDays: '', storageType: 'refrigerated', storageInstructions: '', optionGroups: [], stock: '', minStockAlert: '' });
               }}>DESCARTAR</Button>
-              <Button size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={handleCreateProduct}>
-                {editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO'}
+              <Button size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={handleCreateProduct} disabled={uploadingImage || processingImage}>
+                {uploadingImage || processingImage ? 'ENVIANDO FOTO...' : (editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO')}
               </Button>
             </div>
           </div>
