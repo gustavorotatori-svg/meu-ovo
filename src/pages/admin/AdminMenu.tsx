@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard as Edit2, Trash2, ToggleLeft, ToggleRight, X, Check, Search, GripVertical } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import { Plus, CreditCard as Edit2, Trash2, ToggleLeft, ToggleRight, X, Check, Search, GripVertical, Upload, ImageOff } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Product, Category } from '../../types';
@@ -147,12 +148,32 @@ export default function AdminMenu() {
       }
     }
     
-    if (form.imageUrl && !form.imageUrl.startsWith('http')) {
+    if (form.imageUrl && !form.imageUrl.startsWith('http') && !form.imageUrl.startsWith('data:image/')) {
       newErrors.imageUrl = 'URL da imagem deve começar com http/https';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem muito grande. Máximo 2MB.'); return; }
+    if (!file.type.startsWith('image/')) { toast.error('Formato inválido. Use imagem.'); return; }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64String = event.target?.result as string;
+      setForm(f => ({ ...f, imageUrl: base64String }));
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next.imageUrl;
+        return next;
+      });
+      toast.success('Foto do produto adicionada!');
+    };
+    reader.onerror = () => toast.error('Erro ao carregar a imagem');
+    reader.readAsDataURL(file);
   };
 
   const save = () => {
@@ -346,20 +367,37 @@ export default function AdminMenu() {
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-1">URL da foto</label>
-                <input 
-                  value={form.imageUrl} 
-                  onChange={e => {
-                    setForm(f => ({ ...f, imageUrl: e.target.value }));
-                    if (errors.imageUrl) setErrors(prev => {
-                      const next = { ...prev };
-                      delete next.imageUrl;
-                      return next;
-                    });
-                  }} 
-                  placeholder="https://..." 
-                  className={`w-full border ${errors.imageUrl ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FFC928]`} 
-                />
+                <label className="text-sm font-medium text-gray-600 block mb-1">Foto do produto</label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl border border-gray-200 overflow-hidden flex-shrink-0 bg-gray-50 flex items-center justify-center">
+                    {form.imageUrl ? (
+                      <img src={form.imageUrl} alt={form.name || 'Foto do produto'} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageOff size={20} className="text-gray-300" />
+                    )}
+                  </div>
+                  <label className="flex items-center gap-2 bg-[#111] text-white text-xs font-black px-4 py-2.5 rounded-xl cursor-pointer hover:bg-gray-800 transition-colors">
+                    <Upload size={14} />
+                    Enviar foto
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                  </label>
+                </div>
+                <div className="mt-3">
+                  <label className="text-xs font-medium text-gray-500 block mb-1">Ou cole uma URL da foto (opcional)</label>
+                  <input 
+                    value={form.imageUrl.startsWith('data:') ? '' : form.imageUrl} 
+                    onChange={e => {
+                      setForm(f => ({ ...f, imageUrl: e.target.value }));
+                      if (errors.imageUrl) setErrors(prev => {
+                        const next = { ...prev };
+                        delete next.imageUrl;
+                        return next;
+                      });
+                    }} 
+                    placeholder="https://..." 
+                    className={`w-full border ${errors.imageUrl ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FFC928]`} 
+                  />
+                </div>
                 {errors.imageUrl && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.imageUrl}</p>}
               </div>
 
