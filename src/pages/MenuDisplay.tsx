@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { getAuth } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, onSnapshot, orderBy, limit, addDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { Restaurant, Category, Product, OrderItem, Coupon, LoyaltyProfile, Additional } from '../types';
@@ -132,6 +133,7 @@ export default function MenuDisplay() {
       const q = query(
         collection(db, 'loyalty_profiles'), 
         where('restaurantId', '==', restaurant.id),
+        where('customerId', '==', getAuth().currentUser?.uid || ''),
         where('customerPhone', '==', phone)
       );
       const snap = await getDocs(q);
@@ -412,13 +414,14 @@ export default function MenuDisplay() {
         } else if (!loyaltyProfile) {
           // Create empty profile just to have it ready for points accumulation later
           // if it doesn't exist yet (by phone)
-          const q = query(ptsRef, where('restaurantId', '==', restaurant.id), where('customerPhone', '==', formData.phone));
+          const q = query(ptsRef, where('restaurantId', '==', restaurant.id), where('customerId', '==', getAuth().currentUser?.uid || ''), where('customerPhone', '==', formData.phone));
           const snapshot = await getDocs(q);
           if (snapshot.empty) {
             await addDoc(ptsRef, {
               restaurantId: restaurant.id,
               customerPhone: formData.phone,
               customerName: formData.name,
+              customerId: getAuth().currentUser?.uid || '',
               pointsBalance: 0,
               history: []
             });

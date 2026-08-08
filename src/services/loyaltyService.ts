@@ -37,6 +37,7 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
         restaurantId: restaurant.id,
         customerPhone: order.customerPhone,
         customerName: order.customerName,
+        customerId: order.userId || '',
         pointsBalance: pointsToEarn,
         history: [historyItem]
       });
@@ -48,10 +49,12 @@ export const awardLoyaltyPoints = async (order: Order, restaurant: Restaurant) =
         if (!tDoc.exists()) return;
         const tData = tDoc.data();
         if (tData.history?.some((h: any) => h.orderId === order.id)) return;
-        transaction.update(profileRef, {
+        const updates: Record<string, unknown> = {
           pointsBalance: increment(pointsToEarn),
           history: arrayUnion(historyItem)
-        });
+        };
+        if (!tData.customerId && order.userId) updates.customerId = order.userId;
+        transaction.update(profileRef, updates);
       });
     }
   } catch (error) {

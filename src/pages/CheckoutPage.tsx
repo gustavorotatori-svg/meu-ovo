@@ -170,6 +170,7 @@ export default function CheckoutPage() {
         const q = query(
           collection(db, 'loyalty_profiles'),
           where('restaurantId', '==', restaurant.id),
+          where('customerId', '==', user?.id || ''),
           where('customerPhone', '==', phone)
         );
         const snap = await getDocs(q);

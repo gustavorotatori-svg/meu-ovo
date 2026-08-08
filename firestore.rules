@@ -53,7 +53,12 @@ service cloud.firestore {
       allow create: if isOwnerOrAdmin(incoming().restaurantId)
         && incoming().name is string && incoming().name.size() <= 100
         && incoming().price is number && incoming().price >= 0;
-      allow update, delete: if isOwnerOrAdmin(existing().restaurantId);
+      allow update: if isOwnerOrAdmin(existing().restaurantId)
+        || (isSignedIn()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['orderCount'])
+            && incoming().orderCount is number
+            && (!('orderCount' in existing()) || incoming().orderCount > existing().orderCount));
+      allow delete: if isOwnerOrAdmin(existing().restaurantId);
     }
 
     // ─── USERS ───────────────────────────────────────────────────────────────
@@ -198,10 +203,14 @@ service cloud.firestore {
     match /loyalty_profiles/{profileId} {
       allow read, list: if isOwnerOrAdmin(resource.data.restaurantId)
         || (isSignedIn() && resource.data.customerId == request.auth.uid);
-      allow create: if isOwnerOrAdmin(incoming().restaurantId)
-        && incoming().customerId is string
-        && incoming().points is number;
-      allow update: if isOwnerOrAdmin(existing().restaurantId);
+      allow create: if incoming().customerId is string
+        && incoming().pointsBalance is number
+        && (isOwnerOrAdmin(incoming().restaurantId)
+            || (isSignedIn() && incoming().customerId == request.auth.uid));
+      allow update: if isOwnerOrAdmin(existing().restaurantId)
+        || (isSignedIn() && existing().customerId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys()
+                 .hasOnly(['pointsBalance', 'customerName', 'history']));
       allow delete: if false;
     }
 
