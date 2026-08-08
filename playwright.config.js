@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: '.',
   testMatch: /.*\.spec\.js/,
   timeout: 120000,
+  workers: 1,
   use: {
     browserName: 'chromium',
     channel: 'chrome',
