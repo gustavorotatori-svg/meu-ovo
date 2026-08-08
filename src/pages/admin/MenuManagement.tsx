@@ -120,6 +120,8 @@ export default function MenuManagement() {
     const unsubscribeProd = onSnapshot(qProd, (snapshot) => {
       const prods = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
       setProducts(prods);
+    }, (error) => {
+      console.error('Error listening to products:', error);
     });
 
     return () => {
@@ -155,6 +157,19 @@ export default function MenuManagement() {
       setLoading(false);
     }
   }, [categories, selectedCategory, loading]);
+
+  useEffect(() => {
+    (window as unknown as { handleImageUpload: (event: Event) => void }).handleImageUpload = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          window.dispatchEvent(new CustomEvent('imageProcessed', { detail: reader.result }));
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }, []);
 
   const handleReorderCategories = async (newCategories: Category[]) => {
     setCategories(newCategories);
@@ -242,7 +257,7 @@ export default function MenuManagement() {
       if (isNaN(prepTimeNum) || prepTimeNum < 0) newErrors.estimatedPrepTime = 'Tempo inválido';
     }
 
-    if (newProd.imageUrl && !newProd.imageUrl.startsWith('http') && !newProd.imageUrl.startsWith('data:image')) {
+    if (newProd.imageUrl && !newProd.imageUrl.startsWith('http') && !newProd.imageUrl.startsWith('data:image') && !newProd.imageUrl.startsWith('blob:') && !imageFile) {
       newErrors.imageUrl = 'URL ou formato de imagem inválido';
     }
 
@@ -323,7 +338,7 @@ export default function MenuManagement() {
         setUploadingImage(false);
       }
 
-      await setDoc(doc(db, 'products', productId), {
+      const payload: Record<string, unknown> = {
         restaurantId: restaurant.id,
         categoryId: newProd.categoryId,
         name: newProd.name,
@@ -335,15 +350,17 @@ export default function MenuManagement() {
         ingredients: newProd.ingredients || '',
         allergens: newProd.allergens || '',
         selectedAllergens: newProd.selectedAllergens,
-        labelInfo,
         isActive: newProd.isActive,
         isAvailable: newProd.isAvailable,
         isFeatured: false,
         optionGroups: newProd.optionGroups,
-        stock: stockNum,
-        minStockAlert: minStockNum,
-        orderCount: editingProduct ? undefined : 0,
-      });
+      };
+      if (shelfLifeNum) payload.labelInfo = labelInfo;
+      if (stockNum !== undefined) payload.stock = stockNum;
+      if (minStockNum !== undefined) payload.minStockAlert = minStockNum;
+      if (!editingProduct) payload.orderCount = 0;
+
+      await setDoc(doc(db, 'products', productId), payload);
 
       toast.success(editingProduct ? t('menu.productUpdated') : t('menu.productCreated'));
       
@@ -352,6 +369,7 @@ export default function MenuManagement() {
       setIsProductModalOpen(false);
     } catch (e) {
       setUploadingImage(false);
+      console.error('CRIAR_PRODUTO_ERROR', e);
       toast.error(t('common.error'));
     }
   };
@@ -587,19 +605,6 @@ export default function MenuManagement() {
     );
   }
 
-  useEffect(() => {
-    (window as unknown as { handleImageUpload: (event: Event) => void }).handleImageUpload = (event: Event) => {
-      const file = (event.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          window.dispatchEvent(new CustomEvent('imageProcessed', { detail: reader.result }));
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-  }, []);
-
   return (    <div className="space-y-6">
       <div className="flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
@@ -632,7 +637,7 @@ export default function MenuManagement() {
             <Button size="sm" onClick={() => {
               setEditingProduct(null);
               setImageFile(null);
-              setNewProd({ name: '', description: '', price: '', categoryId: selectedCategory || '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', optionGroups: [] });
+              setNewProd({ name: '', description: '', price: '', categoryId: selectedCategory || '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], optionGroups: [] });
               setIsProductModalOpen(true);
             }} className="h-10 px-6 font-black tracking-widest text-[10px] italic bg-brand-egg text-brand-black border-b-4 border-yellow-600 shadow-md">
               <Plus className="mr-2 h-3.5 w-3.5" /> PRODUTO
