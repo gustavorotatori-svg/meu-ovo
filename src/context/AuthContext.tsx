@@ -74,7 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 onboardingComplete: false,
                 customerRating: 5,
                 customerRatingCount: 0,
-              });
+              }, { merge: true });
             } catch (createErr) {
               console.error("Error recreating missing user profile:", createErr);
             }
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.customerRatingCount = 0;
       }
 
-      await setDoc(doc(db, 'users', res.user.uid), userData);
+      await setDoc(doc(db, 'users', res.user.uid), userData, { merge: true });
     } catch (firestoreError) {
       // If Firestore write fails, rollback the auth user to prevent orphaned accounts
       await res.user.delete().catch(() => {});
@@ -201,7 +201,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         onboardingComplete: false,
         customerRating: 5,
         customerRatingCount: 0,
-      });
+      }, { merge: true });
     }
     registerFCMAndActivity(res.user.uid);
   }

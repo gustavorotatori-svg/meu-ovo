@@ -1,4 +1,4 @@
-import { useState, useCallback, type ChangeEvent, type FormEvent } from 'react';
+import { useState, useCallback, useRef, type ChangeEvent, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Loader, Store, Utensils } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,8 @@ import BackButton from '../components/BackButton';
 import { Logo } from '../components/Logo';
 import SEO from '../components/SEO';
 import { auth } from '../lib/firebase-auth';
+import { db } from '../lib/firebase';
+import { doc, getDoc, getDocs, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import { sendEmailVerification } from 'firebase/auth';
 import { getFirebaseErrorMessage } from '../lib/utils';
 import { Button } from '../components/Button';
@@ -18,7 +20,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '';
-  const safeRedirect = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/busca';
+  const safeRedirect = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '';
   const initialTab: RoleTab = redirectTo === '/cadastro-restaurante' ? 'restaurant' : 'customer';
   const [roleTab, setRoleTab] = useState<RoleTab>(initialTab);
   const [isLogin, setIsLogin] = useState(true);
@@ -28,7 +30,27 @@ export default function LoginPage() {
   const [lgpdConsent, setLgpdConsent] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [fieldErrors, setFieldErrors] = useState({ name: '', email: '', password: '' });
+  const submittingRef = useRef(false);
   const isRestaurant = roleTab === 'restaurant';
+
+  const resolvePostLoginDestination = async (): Promise<string> => {
+    if (safeRedirect) return safeRedirect;
+    const uid = auth.currentUser?.uid || '';
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      const data = userDoc.exists() ? userDoc.data() : null;
+      const role = data?.role || 'customer';
+      if (role === 'restaurant') return '/admin';
+      if (role === 'admin') return '/plataforma';
+      const resumingOnboarding = data?.signupIntent === 'restaurant' && !data?.onboardingComplete;
+      if (resumingOnboarding) return '/cadastro-restaurante';
+      const owned = await getDocs(query(collection(db, 'restaurants'), where('ownerId', '==', uid), limit(1)));
+      if (!owned.empty) return '/cadastro-restaurante';
+    } catch {
+      // fallthrough — keep safe defaults below
+    }
+    return isRestaurant ? '/admin' : '/busca';
+  };
 
   const handleGoogleSignIn = useCallback(async () => {
     if (!isLogin && !lgpdConsent) {
@@ -39,7 +61,7 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
       toast.success('Bem-vindo!');
-      navigate(safeRedirect);
+      navigate(await resolvePostLoginDestination());
     } catch (error) {
       toast.error(getFirebaseErrorMessage(error));
     } finally {
@@ -98,7 +120,9 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!validate()) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       if (isLogin) {
@@ -118,13 +142,14 @@ export default function LoginPage() {
           throw signInErr;
         }
         toast.success('Bem-vindo de volta!');
-        navigate(safeRedirect || (isRestaurant ? '/admin' : '/busca'));
+        navigate(await resolvePostLoginDestination());
       } else {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const role = isRestaurant ? 'restaurant' : 'customer';
         await signUp(formData.email.trim(), formData.password, formData.name.trim(), role);
         if (isRestaurant) {
-          toast.success('Conta de restaurante criada! Agora cadastre seu cardápio.');
+          try { await updateDoc(doc(db, 'users', auth.currentUser?.uid || ''), { signupIntent: 'restaurant' }); } catch {}
+          toast.success('Conta de restaurante criada! Verifique seu email e cadastre seu cardápio.');
           navigate('/cadastro-restaurante');
         } else {
           toast.success('Conta criada! Verifique seu email.');
@@ -135,6 +160,7 @@ export default function LoginPage() {
     } catch (error) {
       toast.error(getFirebaseErrorMessage(error));
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };

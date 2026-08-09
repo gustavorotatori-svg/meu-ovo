@@ -65,14 +65,16 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if request.auth.uid == userId || isPlatformAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId
-        && incoming().diff(existing()).affectedKeys()
-             .hasOnly(['full_name', 'role', 'createdAt', 'pwaInstallPending',
-                       'onboardingComplete', 'customerRating', 'customerRatingCount'])
+        && incoming().keys().hasOnly(['full_name', 'role', 'createdAt', 'pwaInstallPending',
+                                      'onboardingComplete', 'customerRating', 'customerRatingCount',
+                                      'signupIntent'])
         && incoming().role == 'customer';
       allow update: if isSignedIn() && request.auth.uid == userId
         && incoming().diff(existing()).affectedKeys()
-             .hasOnly(['full_name', 'profile_image_url', 'updatedAt', 'role', 'pwaInstallPending'])
-        && (!incoming().keys().contains('role')
+             .hasOnly(['full_name', 'profile_image_url', 'updatedAt', 'role', 'pwaInstallPending',
+                       'favorites', 'onboardingComplete', 'createdAt', 'signupIntent',
+                       'customerRating', 'customerRatingCount'])
+        && (!('role' in incoming())
             || incoming().role == existing().role
             || (existing().role == 'customer' && incoming().role == 'restaurant'));
       allow delete: if false;
@@ -95,7 +97,7 @@ service cloud.firestore {
         && incoming().restaurantId is string
         && incoming().customerPhone is string
         && (incoming().userId == request.auth.uid
-            || !incoming().keys().contains('userId'))
+            || !('userId' in incoming()))
         && incoming().createdAt is string;
       allow update: if (
         isOwnerOrAdmin(existing().restaurantId)

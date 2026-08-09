@@ -154,6 +154,7 @@ export default function InstallAppPage() {
   }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
     const handleAppInstalled = () => {
       toast.success('App instalado com sucesso!');
       doConfirm();

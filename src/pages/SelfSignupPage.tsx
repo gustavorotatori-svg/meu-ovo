@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth } from '../lib/firebase-auth';
 import { db } from '../lib/firebase';
@@ -18,7 +18,9 @@ export default function SelfSignupPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ name: '', whatsapp: '', email: '', password: '' });
   const [created, setCreated] = useState(false);
+  const [lgpdConsent, setLgpdConsent] = useState(false);
   const mountedRef = useRef(true);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (auth.currentUser) {
@@ -47,15 +49,16 @@ export default function SelfSignupPage() {
     password: form.password.length >= 6,
   };
 
-  const canSubmit = valid.name && valid.whatsapp && valid.email && valid.password;
+  const canSubmit = valid.name && valid.whatsapp && valid.email && valid.password && lgpdConsent;
 
   const handleSubmit = async () => {
-    if (!canSubmit || loading) return;
+    if (!canSubmit || loading || submittingRef.current) return;
     if (auth.currentUser) {
       toast.error('Você já está logado');
       navigate('/busca', { replace: true });
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
     try {
       const whatsappClean = form.whatsapp.replace(/\D/g, '');
@@ -68,9 +71,16 @@ export default function SelfSignupPage() {
         role: 'customer',
         createdAt: new Date().toISOString(),
         onboardingComplete: false,
+        signupIntent: 'restaurant',
         customerRating: 5,
         customerRatingCount: 0,
-      });
+      }, { merge: true });
+
+      try {
+        await sendEmailVerification(cred.user);
+      } catch (verifyErr) {
+        console.error('[Signup] Failed to send verification email:', verifyErr);
+      }
 
       if (!mountedRef.current) return;
 
@@ -93,6 +103,7 @@ export default function SelfSignupPage() {
         toast.error(err?.message || 'Erro ao criar conta');
       }
     } finally {
+      submittingRef.current = false;
       if (mountedRef.current) setLoading(false);
     }
   };
@@ -190,11 +201,24 @@ export default function SelfSignupPage() {
                   )}
                 </div>
 
-                <p className="text-[9px] text-gray-500 font-medium text-center leading-relaxed">
-                  Ao criar sua conta, você aceita nossos{' '}
-                  <Link to="/termos" className="text-[#FFC928] hover:underline">Termos</Link> e{' '}
-                  <Link to="/privacidade" className="text-[#FFC928] hover:underline">Política de Privacidade</Link>.
-                </p>
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    id="signup-lgpd"
+                    checked={lgpdConsent}
+                    onChange={e => setLgpdConsent(e.target.checked)}
+                    required
+                    className="mt-0.5 w-5 h-5 rounded border-white/20 bg-white/5 text-[#FFC928] accent-[#FFC928] shrink-0"
+                    aria-required="true"
+                  />
+                  <span className="text-[10px] font-bold text-gray-400 leading-relaxed">
+                    Aceito os{' '}
+                    <Link to="/termos" className="text-[#FFC928] hover:underline">Termos de Uso</Link>
+                    {' '}e a{' '}
+                    <Link to="/privacidade" className="text-[#FFC928] hover:underline">Política de Privacidade</Link>
+                    , e autorizo o tratamento dos meus dados conforme a LGPD.
+                  </span>
+                </label>
 
                 <Button
                   type="submit"
