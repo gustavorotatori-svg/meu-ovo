@@ -4,6 +4,7 @@ import { Button } from '../Button';
 import { toast } from 'react-hot-toast';
 import { db } from '../../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { authedFetch } from '../../lib/api';
 
 interface AIMenuImportProps {
   restaurantId: string;
@@ -66,7 +67,7 @@ export default function AIMenuImport({ restaurantId, onClose, onSuccess }: AIMen
       const commaIndex = result.indexOf(',');
       const base64Data = result.slice(commaIndex + 1);
 
-      const resp = await fetch('/api/ai/parse-menu', {
+      const resp = await authedFetch('/api/ai/parse-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

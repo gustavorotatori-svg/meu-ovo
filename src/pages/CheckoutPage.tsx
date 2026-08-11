@@ -409,6 +409,9 @@ export default function CheckoutPage() {
       productCounts.forEach((qty, productId) => {
         batch.update(doc(db, 'products', productId), { orderCount: increment(qty) });
       });
+      if (restaurantId) {
+        batch.update(doc(db, 'restaurants', restaurantId), { orderCount: increment(1) });
+      }
       await batch.commit();
     } catch (err) {
       console.error('[Checkout] Failed to increment orderCount:', err);

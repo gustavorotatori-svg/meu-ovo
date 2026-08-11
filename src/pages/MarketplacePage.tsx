@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, MapPin, SlidersHorizontal, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2, RotateCcw } from 'lucide-react';
+import { Search, MapPin, SlidersHorizontal, Clock, Truck, X, ChevronDown, Filter, Share2, Utensils, Building2, Landmark, Heart, Loader2, RotateCcw, Flame } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import OptimizedImage from '../components/OptimizedImage';
@@ -361,6 +361,14 @@ export default function MarketplacePage() {
             O que você quer comer hoje?
           </h1>
           <p className="text-gray-400 text-center mb-8 font-medium">Pedido direto. Sem comissão. Apoie o restaurante local.</p>
+          <div className="flex justify-center mb-8">
+            <Link
+              to="/mais-pedidos"
+              className="inline-flex items-center gap-2 bg-[#FFC928] text-black font-black text-[10px] uppercase tracking-widest px-5 py-3 rounded-2xl hover:bg-amber-400 transition-all"
+            >
+              <Flame size={14} /> Ver ranking dos mais pedidos
+            </Link>
+          </div>
           <div className="bg-white rounded-3xl shadow-2xl border-4 border-white/10 p-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
             <div className="flex items-center gap-2 sm:border-r sm:border-gray-100 sm:pr-5 pl-2 sm:pl-4 py-1 sm:py-2">
               <MapPin size={18} className="text-[#FFC928] shrink-0" />

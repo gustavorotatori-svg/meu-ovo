@@ -7,9 +7,16 @@ import helmet from "helmet";
 dotenv.config();
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
+import { initializeApp as initAdminApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { handleWebhook } from '../src/lib/whatsappWebhook.ts';
+
+// Client connects to a custom Firestore database (see src/lib/firebase.ts)
+const FIRESTORE_DATABASE_ID = 'ai-studio-83caa59a-5170-443b-82b8-5354c3a71e8b';
+function adminDb() {
+  return getFirestore(getApps()[0]!, FIRESTORE_DATABASE_ID);
+}
 
 // Initialize Firebase Admin SDK
 let firebaseAdminInitialized = false;
@@ -62,7 +69,7 @@ app.use(helmet({
 }));
 app.use(cors({
   origin: process.env.APP_URL || 'http://localhost:3000',
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
 }));
 app.use(express.json({ limit: '1mb' }));
@@ -105,6 +112,27 @@ function requireApiKey(req: express.Request, res: express.Response, next: expres
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
+}
+
+// Firebase ID token authentication for protected endpoints
+async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (!firebaseAdminInitialized) {
+    // Fallback for local dev without service account: accept x-api-key
+    return requireApiKey(req, res, next);
+  }
+  try {
+    const decoded = await getAuth().verifyIdToken(token);
+    (req as express.Request & { auth?: { uid: string } }).auth = { uid: decoded.uid };
+    next();
+  } catch (error) {
+    console.error('[Auth] Invalid token:', error);
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 }
 
 // Health check (no rate limit)
@@ -153,7 +181,7 @@ app.get("/api/health", (req, res) => {
 
 // Blog and newsletter are now public (requireApiKey removed to match frontend behavior)
 
-app.post("/api/ai/parse-menu", async (req, res) => {
+app.post("/api/ai/parse-menu", requireAuth, async (req, res) => {
   const { fileData, mimeType } = req.body;
   if (!fileData || !mimeType) {
     return res.status(400).json({ error: "fileData and mimeType are required" });
@@ -188,7 +216,7 @@ app.post("/api/ai/parse-menu", async (req, res) => {
   }
 });
 
-app.post("/api/ai/generate-menu", async (req, res) => {
+app.post("/api/ai/generate-menu", requireAuth, async (req, res) => {
   const cuisine = sanitizeString(req.body.cuisine);
   const restaurantName = sanitizeString(req.body.restaurantName);
   const slogan = sanitizeString(req.body.slogan, 200);
@@ -249,7 +277,7 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
   }
 });
 
-app.post("/api/ai/generate-product", async (req, res) => {
+app.post("/api/ai/generate-product", requireAuth, async (req, res) => {
   const categoryName = sanitizeString(req.body.categoryName);
   const userPrompt = sanitizeString(req.body.prompt, 300);
   if (!categoryName) {
@@ -315,8 +343,7 @@ app.get("/api/blog/news", async (req, res) => {
   }
 });
 
-app.post("/api/newsletter/subscribe", async (req, res) => {
-  const email = sanitizeString(req.body.email, 254);
+app.post("/api/newsletter/subscribe", async (req, res) => {  const email = sanitizeString(req.body.email, 254);
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: "Valid email is required" });
   }
@@ -329,6 +356,105 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
   } catch (error) {
     console.error("Newsletter error:", error);
     res.status(500).json({ error: "Subscription failed" });
+  }
+});
+
+/**
+ * LGPD — Export user data (access/portability rights)
+ */
+app.get("/api/account/export", requireAuth, async (req, res) => {
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ error: "Service unavailable" });
+  }
+  try {
+    const uid = (req as express.Request & { auth?: { uid: string } }).auth!.uid;
+    const db = adminDb();
+
+    const userDoc = await db.collection('users').doc(uid).get();
+
+    const ordersSnapshot = await db.collection('orders')
+      .where('userId', '==', uid)
+      .limit(500)
+      .get();
+    const orders = ordersSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const loyaltySnapshot = await db.collection('loyalty_profiles')
+      .where('customerId', '==', uid)
+      .limit(100)
+      .get();
+    const loyalty = loyaltySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    const data = {
+      exportedAt: new Date().toISOString(),
+      profile: userDoc.exists ? userDoc.data() : null,
+      orders,
+      loyalty,
+    };
+    res.setHeader('Content-Disposition', 'attachment; filename="meu-ovo-dados.json"');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.json(data);
+  } catch (error: any) {
+    console.error("[Account Export] Error:", error);
+    res.status(500).json({ error: "Failed to export data" });
+  }
+});
+
+/**
+ * LGPD — Delete account data (erasure right). Requires fresh ID token.
+ * Uses the Admin SDK so it can wipe documents across collections that
+ * client rules intentionally lock (orders by customer, loyalty profiles, etc).
+ */
+app.delete("/api/account/data", requireAuth, async (req, res) => {
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ error: "Service unavailable" });
+  }
+  try {
+    const uid = (req as express.Request & { auth?: { uid: string } }).auth!.uid;
+    const db = adminDb();
+
+    const userRef = db.collection('users').doc(uid);
+
+    const batch = db.batch();
+
+    batch.delete(userRef);
+
+    const deleteWhere = async (collectionName: string, field: string, limit = 500) => {
+      let cursor: any = null;
+      for (;;) {
+        let q = db.collection(collectionName).where(field, '==', uid).limit(limit);
+        if (cursor) q = q.startAfter(cursor);
+        const snap = await q.get();
+        if (snap.empty) break;
+        snap.docs.forEach(d => batch.delete(d.ref));
+        cursor = snap.docs[snap.docs.length - 1];
+      }
+    };
+
+    await deleteWhere('orders', 'userId');
+    await deleteWhere('loyalty_profiles', 'customerId');
+    await deleteWhere('dish_ratings', 'userId');
+    await deleteWhere('ovos_de_ouro_votes', 'userId');
+
+    // Singleton per-user collections (document ID == uid)
+    ['platform_loyalty', 'streaks', 'achievements'].forEach((collectionName) => {
+      batch.delete(db.collection(collectionName).doc(uid));
+    });
+
+    await batch.commit();
+
+    // Delete the Firebase Auth account (last step: if this fails, docs already gone)
+    try {
+      await getAuth().deleteUser(uid);
+    } catch (authErr: any) {
+      if (!authErr?.errorInfo?.code?.includes('auth/user-not-found')) {
+        console.error("[Account Delete] deleteUser error:", authErr);
+      }
+    }
+
+    res.json({ success: true, message: "Account data deleted" });
+  } catch (error: any) {
+    console.error("[Account Delete] Error:", error);
+    res.status(500).json({ error: "Failed to delete account data" });
   }
 });
 
@@ -350,7 +476,7 @@ app.post("/api/whatsapp/webhook", async (req, res) => {
     if (authHeader !== webhookSecret) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
-    const db = getFirestore();
+    const db = adminDb();
     const result = await handleWebhook(ai, db, req.body);
     res.json(result);
   } catch (error: any) {

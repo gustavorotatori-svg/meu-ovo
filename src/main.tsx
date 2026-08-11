@@ -4,10 +4,13 @@ import App from './App.tsx';
 import './index.css';
 import './lib/i18n';
 import { initSentry } from './lib/sentry';
+import { initAnalytics, setupAnalyticsConsentListener } from './lib/analytics';
 
 import { HelmetProvider } from 'react-helmet-async';
 
 initSentry();
+setupAnalyticsConsentListener();
+initAnalytics();
 
 window.addEventListener('error', (event) => {
   console.error('[Global] Uncaught error:', event.error || event.message);

@@ -139,6 +139,8 @@ export default function LandingPage() {
       <SEO
         title="Cardápio Digital Grátis para Restaurantes"
         description="Aumente suas vendas com cardápio digital por QR Code e delivery sem taxas. Receba pedidos direto no seu WhatsApp. Cadastro gratuito."
+        url="/"
+        type="website"
         faqItems={faqData.map(f => ({ question: f.q, answer: f.a }))}
       />
       <Navbar />

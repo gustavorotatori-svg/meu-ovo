@@ -31,17 +31,17 @@ const sections = [
   {
     icon: Cookie,
     title: '5. Cookies e Tecnologias',
-    content: 'Utilizamos cookies e tecnologias similares para melhorar sua experiência, lembrar suas preferências e entender como você interage com a plataforma. Você pode controlar o uso de cookies nas configurações do seu navegador. A desativação de cookies pode afetar algumas funcionalidades da plataforma.'
+    content: 'Utilizamos cookies estritamente necessários para o funcionamento da plataforma (autenticação e preferências). Ferramentas de análise (Google Analytics) e anúncios (Meta Pixel) somente são ativadas após o seu consentimento explícito. Você pode aceitar, recusar ou alterar sua escolha a qualquer momento usando o botão "Cookies" no rodapé do site. Quando recusa os cookies de análise, nenhuma ferramenta de tracking é carregada no seu dispositivo.'
   },
   {
     icon: Trash2,
     title: '6. Seus Direitos (LGPD)',
-    content: 'Nos termos da Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018), você tem direito a: (a) confirmar a existência de tratamento de dados; (b) acessar seus dados; (c) corrigir dados incompletos ou desatualizados; (d) solicitar anonimização ou eliminação; (e) revogar consentimento; (f) solicitar portabilidade. Para exercer qualquer direito, entre em contato conosco.'
+    content: 'Nos termos da Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018), você tem direito a: (a) confirmar a existência de tratamento de dados; (b) acessar seus dados; (c) corrigir dados incompletos ou desatualizados; (d) solicitar anonimização ou eliminação; (e) revogar consentimento; (f) solicitar portabilidade. No seu perfil você encontra as opções "Baixar meus dados" e "Excluir minha conta". Para exercer qualquer outro direito, entre em contato conosco.'
   },
   {
     icon: Mail,
     title: '7. Retenção e Exclusão',
-    content: 'Mantemos seus dados pelo tempo necessário para cumprir as finalidades descritas ou para cumprir obrigações legais. Ao excluir sua conta, seus dados pessoais são removidos em até 30 dias, exceto quando a lei exigir retenção por prazos maiores (como registros de transações fiscais).'
+    content: 'Mantemos seus dados pelo tempo necessário para cumprir as finalidades descritas ou para cumprir obrigações legais. Ao excluir sua conta pela opção "Excluir minha conta" no seu perfil, seus dados pessoais são removidos imediatamente do nosso banco (pedidos e dados pessoais), exceto quando a lei exigir retenção por prazos maiores (como registros de transações fiscais).'
   }
 ];
 

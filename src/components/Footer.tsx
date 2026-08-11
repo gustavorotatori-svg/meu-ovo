@@ -7,6 +7,7 @@ import { Instagram, Twitter, Facebook, Youtube, ExternalLink, Mail, Phone, MapPi
 import { toast } from 'react-hot-toast';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { openConsentSettings } from '../lib/consent';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -62,6 +63,7 @@ export default function Footer() {
       { label: 'Portal do Parceiro', to: '/admin' },
       { label: 'Prêmio Ovos de Ouro', to: '/ovos-de-ouro' },
       { label: 'Marketplace', to: '/busca' },
+      { label: 'Ranking Mais Pedidos', to: '/mais-pedidos' },
       { label: 'Etiquetas', to: '/admin/etiquetas' },
     ],
     legal: [
@@ -289,6 +291,12 @@ export default function Footer() {
                   {link.label}
                 </Link>
               ))}
+              <button
+                onClick={() => openConsentSettings()}
+                className="text-[10px] font-black uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                Cookies
+              </button>
             </div>
           </div>
           

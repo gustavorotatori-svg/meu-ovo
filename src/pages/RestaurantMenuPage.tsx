@@ -560,6 +560,25 @@ export default function RestaurantMenuPage() {
         restaurantName={restaurant.name}
         type="restaurant"
         image={restaurant.coverImage}
+        url={`/r/${restaurant.slug}`}
+        restaurant={{
+          name: restaurant.name,
+          image: restaurant.coverImage,
+          url: `/r/${restaurant.slug}`,
+          description: restaurant.description || `Cardápio digital de ${restaurant.name} — peça delivery sem taxas extras.`,
+          cuisine: restaurant.cuisineType,
+          priceRange: restaurant.priceRange ? (restaurant.priceRange === 'low' ? '$' : restaurant.priceRange === 'medium' ? '$$' : '$$$') : undefined,
+          telephone: restaurant.whatsapp ? `+55${restaurant.whatsapp.replace(/\D/g, '')}` : undefined,
+          address: {
+            streetAddress: restaurant.address,
+            addressLocality: restaurant.neighborhood,
+            addressRegion: restaurant.city,
+            addressCountry: 'BR',
+          },
+          openingHours: restaurant.hours ? [restaurant.hours] : undefined,
+          rating: restaurant.rating,
+          reviewCount: restaurant.reviewCount,
+        }}
       />
 
       {/* Floating Animated Header on Scroll */}

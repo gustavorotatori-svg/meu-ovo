@@ -68,6 +68,7 @@ export default function SelfSignupPage() {
 
       await setDoc(doc(db, 'users', cred.user.uid), {
         full_name: form.name,
+        whatsapp: whatsappClean || null,
         role: 'customer',
         createdAt: new Date().toISOString(),
         onboardingComplete: false,
@@ -90,7 +91,7 @@ export default function SelfSignupPage() {
 
       setTimeout(() => {
         if (mountedRef.current) {
-          navigate(`/cadastro-restaurante?whatsapp=${encodeURIComponent(whatsappClean)}&name=${encodeURIComponent(form.name)}&email=${encodeURIComponent(form.email)}`);
+          navigate('/cadastro-restaurante');
         }
       }, 1500);
     } catch (err: any) {

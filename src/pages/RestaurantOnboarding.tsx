@@ -11,6 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { toast } from 'react-hot-toast';
 import { encodeGeohash } from '../lib/geohash';
+import { authedFetch } from '../lib/api';
 
 export default function RestaurantOnboarding() {
   const { t } = useTranslation();
@@ -336,7 +337,7 @@ export default function RestaurantOnboarding() {
         const commaIndex = base64WithHeader.indexOf(',');
         const base64Data = base64WithHeader.slice(commaIndex + 1);
 
-        const response = await fetch('/api/ai/parse-menu', {
+        const response = await authedFetch('/api/ai/parse-menu', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

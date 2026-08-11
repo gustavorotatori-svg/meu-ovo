@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield, Plus, Trash2, Check, Home, RotateCcw } from 'lucide-react';
+import { User, Package, MapPin, Settings, LogOut, ChevronRight, Clock, Star, Heart, Mail, Lock, Shield, Plus, Trash2, Check, Home, RotateCcw, Download, AlertTriangle, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { exportUserData, deleteAccountData } from '../services/accountService';
 import { collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Order, SavedAddress, Product, CartItem } from '../types';
@@ -40,6 +41,42 @@ export default function CustomerProfilePage() {
   });
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [addressForm, setAddressForm] = useState({ label: '', street: '', number: '', complement: '', neighborhood: '', city: '' });
+  const [lgpdBusy, setLgpdBusy] = useState<'download' | 'delete' | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const handleDownloadData = async () => {
+    setLgpdBusy('download');
+    try {
+      const { filename, blob } = await exportUserData();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Seus dados foram baixados.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao baixar seus dados.');
+    } finally {
+      setLgpdBusy(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setLgpdBusy('delete');
+    try {
+      await deleteAccountData();
+      toast.success('Conta excluída. Até logo!');
+      await signOut();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Falha ao excluir a conta.');
+    } finally {
+      setLgpdBusy(null);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   useEffect(() => {
     try { localStorage.setItem('meuovo_addresses', JSON.stringify(savedAddresses)); } catch {}
@@ -612,6 +649,28 @@ export default function CustomerProfilePage() {
                  Sair da conta
                </button>
             </div>
+
+            <div className="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 space-y-1">
+              <div className="flex items-center gap-4 p-4 rounded-xl text-[#111] font-black text-[10px] uppercase tracking-widest">
+                <Shield size={18} className="text-[#FFC928]" />
+                Privacidade (LGPD)
+              </div>
+              <button 
+                onClick={handleDownloadData}
+                disabled={lgpdBusy}
+                className="w-full flex items-center gap-4 p-4 rounded-xl transition-all font-black text-[10px] uppercase tracking-widest text-left text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-50"
+              >
+                <Download size={18} />
+                {lgpdBusy === 'download' ? 'Baixando...' : 'Baixar meus dados'}
+              </button>
+              <button 
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full flex items-center gap-4 p-4 rounded-xl text-red-400 hover:bg-red-50 hover:text-red-500 transition-all font-black text-[10px] uppercase tracking-widest text-left"
+              >
+                <Trash2 size={18} />
+                Excluir minha conta
+              </button>
+            </div>
           </div>
 
           {/* Main Content / History */}
@@ -844,6 +903,52 @@ export default function CustomerProfilePage() {
       </main>
 
       <Footer />
+
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+            role="dialog" aria-modal="true" aria-label="Confirmar exclusão de conta"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-3xl w-full max-w-md p-8 shadow-2xl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center mb-4">
+                <AlertTriangle size={24} className="text-red-500" />
+              </div>
+              <h3 className="text-xl font-black uppercase tracking-tight text-[#111] mb-2">
+                Excluir minha conta
+              </h3>
+              <p className="text-sm font-medium text-slate-500 leading-relaxed mb-6">
+                Isso apagará permanentemente seu perfil, histórico de pedidos e dados pessoais (LGPD - art. 18).
+                Essa ação não pode ser desfeita. Deseja continuar?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={lgpdBusy === 'delete'}
+                  className="flex-1 border-2 border-slate-200 hover:border-slate-300 text-slate-500 font-black py-3 rounded-xl text-[10px] uppercase tracking-widest transition-all disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={lgpdBusy === 'delete'}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {lgpdBusy === 'delete' ? <><Loader className="animate-spin" size={14} /> Excluindo...</> : <><Trash2 size={14} /> Excluir</>}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

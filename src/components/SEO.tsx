@@ -7,6 +7,27 @@ interface FAQItem {
   answer: string;
 }
 
+interface RestaurantSchemaData {
+  name: string;
+  image?: string;
+  url?: string;
+  description?: string;
+  cuisine?: string;
+  priceRange?: string;
+  telephone?: string;
+  address?: {
+    streetAddress?: string;
+    addressLocality?: string;
+    addressRegion?: string;
+    postalCode?: string;
+    addressCountry?: string;
+  };
+  geo?: { latitude: number; longitude: number };
+  openingHours?: string[];
+  rating?: number;
+  reviewCount?: number;
+}
+
 interface SEOProps {
   title?: string;
   description?: string;
@@ -16,6 +37,7 @@ interface SEOProps {
   type?: string;
   publishedTime?: string;
   restaurantName?: string;
+  restaurant?: RestaurantSchemaData;
   noIndex?: boolean;
   faqItems?: FAQItem[];
 }
@@ -29,6 +51,7 @@ const SEO: React.FC<SEOProps> = ({
   type = 'website',
   publishedTime,
   restaurantName,
+  restaurant,
   noIndex,
   faqItems,
 }) => {
@@ -97,15 +120,22 @@ const SEO: React.FC<SEOProps> = ({
       </script>
 
       {/* Restaurant Schema (per-page) */}
-      {restaurantName && type === 'restaurant' && (
+      {(restaurantName || restaurant) && (
         <script type="application/ld+json">
           {JSON.stringify({
             "@context": "https://schema.org",
             "@type": "Restaurant",
-            "name": restaurantName,
-            "description": metaDescription,
-            "image": metaImage,
-            "url": metaUrl,
+            "name": restaurant?.name || restaurantName,
+            "description": restaurant?.description || metaDescription,
+            "image": restaurant?.image || metaImage,
+            "url": restaurant?.url || metaUrl,
+            ...(restaurant?.cuisine ? { "servesCuisine": restaurant.cuisine } : {}),
+            ...(restaurant?.priceRange ? { "priceRange": restaurant.priceRange } : {}),
+            ...(restaurant?.telephone ? { "telephone": restaurant.telephone } : {}),
+            ...(restaurant?.address ? { "address": { "@type": "PostalAddress", "streetAddress": restaurant.address.streetAddress, "addressLocality": restaurant.address.addressLocality, "addressRegion": restaurant.address.addressRegion, "postalCode": restaurant.address.postalCode, "addressCountry": restaurant.address.addressCountry } } : {}),
+            ...(restaurant?.geo ? { "geo": { "@type": "GeoCoordinates", "latitude": restaurant.geo.latitude, "longitude": restaurant.geo.longitude } } : {}),
+            ...(restaurant?.openingHours?.length ? { "openingHoursSpecification": restaurant.openingHours.map(h => ({ "@type": "OpeningHoursSpecification", "dayOfWeek": h })) } : {}),
+            ...(restaurant?.rating && restaurant.reviewCount ? { "aggregateRating": { "@type": "AggregateRating", "ratingValue": restaurant.rating, "reviewCount": restaurant.reviewCount } } : {}),
           })}
         </script>
       )}

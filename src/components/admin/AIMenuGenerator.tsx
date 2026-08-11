@@ -4,6 +4,7 @@ import { Button } from '../Button';
 import { toast } from 'react-hot-toast';
 import { db } from '../../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { authedFetch } from '../../lib/api';
 
 interface AIMenuGeneratorProps {
   restaurantId: string;
@@ -43,7 +44,7 @@ export default function AIMenuGenerator({ restaurantId, onClose, onSuccess }: AI
 
     setLoading(true);
     try {
-      const resp = await fetch('/api/ai/generate-menu', {
+      const resp = await authedFetch('/api/ai/generate-menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cuisine, restaurantName, slogan: slogan || undefined })

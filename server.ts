@@ -5,12 +5,19 @@ import { GoogleGenAI, Type } from "@google/genai";
 import dotenv from "dotenv";
 import cors from "cors";
 import helmet from "helmet";
-import { initializeApp as initAdminApp, cert } from 'firebase-admin/app';
+import { initializeApp as initAdminApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getAuth } from 'firebase-admin/auth';
 import { handleWebhook } from './src/lib/whatsappWebhook';
 
 dotenv.config();
+
+// Client connects to a custom Firestore database (see src/lib/firebase.ts)
+const FIRESTORE_DATABASE_ID = 'ai-studio-83caa59a-5170-443b-82b8-5354c3a71e8b';
+function adminDb() {
+  return getFirestore(getApps()[0]!, FIRESTORE_DATABASE_ID);
+}
 
 // Initialize Firebase Admin SDK for push notifications
 let firebaseAdminInitialized = false;
@@ -109,6 +116,26 @@ async function startServer() {
     next();
   }
 
+  // Firebase ID token authentication for protected endpoints
+  async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    if (!firebaseAdminInitialized) {
+      return requireApiKey(req, res, next);
+    }
+    try {
+      const decoded = await getAuth().verifyIdToken(token);
+      (req as express.Request & { auth?: { uid: string } }).auth = { uid: decoded.uid };
+      next();
+    } catch (error) {
+      console.error('[Auth] Invalid token:', error);
+      return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+  }
+
   // Initialize Gemini
   const ai = new GoogleGenAI({ 
     apiKey: process.env.GEMINI_API_KEY,
@@ -153,7 +180,7 @@ async function startServer() {
    * AI Menu Document Parser
    * Uses Gemini 2.5 Flash Lite to extract categories and products from an uploaded image or PDF
    */
-  app.post("/api/ai/parse-menu", async (req, res) => {
+  app.post("/api/ai/parse-menu", requireAuth, async (req, res) => {
     const { fileData, mimeType } = req.body;
     if (!fileData || !mimeType) {
       return res.status(400).json({ error: "fileData and mimeType are required" });
@@ -223,7 +250,7 @@ async function startServer() {
    * AI Menu Generator
    * Generates a full menu with categories and items based on cuisine type
    */
-  app.post("/api/ai/generate-menu", async (req, res) => {
+  app.post("/api/ai/generate-menu", requireAuth, async (req, res) => {
     const cuisine = sanitizeString(req.body.cuisine);
     const restaurantName = sanitizeString(req.body.restaurantName);
     const slogan = sanitizeString(req.body.slogan, 200);
@@ -288,7 +315,7 @@ Retorne o resultado estritamente no formato JSON fornecido no esquema.`;
    * AI Product Generator
    * Generates a single product/plate for a given category
    */
-  app.post("/api/ai/generate-product", async (req, res) => {
+  app.post("/api/ai/generate-product", requireAuth, async (req, res) => {
     const categoryName = sanitizeString(req.body.categoryName);
     const userPrompt = sanitizeString(req.body.prompt, 300);
     if (!categoryName) {
@@ -407,6 +434,102 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
   });
 
   /**
+   * LGPD — Export user data (access/portability rights)
+   */
+  app.get("/api/account/export", requireAuth, async (req, res) => {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ error: "Service unavailable" });
+    }
+    try {
+      const uid = (req as express.Request & { auth?: { uid: string } }).auth!.uid;
+      const db = adminDb();
+
+      const userDoc = await db.collection('users').doc(uid).get();
+
+      const ordersSnapshot = await db.collection('orders')
+        .where('userId', '==', uid)
+        .limit(500)
+        .get();
+      const orders = ordersSnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const loyaltySnapshot = await db.collection('loyalty_profiles')
+        .where('customerId', '==', uid)
+        .limit(100)
+        .get();
+      const loyalty = loyaltySnapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const data = {
+        exportedAt: new Date().toISOString(),
+        profile: userDoc.exists ? userDoc.data() : null,
+        orders,
+        loyalty,
+      };
+      res.setHeader('Content-Disposition', 'attachment; filename="meu-ovo-dados.json"');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.json(data);
+    } catch (error: any) {
+      console.error("[Account Export] Error:", error);
+      res.status(500).json({ error: "Failed to export data" });
+    }
+  });
+
+  /**
+   * LGPD — Delete account data (erasure right). Requires fresh ID token.
+   */
+  app.delete("/api/account/data", requireAuth, async (req, res) => {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ error: "Service unavailable" });
+    }
+    try {
+      const uid = (req as express.Request & { auth?: { uid: string } }).auth!.uid;
+      const db = adminDb();
+
+      const userRef = db.collection('users').doc(uid);
+
+      const batch = db.batch();
+
+      batch.delete(userRef);
+
+      const deleteWhere = async (collectionName: string, field: string, limit = 500) => {
+        let cursor: any = null;
+        for (;;) {
+          let q = db.collection(collectionName).where(field, '==', uid).limit(limit);
+          if (cursor) q = q.startAfter(cursor);
+          const snap = await q.get();
+          if (snap.empty) break;
+          snap.docs.forEach(d => batch.delete(d.ref));
+          cursor = snap.docs[snap.docs.length - 1];
+        }
+      };
+
+      await deleteWhere('orders', 'userId');
+      await deleteWhere('loyalty_profiles', 'customerId');
+      await deleteWhere('dish_ratings', 'userId');
+      await deleteWhere('ovos_de_ouro_votes', 'userId');
+
+      // Singleton per-user collections (document ID == uid)
+      ['platform_loyalty', 'streaks', 'achievements'].forEach((collectionName) => {
+        batch.delete(db.collection(collectionName).doc(uid));
+      });
+
+      await batch.commit();
+
+      try {
+        await getAuth().deleteUser(uid);
+      } catch (authErr: any) {
+        if (!authErr?.errorInfo?.code?.includes('auth/user-not-found')) {
+          console.error("[Account Delete] deleteUser error:", authErr);
+        }
+      }
+
+      res.json({ success: true, message: "Account data deleted" });
+    } catch (error: any) {
+      console.error("[Account Delete] Error:", error);
+      res.status(500).json({ error: "Failed to delete account data" });
+    }
+  });
+
+  /**
    * Re-engagement Push Notification
    * Sends push notifications to users inactive for 7+ days
    * Requires FIREBASE_SERVICE_ACCOUNT_KEY env var + FCM tokens registered on user docs
@@ -421,7 +544,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-      const db = getFirestore();
+      const db = adminDb();
       const snapshot = await db.collection('users')
         .where('fcmToken', '!=', null)
         .where('lastActiveAt', '<', sevenDaysAgo.toISOString())
@@ -486,7 +609,7 @@ Selecione ou crie também uma URL de imagem pública real (Unsplash ou Pexels) c
       if (authHeader !== webhookSecret) {
         return res.status(401).json({ success: false, message: "Unauthorized" });
       }
-      const db = getFirestore();
+      const db = adminDb();
       const result = await handleWebhook(ai, db, req.body);
       res.json(result);
     } catch (error: any) {

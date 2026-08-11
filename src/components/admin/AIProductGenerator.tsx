@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { db } from '../../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { cn } from '../../lib/utils';
+import { authedFetch } from '../../lib/api';
 
 interface AIProductGeneratorProps {
   restaurantId: string;
@@ -149,7 +150,7 @@ export default function AIProductGenerator({
     setLoading(true);
     setErrors({});
     try {
-      const resp = await fetch('/api/ai/generate-product', {
+      const resp = await authedFetch('/api/ai/generate-product', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ categoryName, prompt: prompt || undefined })

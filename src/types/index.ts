@@ -22,6 +22,7 @@ export interface Restaurant {
   minimumOrder: number;
   rating: number;
   reviewCount: number;
+  orderCount?: number;
   description: string;
   responsible?: string;
   hours?: string;

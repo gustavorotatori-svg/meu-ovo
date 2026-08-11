@@ -34,7 +34,11 @@ service cloud.firestore {
         && incoming().slug.matches('^[a-z0-9-]+$')
         && (incoming().createdAt is timestamp || incoming().createdAt is string);
       allow update: if isOwnerOrAdmin(restaurantId)
-        && incoming().ownerId == existing().ownerId;
+        && incoming().ownerId == existing().ownerId
+        || (isSignedIn()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['orderCount'])
+            && incoming().orderCount is number
+            && (!('orderCount' in existing()) || incoming().orderCount > existing().orderCount));
       allow delete: if isOwnerOrAdmin(restaurantId);
     }
 
@@ -67,13 +71,13 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == userId
         && incoming().keys().hasOnly(['full_name', 'role', 'createdAt', 'pwaInstallPending',
                                       'onboardingComplete', 'customerRating', 'customerRatingCount',
-                                      'signupIntent'])
+                                      'signupIntent', 'whatsapp'])
         && incoming().role == 'customer';
       allow update: if isSignedIn() && request.auth.uid == userId
         && incoming().diff(existing()).affectedKeys()
              .hasOnly(['full_name', 'profile_image_url', 'updatedAt', 'role', 'pwaInstallPending',
                        'favorites', 'onboardingComplete', 'createdAt', 'signupIntent',
-                       'customerRating', 'customerRatingCount'])
+                       'customerRating', 'customerRatingCount', 'whatsapp'])
         && (!('role' in incoming())
             || incoming().role == existing().role
             || (existing().role == 'customer' && incoming().role == 'restaurant'));
