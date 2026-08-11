@@ -201,3 +201,13 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 - `npx tsc --noEmit` — 0 erros
 - `npm run build` — 0 erros
 - `vercel --prod` — READY, alias em https://meu-ovo-pi.vercel.app
+
+---
+
+## Sessão (11/08/2026) — Deploy GitHub: api/index.js commitado
+
+### CRÍTICO: `/api/*` caiu no fallback SPA após push pelo GitHub
+- **Causa**: `api/index.js` era gitignored e gerado no build (`scripts/build-api.mjs`). Deploys via CLI (`vercel --prod`) subiam o arquivo local → função `api/index` deployada. Deploys via **GitHub integration** usam checkout limpo do repo → arquivo ausente na detecção de funções → só `api/sitemap.xml` era deployada → rewrite `/api/(.*)` → `/api/index` caía no SPA fallback.
+- **Solução**: `api/index.js` removido do `.gitignore` e **commitado** (bundle ESM ~30KB gerado por `scripts/build-api.mjs`). GitHub build agora detecta e deploya a função.
+- **Workflow obrigatório**: toda mudança em `server/api.ts`/`server.ts` deve rodar `npm run build` (regenera `api/index.js`) e commitar o bundle junto. Não editar `api/index.js` à mão.
+- **Verificação**: deploy → `https://meu-ovo-pi.vercel.app/api/health` 200 JSON, `/api/account/export` 401 sem token, sitemap OK.
