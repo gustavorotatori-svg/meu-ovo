@@ -12,5 +12,6 @@ firebase.json
 firestore.json
 .firebaserc
 .vercel
+backups/
 test-results/
 pw-signup*.txt

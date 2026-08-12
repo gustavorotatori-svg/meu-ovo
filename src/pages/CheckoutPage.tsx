@@ -338,6 +338,18 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (scheduledAt) {
+      const scheduledTime = new Date(scheduledAt).getTime();
+      if (isNaN(scheduledTime)) {
+        toast.error('Data de agendamento inválida');
+        return;
+      }
+      if (scheduledTime < Date.now() + 15 * 60 * 1000) {
+        toast.error('Agende com pelo menos 15 minutos de antecedência');
+        return;
+      }
+    }
+
     setSubmitting(true);
     const id = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     

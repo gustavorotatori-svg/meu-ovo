@@ -42,6 +42,11 @@ test('Upload de foto com processamento (onboarding + painel admin)', async ({ pa
   const log = [];
   await collectErrors(page, log);
 
+  // Cookie consent dispensado via init script (barra fixa intercepta cliques)
+  await page.addInitScript(() => {
+    localStorage.setItem('@meuovo:cookie-consent', JSON.stringify({ accepted: true, at: new Date().toISOString() }));
+  });
+
   // Login como restaurante
   await page.goto(`${BASE}/login?redirect=/cadastro-restaurante`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#login-email', { timeout: 20000 });

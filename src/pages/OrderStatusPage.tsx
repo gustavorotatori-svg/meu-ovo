@@ -319,6 +319,19 @@ export default function OrderStatusPage() {
           </div>
         )}
 
+        {/* Agendado Banner */}
+        {order.scheduledAt && order.status !== 'finished' && order.status !== 'cancelled' && (
+          <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 flex items-center gap-4">
+            <Clock size={28} className="text-amber-500 shrink-0" />
+            <div>
+              <p className="font-black text-amber-800 uppercase tracking-tighter text-sm">Pedido agendado</p>
+              <p className="text-sm text-amber-700 font-bold">
+                Para {new Date(order.scheduledAt).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Payment Section (when accepted and not paid) */}
         {order.status === 'accepted' && order.paymentStatus !== 'paid' && !paymentConfirmed && (
           <motion.div

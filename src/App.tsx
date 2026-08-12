@@ -14,6 +14,7 @@ import PageTransition from './components/PageTransition';
 import OvosDeOuroVotePopup from './components/OvosDeOuroVotePopup';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
 import CookieConsent from './components/CookieConsent';
+import AbandonedCartWatcher from './components/AbandonedCartWatcher';
 
 const basename = window.location.hostname.includes('github.io') ? '/meu-ovo' : window.location.hostname.includes('vercel.app') ? '/' : '/';
 
@@ -86,6 +87,7 @@ export default function App() {
           <CartProvider>
             <BrowserRouter basename={basename}>
               <ScrollToTop />
+              <AbandonedCartWatcher />
               <ErrorBoundary>
                 <Routes>
                   <Route element={<PageTransition><Outlet /></PageTransition>}>

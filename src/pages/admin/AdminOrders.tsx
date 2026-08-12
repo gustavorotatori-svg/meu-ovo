@@ -1662,6 +1662,11 @@ const OrderCard: React.FC<{
             </div>
             <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-2 font-bold uppercase">
               <span className="flex items-center gap-1"><Clock size={12} />{new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+              {order.scheduledAt && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">
+                  <Clock size={12} />Agendado {new Date(order.scheduledAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
               {!compact && (
                 <span className={`flex items-center gap-1 ${isDark ? 'text-white/40' : 'text-gray-400'}`}>
                   • {order.type === 'dine-in' ? `Mesa ${order.tableNumber}` : order.type === 'delivery' ? 'Delivery' : 'Retirada'}

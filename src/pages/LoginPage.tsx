@@ -21,7 +21,8 @@ export default function LoginPage() {
   const { signIn, signUp, signInWithGoogle, resetPassword } = useAuth();
   const redirectTo = new URLSearchParams(window.location.search).get('redirect') || '';
   const safeRedirect = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '';
-  const initialTab: RoleTab = redirectTo === '/cadastro-restaurante' ? 'restaurant' : 'customer';
+  const isRestaurantRedirect = redirectTo === '/cadastro-restaurante' || redirectTo === '/admin' || redirectTo.startsWith('/admin/');
+  const initialTab: RoleTab = isRestaurantRedirect ? 'restaurant' : 'customer';
   const [roleTab, setRoleTab] = useState<RoleTab>(initialTab);
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
