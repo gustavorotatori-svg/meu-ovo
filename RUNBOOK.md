@@ -18,6 +18,8 @@
 - [ ] Suíte E2E verde (`npm run test:e2e` ou equivalente)
 - [ ] Push para `master` → deploy Vercel concluído no dashboard
 - [ ] `node scripts/smoke-prod.mjs` → `SMOKE TEST OK`
+
+> **Como verificar que o deploy do GitHub aconteceu**: `npx vercel ls meu-ovo` — deve aparecer um deployment novo no topo com a idade próxima ao horário do push. Para confirmar que é do GitHub (e não CLI), `npx vercel api "/v13/deployments/<id>"` e checar `githubDeployment: "1"` e `lambdaRuntimeStats` com `nodejs:2` (API + sitemap). Deploys vindos do GitHub são automáticos ao dar push em `master`; `vercel --prod` é só fallback emergencial. Deployments raw (`https://<deploy>-...vercel.app`) e o branch alias são protegidos por SSO da Vercel — não use para smoke test; use o alias de produção real (`https://meu-ovo-pi.vercel.app`).
 - [ ] Backup de segurança: `node scripts/firestore-backup.mjs`
 - [ ] Domínio custom configurado (pendente): apontar DNS, adicionar domínio na Vercel, revalidar `APP_URL`/sitemap
 - [ ] Conteúdo: pelo menos 1 restaurante real com catálogo completo, horário e endereço de entrega
