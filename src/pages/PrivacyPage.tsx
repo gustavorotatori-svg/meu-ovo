@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Eye, Database, Lock, Cookie, Trash2, Mail, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Shield, Eye, Database, Lock, Bot, Cookie, Trash2, Mail, ChevronDown } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -29,18 +29,23 @@ const sections = [
     content: 'Adotamos medidas técnicas e organizacionais robustas para proteger seus dados contra acesso não autorizado, alteração, divulgação ou destruição. Isso inclui criptografia em trânsito (SSL/TLS), firewalls, controles de acesso restrito e monitoramento contínuo de segurança. Nossos servidores são hospedados em provedores certificados.'
   },
   {
+    icon: Bot,
+    title: '5. Dados na Nuvem e Inteligência Artificial',
+    content: 'Nossa plataforma é hospedada no Google Cloud (Firebase), com criptografia em trânsito (TLS 1.2+) e em repouso (AES-256). Recursos de inteligência artificial generativa (Google Gemini) são usados apenas quando você opta por usá-los: para gerar sugestões de cardápio e descrições de produtos (botão "Gerar com IA" no painel) e para responder dúvidas no atendimento via WhatsApp. Nesses casos, enviamos à IA somente as informações necessárias à tarefa (como o nome e a categoria de um produto) — nunca enviamos dados pessoais de clientes. Os resultados gerados por IA são meras sugestões e passam pela sua revisão antes de qualquer publicação. Você pode usar a plataforma normalmente sem ativar nenhum recurso de IA.'
+  },
+  {
     icon: Cookie,
-    title: '5. Cookies e Tecnologias',
+    title: '6. Cookies e Tecnologias',
     content: 'Utilizamos cookies estritamente necessários para o funcionamento da plataforma (autenticação e preferências). Ferramentas de análise (Google Analytics) e anúncios (Meta Pixel) somente são ativadas após o seu consentimento explícito. Você pode aceitar, recusar ou alterar sua escolha a qualquer momento usando o botão "Cookies" no rodapé do site. Quando recusa os cookies de análise, nenhuma ferramenta de tracking é carregada no seu dispositivo.'
   },
   {
     icon: Trash2,
-    title: '6. Seus Direitos (LGPD)',
+    title: '7. Seus Direitos (LGPD)',
     content: 'Nos termos da Lei Geral de Proteção de Dados (LGPD - Lei 13.709/2018), você tem direito a: (a) confirmar a existência de tratamento de dados; (b) acessar seus dados; (c) corrigir dados incompletos ou desatualizados; (d) solicitar anonimização ou eliminação; (e) revogar consentimento; (f) solicitar portabilidade. No seu perfil você encontra as opções "Baixar meus dados" e "Excluir minha conta". Para exercer qualquer outro direito, entre em contato conosco.'
   },
   {
     icon: Mail,
-    title: '7. Retenção e Exclusão',
+    title: '8. Retenção e Exclusão',
     content: 'Mantemos seus dados pelo tempo necessário para cumprir as finalidades descritas ou para cumprir obrigações legais. Ao excluir sua conta pela opção "Excluir minha conta" no seu perfil, seus dados pessoais são removidos imediatamente do nosso banco (pedidos e dados pessoais), exceto quando a lei exigir retenção por prazos maiores (como registros de transações fiscais).'
   }
 ];
@@ -74,7 +79,7 @@ export default function PrivacyPage() {
               Política de <span className="text-[#FFC928]">Privacidade</span>
             </h1>
             <p className="text-sm text-gray-400 font-semibold">
-              Última atualização: Junho de 2026
+              Última atualização: Agosto de 2026
             </p>
           </div>
 

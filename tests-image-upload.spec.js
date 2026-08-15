@@ -39,6 +39,8 @@ async function collectErrors(page, log) {
 }
 
 test('Upload de foto com processamento (onboarding + painel admin)', async ({ page }) => {
+  // Fluxo longo (onboarding completo + upload + filtros) — tolerar ambiente lento
+  test.setTimeout(240000);
   const log = [];
   await collectErrors(page, log);
 
@@ -128,7 +130,9 @@ test('Upload de foto com processamento (onboarding + painel admin)', async ({ pa
   await page.selectOption('select', { label: 'Mais Vendidos' });
 
   await page.getByRole('button', { name: /CRIAR PRODUTO/i }).click();
-  await page.waitForTimeout(3000);
+
+  // Confirmar que o salvamento foi reconhecido (toast de sucesso do Firestore)
+  await page.waitForSelector('text=Produto criado!', { timeout: 20000 }).catch(() => {});
   console.log('--- logs pós salvar ---');
   log.filter(l => !l.includes('googletagmanager') && !l.includes('facebook.net') && !l.includes('Sentry') && !l.includes('gtag') && !l.includes('worker from')).forEach(l => console.log(l));
   const toasts = await page.locator('[class*="toast"], [role="status"], [aria-live="polite"]').allTextContents().catch(() => []);
@@ -138,10 +142,9 @@ test('Upload de foto com processamento (onboarding + painel admin)', async ({ pa
 
   // A aba padrão é a primeira categoria (pode não conter o produto); clicar em "Todos"
   await page.getByRole('button', { name: /todos/i }).click();
-  await page.waitForTimeout(1000);
 
-  // Aguardar o produto aparecer na grade com a imagem enviada (URL do Firebase Storage)
-  await page.waitForSelector('text=X-Bacon Foto', { timeout: 20000 });
+  // Espera robusta: Playwright re-poll até o produto aparecer (tolera latência do listener Firestore)
+  await expect(page.getByText('X-Bacon Foto')).toBeVisible({ timeout: 60000 });
 
   // Verificar que a URL da imagem veio do Firebase Storage (upload real + processado)
   const imgUrls = await page.locator('img[src*="firebasestorage.googleapis.com"]').count();

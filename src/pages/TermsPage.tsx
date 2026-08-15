@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText, Scale, Gavel, Lock, AlertTriangle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Scale, Gavel, Lock, Bot, AlertTriangle, ChevronDown } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -34,18 +34,23 @@ const sections = [
     content: 'A plataforma Meu Ovo não processa nem intermediia pagamentos entre Clientes e Restaurantes. Todas as transações financeiras são de responsabilidade exclusiva do Restaurante, que define seus próprios métodos de pagamento (PIX, crédito, débito, voucher, dinheiro). O Cliente deve resolver diretamente com o Restaurante qualquer questão relacionada a cobranças, reembolsos ou estornos.'
   },
   {
+    icon: Bot,
+    title: '6. Inteligência Artificial e Conteúdo Gerado',
+    content: 'A plataforma oferece recursos assistidos por inteligência artificial (Google Gemini), como a geração de sugestões de cardápio, descrições de produtos e respostas no atendimento via WhatsApp. O conteúdo gerado por IA é apenas uma sugestão: o Restaurante é o único responsável por revisar, corrigir e aprovar qualquer texto, preço, imagem ou informação gerada por IA antes de sua publicação, bem como por garantir a veracidade e a conformidade do conteúdo com as normas aplicáveis. A plataforma pode modificar, suspender ou descontinuar os recursos de IA a qualquer momento, sem aviso prévio.'
+  },
+  {
     icon: AlertTriangle,
-    title: '6. Limitação de Responsabilidade',
+    title: '7. Limitação de Responsabilidade',
     content: 'A plataforma Meu Ovo atua exclusivamente como ferramenta tecnológica de conexão entre Restaurantes e Clientes. Não nos responsabilizamos por: (a) atrasos na entrega; (b) qualidade ou quantidade dos produtos; (c) cobranças indevidas; (d) danos decorrentes de uso indevido da plataforma; (e) indisponibilidade temporária do serviço. A responsabilidade da plataforma é limitada ao valor máximo legalmente permitido.'
   },
   {
     icon: FileText,
-    title: '7. Propriedade Intelectual',
+    title: '8. Propriedade Intelectual',
     content: 'Todo o conteúdo da plataforma, incluindo logotipos, textos, imagens, código-fonte e design, é propriedade do Meu Ovo ou de seus licenciadores. É proibida a reprodução, distribuição, modificação ou uso não autorizado de qualquer conteúdo sem prévia autorização por escrito.'
   },
   {
     icon: Scale,
-    title: '8. Disposições Gerais',
+    title: '9. Disposições Gerais',
     content: 'Estes Termos são regidos pelas leis brasileiras. Qualquer disputa será resolvida no foro da comarca de São Paulo - SP. Se qualquer disposição destes Termos for considerada inválida ou inexequível, as demais disposições permanecerão em pleno vigor. O não exercício de qualquer direito por parte da plataforma não constitui renúncia.'
   }
 ];
@@ -79,7 +84,7 @@ export default function TermsPage() {
               Termos de <span className="text-[#FFC928]">Uso</span>
             </h1>
             <p className="text-sm text-gray-400 font-semibold">
-              Última atualização: Junho de 2026
+              Última atualização: Agosto de 2026
             </p>
           </div>
 
