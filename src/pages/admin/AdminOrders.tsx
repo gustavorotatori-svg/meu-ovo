@@ -5,8 +5,9 @@ import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Order } from '../../types';
 import { db } from '../../lib/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, increment } from 'firebase/firestore';
 import { awardLoyaltyPoints } from '../../services/loyaltyService';
+import { deductStockForOrder, restoreStockForOrder } from '../../services/stockService';
 import { triggerAutomaticNotification, WA_NUMBER } from '../../services/whatsappService';
 import { getCustomerStats, submitCustomerRating, CustomerStats } from '../../services/customerRatingService';
 import { toast } from 'react-hot-toast';
@@ -65,7 +66,7 @@ const NEXT_BTN_LABELS: Record<Order['status'], string> = {
 };
 
 export default function AdminOrders() {
-  const { currentRestaurant: restaurant, orders, updateOrderStatus } = useRestaurant();
+  const { currentRestaurant: restaurant, orders, updateOrderStatus, activeSession, cashierSessions } = useRestaurant();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [filter, setFilter] = useState<Order['status'] | 'all'>('all');
@@ -278,8 +279,26 @@ export default function AdminOrders() {
           triggerAutomaticNotification({ ...order, status: newStatus }, restaurant);
         }
 
+        if (newStatus === 'accepted') {
+          // Baixa automática de estoque via ficha técnica
+          await deductStockForOrder(order, restaurant.id);
+        }
+
+        if (newStatus === 'cancelled' && ['accepted', 'preparing', 'ready', 'out-for-delivery', 'finished'].includes(order.status)) {
+          // Devolve o estoque de pedidos que já tinham dado baixa
+          await restoreStockForOrder(order, restaurant.id);
+        }
+
         if (newStatus === 'finished') {
           await awardLoyaltyPoints(order, restaurant);
+
+          // Crédita a venda no caixa aberto (se houver sessão ativa)
+          const session = activeSession || (cashierSessions.find(s => s.status === 'open') || null);
+          if (session && order.total > 0) {
+            updateDoc(doc(db, 'cashier_sessions', session.id), {
+              totalSales: increment(order.total),
+            }).catch(err => console.error('[Cashier] Erro ao creditar venda no caixa:', err));
+          }
         }
       }
       
@@ -288,7 +307,7 @@ export default function AdminOrders() {
       console.error('Error updating status:', error);
       toast.error('Erro ao atualizar status');
     }
-  }, [restaurant, updateOrderStatus]);
+  }, [restaurant, updateOrderStatus, activeSession, cashierSessions]);
 
   const printOrder = (order: Order, type: 'ticket' | 'account' = 'ticket') => {
     const printWindow = window.open('', '_blank', 'width=400,height=600');

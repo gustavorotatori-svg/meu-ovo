@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react';
-import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession } from '../types';
+import { Restaurant, Product, Category, Order, Table, DeliverySettings, CashierSession, Ingredient, RecipeSheet, IngredientMovement } from '../types';
 import { auth } from '../lib/firebase-auth';
 import { db, handleFirestoreError, OperationType } from '../lib/firebase';
 import { useAuth } from './AuthContext';
@@ -18,7 +18,9 @@ import {
   orderBy,
   getDoc,
   getDocs,
-  arrayUnion
+  arrayUnion,
+  limit,
+  increment
 } from 'firebase/firestore';
 
 interface RestaurantContextType {
@@ -32,6 +34,9 @@ interface RestaurantContextType {
   deliverySettings: DeliverySettings;
   cashierSessions: CashierSession[];
   activeSession: CashierSession | null;
+  ingredients: Ingredient[];
+  recipeSheets: RecipeSheet[];
+  ingredientMovements: IngredientMovement[];
   favorites: string[];
   toggleFavorite: (restaurantId: string) => void;
   addProduct: (p: Product) => Promise<void>;
@@ -50,6 +55,12 @@ interface RestaurantContextType {
   openCashier: (amount: number, user: string) => void;
   closeCashier: (amount: number) => void;
   addCashierMovement: (type: 'withdrawal' | 'addition', amount: number, reason: string) => void;
+  addIngredient: (i: Ingredient) => Promise<void>;
+  updateIngredient: (i: Ingredient) => Promise<void>;
+  deleteIngredient: (id: string) => Promise<void>;
+  saveRecipeSheet: (sheet: RecipeSheet) => Promise<void>;
+  deleteRecipeSheet: (id: string) => Promise<void>;
+  recordIngredientMovement: (movement: Omit<IngredientMovement, 'id' | 'createdAt'>, updateStock: boolean) => Promise<void>;
 }
 
 const RestaurantContext = createContext<RestaurantContextType | null>(null);
@@ -86,6 +97,9 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   const [currentRestaurant, setCurrentRestaurant] = useState<Restaurant | null>(null);
   const [cashierSessions, setCashierSessions] = useState<CashierSession[]>([]);
   const [activeSession, setActiveSession] = useState<CashierSession | null>(null);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [recipeSheets, setRecipeSheets] = useState<RecipeSheet[]>([]);
+  const [ingredientMovements, setIngredientMovements] = useState<IngredientMovement[]>([]);
 
   // Load cashier sessions from Firestore when currentRestaurant changes
   useEffect(() => {
@@ -252,12 +266,50 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
       }
     }, () => {});
 
+    // Listen to Ingredients (insumos)
+    const qIngredients = query(collection(db, 'ingredients'), where('restaurantId', '==', currentRestaurant.id));
+    const unsubIngredients = onSnapshot(qIngredients, (snapshot) => {
+      setIngredients(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'ingredients');
+      }
+    });
+
+    // Listen to Recipe Sheets (ficha técnica)
+    const qSheets = query(collection(db, 'recipe_sheets'), where('restaurantId', '==', currentRestaurant.id));
+    const unsubSheets = onSnapshot(qSheets, (snapshot) => {
+      setRecipeSheets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RecipeSheet)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'recipe_sheets');
+      }
+    });
+
+    // Listen to Ingredient Movements (últimas 300)
+    const qMovements = query(
+      collection(db, 'ingredient_movements'),
+      where('restaurantId', '==', currentRestaurant.id),
+      orderBy('createdAt', 'desc'),
+      limit(300)
+    );
+    const unsubMovements = onSnapshot(qMovements, (snapshot) => {
+      setIngredientMovements(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as IngredientMovement)));
+    }, (error) => {
+      if (error.code !== 'permission-denied') {
+        handleFirestoreError(error, OperationType.LIST, 'ingredient_movements');
+      }
+    });
+
     return () => {
       unsubProducts();
       unsubCats();
       unsubOrders();
       unsubTables();
       unsubDelivery();
+      unsubIngredients();
+      unsubSheets();
+      unsubMovements();
     };
   }, [currentRestaurant, user]);
 
@@ -485,22 +537,89 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     }
   }, [activeSession]);
 
+  const addIngredient = useCallback(async (ing: Ingredient) => {
+    try {
+      const { id, ...data } = ing;
+      await setDoc(doc(db, 'ingredients', id), sanitizeForFirestore(data));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `ingredients/${ing.id}`);
+      throw error;
+    }
+  }, []);
+
+  const updateIngredient = useCallback(async (ing: Ingredient) => {
+    try {
+      const { id, ...data } = ing;
+      await updateDoc(doc(db, 'ingredients', id), sanitizeForFirestore(data));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `ingredients/${ing.id}`);
+      throw error;
+    }
+  }, []);
+
+  const deleteIngredient = useCallback(async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'ingredients', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `ingredients/${id}`);
+      throw error;
+    }
+  }, []);
+
+  const saveRecipeSheet = useCallback(async (sheet: RecipeSheet) => {
+    try {
+      const { id, ...data } = sheet;
+      await setDoc(doc(db, 'recipe_sheets', id), sanitizeForFirestore(data));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `recipe_sheets/${sheet.id}`);
+      throw error;
+    }
+  }, []);
+
+  const deleteRecipeSheet = useCallback(async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'recipe_sheets', id));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `recipe_sheets/${id}`);
+      throw error;
+    }
+  }, []);
+  const recordIngredientMovement = useCallback(async (movement: IngredientMovement, updateStock: boolean) => {
+      try {
+        const { id, ...data } = movement;
+        const createdAt = data.createdAt || new Date().toISOString();
+        await setDoc(doc(db, 'ingredient_movements', id), sanitizeForFirestore({ ...data, createdAt }));
+        if (updateStock) {
+          await updateDoc(doc(db, 'ingredients', movement.ingredientId), {
+            stock: increment(movement.quantity),
+          });
+        }
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, 'ingredient_movements');
+        throw error;
+      }
+  }, []);
+
   const value = useMemo(() => ({
     currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
     orders, tables, deliverySettings, cashierSessions, activeSession,
+    ingredients, recipeSheets, ingredientMovements,
     favorites, toggleFavorite,
     addProduct, updateProduct, deleteProduct,
     addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
     registerRestaurant,
-    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
+    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement,
+    addIngredient, updateIngredient, deleteIngredient, saveRecipeSheet, deleteRecipeSheet, recordIngredientMovement
   }), [
     currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
     orders, tables, deliverySettings, cashierSessions, activeSession,
+    ingredients, recipeSheets, ingredientMovements,
     favorites, toggleFavorite,
     addProduct, updateProduct, deleteProduct,
     addOrder, updateOrderStatus, addCategory, deleteCategory, reorderProducts, reorderCategories,
     registerRestaurant,
-    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement
+    addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement,
+    addIngredient, updateIngredient, deleteIngredient, saveRecipeSheet, deleteRecipeSheet, recordIngredientMovement
   ]);
 
   return (

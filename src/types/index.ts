@@ -275,6 +275,46 @@ export interface CashierSession {
   additions: { amount: number; reason: string; time: string }[];
 }
 
+export interface Ingredient {
+  id: string;
+  restaurantId: string;
+  name: string;
+  unit: string;
+  costPerUnit: number;
+  stock: number;
+  minStock: number;
+  createdAt: string;
+}
+
+export interface RecipeIngredient {
+  ingredientId: string;
+  ingredientName?: string;
+  quantity: number;
+}
+
+export interface RecipeSheet {
+  id: string;
+  restaurantId: string;
+  productId: string;
+  productName: string;
+  ingredients: RecipeIngredient[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IngredientMovement {
+  id: string;
+  restaurantId: string;
+  ingredientId: string;
+  ingredientName: string;
+  type: 'purchase' | 'sale' | 'adjustment' | 'waste';
+  quantity: number;
+  unitCost?: number;
+  reason: string;
+  orderId?: string;
+  createdAt: string;
+}
+
 export interface FiscalReceipt {
   id: string;
   orderId: string;

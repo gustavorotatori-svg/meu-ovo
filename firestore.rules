@@ -205,6 +205,42 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ─── INGREDIENTS (insumos) ───────────────────────────────────────────────
+    match /ingredients/{ingredientId} {
+      allow read: if true;
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().name is string && incoming().name.size() <= 100
+        && incoming().unit is string
+        && incoming().costPerUnit is number && incoming().costPerUnit >= 0
+        && incoming().stock is number && incoming().stock >= 0;
+      allow update: if isOwnerOrAdmin(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if isOwnerOrAdmin(existing().restaurantId);
+    }
+
+    // ─── RECIPE SHEETS (ficha técnica) ───────────────────────────────────────
+    match /recipe_sheets/{recipeId} {
+      allow read: if true;
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().productId is string
+        && incoming().ingredients is list
+        && incoming().ingredients.size() <= 100;
+      allow update: if isOwnerOrAdmin(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if isOwnerOrAdmin(existing().restaurantId);
+    }
+
+    // ─── INGREDIENT MOVEMENTS (movimentações de estoque) ─────────────────────
+    match /ingredient_movements/{movementId} {
+      allow read, list: if isOwnerOrAdmin(resource.data.restaurantId);
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().ingredientId is string
+        && incoming().type in ['purchase', 'sale', 'adjustment', 'waste']
+        && incoming().quantity is number
+        && incoming().createdAt is string;
+      allow update, delete: if false;
+    }
+
     // ─── LOYALTY PROFILES ────────────────────────────────────────────────────
     match /loyalty_profiles/{profileId} {
       allow read, list: if isOwnerOrAdmin(resource.data.restaurantId)

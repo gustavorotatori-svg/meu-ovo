@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap, Sticker, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, UtensilsCrossed, ChefHat, Truck, BarChart2, Menu, X, QrCode, ExternalLink, ChevronRight, Ticket, Gift, Settings, Wallet, Trophy, FileText, Zap, Sticker, MessageSquare, Boxes, ClipboardList, Calculator } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -56,6 +56,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const NAV_ITEMS = [
     { to: '/admin', label: t('nav.dashboard'), icon: <LayoutDashboard size={18} /> },
     { to: '/admin/caixa', label: 'Caixa', icon: <Wallet size={18} /> },
+    { to: '/admin/estoque', label: 'Estoque', icon: <Boxes size={18} /> },
+    { to: '/admin/ficha-tecnica', label: 'Ficha Técnica', icon: <ClipboardList size={18} /> },
+    { to: '/admin/financeiro', label: 'Financeiro', icon: <Calculator size={18} /> },
     { to: '/admin/pedidos', label: t('nav.orders'), icon: <ShoppingBag size={18} /> },
     { to: '/admin/cardapio', label: t('nav.menu'), icon: <Package size={18} /> },
     { to: '/admin/etiquetas', label: 'Etiquetas', icon: <Sticker size={18} /> },

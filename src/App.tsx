@@ -42,6 +42,9 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 const AdminOrders = lazy(() => import('./pages/admin/AdminOrders'));
 const AdminCashier = lazy(() => import('./pages/admin/AdminCashier'));
+const AdminInventory = lazy(() => import('./pages/admin/AdminInventory'));
+const AdminRecipeSheets = lazy(() => import('./pages/admin/AdminRecipeSheets'));
+const AdminFinancial = lazy(() => import('./pages/admin/AdminFinancial'));
 const MenuManagement = lazy(() => import('./pages/admin/MenuManagement'));
 const AdminWaiter = lazy(() => import('./pages/admin/AdminWaiter'));
 const KitchenMode = lazy(() => import('./pages/admin/KitchenMode'));
@@ -122,6 +125,21 @@ export default function App() {
                     <Route path="/admin/caixa" element={
                       <ProtectedRoute roles={['restaurant', 'admin']}>
                         <PageSuspense><AdminCashier /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/estoque" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminInventory /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/ficha-tecnica" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminRecipeSheets /></PageSuspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin/financeiro" element={
+                      <ProtectedRoute roles={['restaurant', 'admin']}>
+                        <PageSuspense><AdminFinancial /></PageSuspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin/pedidos" element={
