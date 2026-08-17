@@ -84,10 +84,10 @@ function sanitizeForFirestore<T>(value: T): T {
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { user, refreshUserProfile } = useAuth();
   const [restaurants, setRestaurants] = useState<Restaurant[]>(mockRestaurants);
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [tables, setTables] = useState<Table[]>(mockTables);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [tables, setTables] = useState<Table[]>([]);
   const [deliverySettings, setDeliverySettings] = useState<DeliverySettings>({
     fee: 0,
     minimumOrder: 0,

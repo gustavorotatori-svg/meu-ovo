@@ -122,8 +122,7 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
     return res.status(401).json({ error: 'Authentication required' });
   }
   if (!firebaseAdminInitialized) {
-    // Fallback for local dev without service account: accept x-api-key
-    return requireApiKey(req, res, next);
+    return res.status(503).json({ error: 'Service unavailable: authentication not configured' });
   }
   try {
     const decoded = await getAuth().verifyIdToken(token);
@@ -140,13 +139,6 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    env: {
-      gemini: !!process.env.GEMINI_API_KEY,
-      firebase: firebaseAdminInitialized,
-      pix: !!process.env.VITE_PLATFORM_PIX_KEY,
-      sentry: !!process.env.VITE_SENTRY_DSN,
-      webhook: !!process.env.WEBHOOK_SECRET,
-    },
   });
 });
 
@@ -173,10 +165,6 @@ function isSafeRedirect(url: string): boolean {
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
   httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
-});
-
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
 });
 
 // Blog and newsletter are now public (requireApiKey removed to match frontend behavior)
@@ -343,16 +331,24 @@ app.get("/api/blog/news", async (req, res) => {
   }
 });
 
-app.post("/api/newsletter/subscribe", async (req, res) => {  const email = sanitizeString(req.body.email, 254);
+app.post("/api/newsletter/subscribe", async (req, res) => {
+  const email = sanitizeString(req.body.email, 254);
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: "Valid email is required" });
   }
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite",
-      contents: `Gere um conteúdo de boas-vindas para o newsletter do 'Meu Ovo' para o email ${email}. O tom deve ser empreendedor, direto e parceiro. Inclua um resumo rápido de uma notícia quente do setor de restaurantes (Abrasel ou ANR).`
-    });
-    res.json({ success: true, message: "Subscribed successfully!", preview: response.text });
+    if (firebaseAdminInitialized) {
+      const db = adminDb();
+      const subRef = db.collection('newsletter_subscribers').doc(email.toLowerCase());
+      const existing = await subRef.get();
+      if (!existing.exists) {
+        await subRef.set({
+          email: email.toLowerCase(),
+          subscribedAt: new Date().toISOString(),
+        });
+      }
+    }
+    res.json({ success: true, message: "Subscribed successfully!" });
   } catch (error) {
     console.error("Newsletter error:", error);
     res.status(500).json({ error: "Subscription failed" });

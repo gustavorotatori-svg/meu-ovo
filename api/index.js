@@ -410,17 +410,6 @@ function rateLimit(maxRequests, windowMs) {
     next();
   };
 }
-function requireApiKey(req, res, next) {
-  const apiKey = req.headers["x-api-key"];
-  const validKey = process.env.API_SECRET_KEY || process.env.GEMINI_API_KEY;
-  if (!validKey) {
-    return res.status(500).json({ error: "Server misconfigured" });
-  }
-  if (apiKey !== validKey) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-  next();
-}
 async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
@@ -428,7 +417,7 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ error: "Authentication required" });
   }
   if (!firebaseAdminInitialized) {
-    return requireApiKey(req, res, next);
+    return res.status(503).json({ error: "Service unavailable: authentication not configured" });
   }
   try {
     const decoded = await getAuth().verifyIdToken(token);
@@ -442,14 +431,7 @@ async function requireAuth(req, res, next) {
 app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-    env: {
-      gemini: !!process.env.GEMINI_API_KEY,
-      firebase: firebaseAdminInitialized,
-      pix: !!process.env.VITE_PLATFORM_PIX_KEY,
-      sentry: !!process.env.VITE_SENTRY_DSN,
-      webhook: !!process.env.WEBHOOK_SECRET
-    }
+    timestamp: (/* @__PURE__ */ new Date()).toISOString()
   });
 });
 app.use("/api", rateLimit(30, 6e4));
@@ -465,9 +447,6 @@ function isAllowedMimeType(mt) {
 var ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
   httpOptions: { headers: { "User-Agent": "aistudio-build" } }
-});
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
 });
 app.post("/api/ai/parse-menu", requireAuth, async (req, res) => {
   const { fileData, mimeType } = req.body;
@@ -631,11 +610,18 @@ app.post("/api/newsletter/subscribe", async (req, res) => {
     return res.status(400).json({ error: "Valid email is required" });
   }
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite",
-      contents: `Gere um conte\xFAdo de boas-vindas para o newsletter do 'Meu Ovo' para o email ${email}. O tom deve ser empreendedor, direto e parceiro. Inclua um resumo r\xE1pido de uma not\xEDcia quente do setor de restaurantes (Abrasel ou ANR).`
-    });
-    res.json({ success: true, message: "Subscribed successfully!", preview: response.text });
+    if (firebaseAdminInitialized) {
+      const db = adminDb();
+      const subRef = db.collection("newsletter_subscribers").doc(email.toLowerCase());
+      const existing = await subRef.get();
+      if (!existing.exists) {
+        await subRef.set({
+          email: email.toLowerCase(),
+          subscribedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+      }
+    }
+    res.json({ success: true, message: "Subscribed successfully!" });
   } catch (error) {
     console.error("Newsletter error:", error);
     res.status(500).json({ error: "Subscription failed" });

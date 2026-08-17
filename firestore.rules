@@ -70,14 +70,13 @@ service cloud.firestore {
       allow read: if request.auth.uid == userId || isPlatformAdmin();
       allow create: if isSignedIn() && request.auth.uid == userId
         && incoming().keys().hasOnly(['full_name', 'role', 'createdAt', 'pwaInstallPending',
-                                      'onboardingComplete', 'customerRating', 'customerRatingCount',
-                                      'signupIntent', 'whatsapp'])
+                                      'onboardingComplete', 'signupIntent', 'whatsapp'])
         && incoming().role == 'customer';
       allow update: if isSignedIn() && request.auth.uid == userId
         && incoming().diff(existing()).affectedKeys()
              .hasOnly(['full_name', 'profile_image_url', 'updatedAt', 'role', 'pwaInstallPending',
                        'favorites', 'onboardingComplete', 'createdAt', 'signupIntent',
-                       'customerRating', 'customerRatingCount', 'whatsapp'])
+                       'whatsapp', 'fcmToken', 'lastActiveAt', 'notifPreferences'])
         && (!('role' in incoming())
             || incoming().role == existing().role
             || (existing().role == 'customer' && incoming().role == 'restaurant'));
@@ -130,8 +129,9 @@ service cloud.firestore {
         isOwnerOrAdmin(existing().restaurantId)
         && incoming().restaurantId == existing().restaurantId
       ) || (
-        // Client increments usageCount: must be active, within limit, increment by exactly 1
-        incoming().diff(existing()).affectedKeys().hasOnly(['usageCount'])
+        // Client increments usageCount: must be signed in, active, within limit, increment by exactly 1
+        isSignedIn()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['usageCount'])
         && existing().isActive == true
         && (existing().usageLimit == null || existing().usageCount < existing().usageLimit)
         && incoming().usageCount == existing().usageCount + 1
@@ -207,7 +207,7 @@ service cloud.firestore {
 
     // ─── INGREDIENTS (insumos) ───────────────────────────────────────────────
     match /ingredients/{ingredientId} {
-      allow read: if true;
+      allow read, list: if isOwnerOrAdmin(resource.data.restaurantId);
       allow create: if isOwnerOrAdmin(incoming().restaurantId)
         && incoming().name is string && incoming().name.size() <= 100
         && incoming().unit is string
@@ -220,7 +220,7 @@ service cloud.firestore {
 
     // ─── RECIPE SHEETS (ficha técnica) ───────────────────────────────────────
     match /recipe_sheets/{recipeId} {
-      allow read: if true;
+      allow read, list: if isOwnerOrAdmin(resource.data.restaurantId);
       allow create: if isOwnerOrAdmin(incoming().restaurantId)
         && incoming().productId is string
         && incoming().ingredients is list
@@ -293,6 +293,29 @@ service cloud.firestore {
     match /test/{document} {
       allow read: if true;
       allow write: if false;
+    }
+
+    // ─── FLASH DEALS (promoções relâmpago) ──────────────────────────────────
+    match /flash_deals/{dealId} {
+      allow read: if true;
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().restaurantId is string
+        && incoming().productId is string
+        && incoming().discountPercent is number
+        && incoming().discountPercent > 0 && incoming().discountPercent <= 90
+        && incoming().expiresAt is string;
+      allow update: if isOwnerOrAdmin(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId;
+      allow delete: if isOwnerOrAdmin(existing().restaurantId);
+    }
+
+    // ─── LABELS (selos/emojis customizados) ─────────────────────────────────
+    match /labels/{labelId} {
+      allow read, list: if isOwnerOrAdmin(resource.data.restaurantId);
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().emoji is string
+        && incoming().text is string;
+      allow update, delete: if isOwnerOrAdmin(existing().restaurantId);
     }
   }
 }

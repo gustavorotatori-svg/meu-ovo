@@ -73,8 +73,6 @@ export default function SelfSignupPage() {
         createdAt: new Date().toISOString(),
         onboardingComplete: false,
         signupIntent: 'restaurant',
-        customerRating: 5,
-        customerRatingCount: 0,
       }, { merge: true });
 
       try {

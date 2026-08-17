@@ -72,8 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 createdAt: new Date().toISOString(),
                 pwaInstallPending: true,
                 onboardingComplete: false,
-                customerRating: 5,
-                customerRatingCount: 0,
               }, { merge: true });
             } catch (createErr) {
               console.error("Error recreating missing user profile:", createErr);
@@ -145,10 +143,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         pwaInstallPending: true,
         onboardingComplete: false,
       };
-      if (safeRole === 'customer') {
-        userData.customerRating = 5;
-        userData.customerRatingCount = 0;
-      }
 
       await setDoc(doc(db, 'users', res.user.uid), userData, { merge: true });
     } catch (firestoreError) {
@@ -199,8 +193,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
         pwaInstallPending: true,
         onboardingComplete: false,
-        customerRating: 5,
-        customerRatingCount: 0,
       }, { merge: true });
     }
     registerFCMAndActivity(res.user.uid);
