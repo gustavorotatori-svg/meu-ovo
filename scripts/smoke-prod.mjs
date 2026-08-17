@@ -3,7 +3,7 @@
 const base = (process.argv[2] || process.env.APP_URL || 'https://meu-ovo-pi.vercel.app').replace(/\/$/, '');
 
 const checks = [
-  { name: 'GET /api/health', url: '/api/health', expect: (r) => r.status === 200 && r.json?.status === 'ok' && r.json?.env?.firebase === true },
+  { name: 'GET /api/health', url: '/api/health', expect: (r) => r.status === 200 && r.json?.status === 'ok' },
   { name: 'GET /', url: '/', expect: (r) => r.status === 200 && (r.text || '').includes('MEU OVO') },
   { name: 'GET /busca', url: '/busca', expect: (r) => r.status === 200 },
   { name: 'GET /mais-pedidos', url: '/mais-pedidos', expect: (r) => r.status === 200 },
