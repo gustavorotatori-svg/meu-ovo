@@ -298,6 +298,7 @@ export interface RecipeSheet {
   productId: string;
   productName: string;
   ingredients: RecipeIngredient[];
+  preparationMode?: string;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Order } from '../../types';
-import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, Volume2, VolumeX, Smartphone, MapPin, Store, Maximize2, Minimize2 } from 'lucide-react';
+import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, Volume2, VolumeX, Smartphone, MapPin, Store, Maximize2, Minimize2, BookOpen, X } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
@@ -11,16 +11,36 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
 
 export default function KitchenMode() {
-  const { currentRestaurant, orders, updateOrderStatus } = useRestaurant();
+  const { currentRestaurant, orders, updateOrderStatus, recipeSheets, products } = useRestaurant();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [filter, setFilter] = useState<'all' | 'delivery' | 'dine-in' | 'pickup'>('all');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<{ productName: string; quantity: number; observations?: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const prevOrdersCount = useRef(orders.length);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const getRecipeForProduct = (productName: string) => {
+    const product = products.find(p => p.name.toLowerCase() === productName.toLowerCase());
+    if (!product) return null;
+    const sheet = recipeSheets.find(s => s.productId === product.id);
+    return sheet ? { recipe: sheet, prepTime: product.estimatedPrepTime } : null;
+  };
+
+  const getTimeColor = (minutes: number) => {
+    if (minutes < 7) return 'bg-emerald-500 text-white';
+    if (minutes < 15) return 'bg-orange-500 text-white';
+    return 'bg-red-500 text-white animate-bounce';
+  };
+
+  const getTimeBg = (minutes: number) => {
+    if (minutes < 7) return 'bg-emerald-500/50 ring-emerald-500/5';
+    if (minutes < 15) return 'bg-orange-500/50 ring-orange-500/5';
+    return 'bg-red-500/50 ring-red-500/5';
+  };
 
   // Sound alert logic for NEW orders only
   useEffect(() => {
@@ -185,8 +205,8 @@ export default function KitchenMode() {
                         </div>
                       </div>
                       <div className={cn(
-                        "p-3 rounded-2xl flex flex-col items-center justify-center min-w-[60px] ml-4 transition-colors",
-                        timeInKitchen > 15 ? 'bg-red-500 text-white animate-bounce' : 'bg-white/5 opacity-50'
+                        "p-3 rounded-2xl flex flex-col items-center justify-center min-w-[60px] ml-4 transition-colors ring-4",
+                        getTimeBg(timeInKitchen)
                       )}>
                         <Clock size={16} className="mb-0.5" />
                         <span className="text-xs font-black leading-none">{timeInKitchen}'</span>
@@ -195,26 +215,42 @@ export default function KitchenMode() {
 
                     {/* Items List */}
                     <div className="p-5 flex-1 space-y-4">
-                      {order.items.map((item, i) => (
-                        <div key={i} className="flex gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-[#FFC928] text-[#111] flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
-                            {item.quantity}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-black text-sm leading-tight uppercase tracking-tight">{item.productName}</p>
-                            {item.additionals && item.additionals.length > 0 && (
-                              <p className="text-[10px] text-orange-500 font-black uppercase mt-0.5 leading-none">
-                                + {item.additionals.map(a => a.name).join(', ')}
-                              </p>
+                      {order.items.map((item, i) => {
+                        const itemRecipe = getRecipeForProduct(item.productName);
+                        return (
+                          <div 
+                            key={i} 
+                            className={cn(
+                              "flex gap-3 rounded-xl p-2 -m-2 transition-all",
+                              itemRecipe && "cursor-pointer hover:bg-white/5"
                             )}
-                            {item.observations && (
-                              <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase italic leading-tight">
-                                "Obs: {item.observations}"
+                            onClick={() => itemRecipe && setSelectedItem({ productName: item.productName, quantity: item.quantity, observations: item.observations })}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-[#FFC928] text-[#111] flex items-center justify-center font-black text-sm shrink-0 shadow-sm">
+                              {item.quantity}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="font-black text-sm leading-tight uppercase tracking-tight">{item.productName}</p>
+                                {itemRecipe && <BookOpen size={12} className="text-[#FFC928] shrink-0" />}
                               </div>
-                            )}
+                              {itemRecipe?.prepTime && (
+                                <p className="text-[9px] text-gray-400 font-bold mt-0.5">⏱ ~{itemRecipe.prepTime}min de preparo</p>
+                              )}
+                              {item.additionals && item.additionals.length > 0 && (
+                                <p className="text-[10px] text-orange-500 font-black uppercase mt-0.5 leading-none">
+                                  + {item.additionals.map(a => a.name).join(', ')}
+                                </p>
+                              )}
+                              {item.observations && (
+                                <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase italic leading-tight">
+                                  "Obs: {item.observations}"
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Actions */}
@@ -295,6 +331,88 @@ export default function KitchenMode() {
           {format(new Date(), "eeee, d 'de' MMMM • HH:mm", { locale: ptBR })}
         </div>
       </footer>
+
+      {/* Recipe Modal */}
+      <AnimatePresence>
+        {selectedItem && (() => {
+          const itemRecipe = getRecipeForProduct(selectedItem.productName);
+          if (!itemRecipe) return null;
+          const { recipe, prepTime } = itemRecipe;
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+              onClick={() => setSelectedItem(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                className={cn(
+                  "w-full max-w-lg rounded-3xl p-6 max-h-[80vh] overflow-y-auto shadow-2xl border",
+                  isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-gray-200'
+                )}
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-start justify-between mb-5">
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight">{selectedItem.productName}</h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="text-[10px] font-black text-[#FFC928] bg-[#FFC928]/10 px-2 py-0.5 rounded-full">
+                        Qtd: {selectedItem.quantity}
+                      </span>
+                      {prepTime && (
+                        <span className="text-[10px] font-black text-gray-400">
+                          ⏱ ~{prepTime}min
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedItem(null)} className="p-2 rounded-xl hover:bg-white/10 transition-colors">
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {recipe.ingredients.length > 0 && (
+                  <div className="mb-5">
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Ingredientes</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {recipe.ingredients.map((ing, i) => (
+                        <div key={i} className={cn("flex items-center justify-between p-2.5 rounded-xl text-sm", isDark ? 'bg-white/5' : 'bg-gray-50')}>
+                          <span className="font-semibold">{ing.ingredientName || ing.ingredientId}</span>
+                          <span className="font-black text-[#FFC928] text-xs">{ing.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {recipe.preparationMode && (
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Modo de Preparo</h4>
+                    <div className={cn("p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap", isDark ? 'bg-white/5 text-gray-300' : 'bg-amber-50 text-gray-700')}>
+                      {recipe.preparationMode}
+                    </div>
+                  </div>
+                )}
+
+                {selectedItem.observations && (
+                  <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <p className="text-[10px] font-black text-red-500 uppercase mb-1">Observação do Cliente</p>
+                    <p className="text-sm font-semibold text-red-400">{selectedItem.observations}</p>
+                  </div>
+                )}
+
+                {!recipe.preparationMode && recipe.ingredients.length === 0 && (
+                  <p className="text-center text-gray-400 text-sm py-4">Nenhuma ficha técnica cadastrada para este produto.</p>
+                )}
+              </motion.div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

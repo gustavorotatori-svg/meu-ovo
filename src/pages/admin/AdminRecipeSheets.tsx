@@ -15,6 +15,7 @@ export default function AdminRecipeSheets() {
 
   const [selectedProductId, setSelectedProductId] = useState('');
   const [rows, setRows] = useState<{ ingredientId: string; quantity: string }[]>([]);
+  const [preparationMode, setPreparationMode] = useState('');
 
   const selectedProduct = products.find(p => p.id === selectedProductId);
   const existingSheet = useMemo(() => recipeSheets.find(s => s.productId === selectedProductId), [recipeSheets, selectedProductId]);
@@ -24,8 +25,10 @@ export default function AdminRecipeSheets() {
     const sheet = recipeSheets.find(s => s.productId === productId);
     if (sheet) {
       setRows(sheet.ingredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: String(ing.quantity) })));
+      setPreparationMode(sheet.preparationMode || '');
     } else {
       setRows([]);
+      setPreparationMode('');
     }
   };
 
@@ -62,6 +65,7 @@ export default function AdminRecipeSheets() {
       productId: selectedProduct.id,
       productName: selectedProduct.name,
       ingredients: validRows,
+      preparationMode: preparationMode.trim() || undefined,
       createdAt: existingSheet?.createdAt || now,
       updatedAt: now,
     };
@@ -171,6 +175,19 @@ export default function AdminRecipeSheets() {
           <button onClick={addRow} data-testid="rs-add-row" className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm font-black uppercase tracking-widest transition-colors mb-6">
             <Plus size={16} /> Adicionar insumo
           </button>
+
+          <div className={`rounded-2xl border p-5 mb-6 ${isDark ? 'bg-zinc-950/60 border-white/5' : 'bg-white border-gray-100'}`}>
+            <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 block">Modo de Preparo</label>
+            <textarea
+              value={preparationMode}
+              onChange={e => setPreparationMode(e.target.value)}
+              placeholder="Descreva o passo a passo do preparo deste produto..."
+              rows={4}
+              data-testid="rs-prep-mode"
+              className="w-full px-4 py-3 rounded-xl border text-sm font-medium outline-none bg-transparent focus:border-[#FFC928] resize-none"
+            />
+            <p className="text-[9px] text-gray-400 font-semibold mt-1">Este texto será exibido no Painel de Cozinha (KDS) para auxiliar o preparo.</p>
+          </div>
 
           <div className={`rounded-2xl border p-5 mb-6 ${isDark ? 'bg-zinc-950/60 border-white/5' : 'bg-white border-gray-100'}`}>
             <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Resumo</p>

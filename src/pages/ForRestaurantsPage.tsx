@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2, Sticker } from 'lucide-react';
+import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2, Sticker, ChefHat } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -349,6 +349,67 @@ export default function ForRestaurantsPage() {
                 </div>
               </div>
             </div>
+          </div>
+          </ScrollReveal>
+
+          {/* KDS Kitchen Display Card */}
+          <ScrollReveal direction="up" delay={300}>
+          <div className="bg-[#111] rounded-[3rem] p-10 md:p-16 shadow-2xl relative overflow-hidden group lg:col-span-2">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              <div>
+                <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-8 border border-white/10 group-hover:bg-[#FFC928]/20 transition-colors">
+                  <ChefHat className="text-[#FFC928]" size={32} />
+                </div>
+                <h2 className="text-3xl lg:text-4xl font-black text-white mb-6 leading-tight">Painel de Cozinha (KDS)</h2>
+                <p className="text-gray-400 text-lg font-medium mb-10 leading-relaxed">
+                  Tablet na cozinha recebe pedidos em tempo real. Cada item mostra ingredientes, modo de preparo e tempo estimado — sem impressora, sem fio, sem erro.
+                </p>
+
+                <ul className="space-y-4">
+                  {[
+                    'Receita e modo de preparo na tela',
+                    'Timer por item com cores de alerta',
+                    'Tela cheia otimizada para tablet',
+                    'Sem necessidade de impressora'
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-center gap-3 text-white font-bold">
+                      <CheckCircle className="text-green-500" size={20} />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* KDS Mockup */}
+              <div className="bg-black/40 rounded-2xl p-6 border border-white/5 shadow-inner">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[9px] font-black text-white uppercase tracking-widest">Cozinha Ativa</span>
+                  </div>
+                  <span className="text-[8px] font-black text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">KDS</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] font-black text-orange-400 bg-orange-950 px-1.5 py-0.5 rounded uppercase">Preparo</span>
+                      <span className="text-[9px] font-black text-orange-400">8'</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">1x Parmegiana</p>
+                    <p className="text-[10px] text-gray-400 mt-1">🥩 Molho → Empanar → Fritar → Queijo → Salada</p>
+                  </div>
+                  <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[9px] font-black text-emerald-400 bg-emerald-950 px-1.5 py-0.5 rounded uppercase">Pronto</span>
+                      <span className="text-[9px] font-black text-emerald-400">3'</span>
+                    </div>
+                    <p className="text-xs text-white font-bold">2x Hambúrguer Artesanal</p>
+                    <p className="text-[10px] text-gray-400 mt-1">🥩 Pão → Blend → Queijo → Montagem</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
           </div>
           </ScrollReveal>
         </div>

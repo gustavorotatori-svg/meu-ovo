@@ -47,6 +47,11 @@ const sections = [
     icon: Mail,
     title: '8. Retenção e Exclusão',
     content: 'Mantemos seus dados pelo tempo necessário para cumprir as finalidades descritas ou para cumprir obrigações legais. Ao excluir sua conta pela opção "Excluir minha conta" no seu perfil, seus dados pessoais são removidos imediatamente do nosso banco (pedidos e dados pessoais), exceto quando a lei exigir retenção por prazos maiores (como registros de transações fiscais).'
+  },
+  {
+    icon: Shield,
+    title: '9. Encarregado de Dados (DPO)',
+    content: 'Nos termos do art. 41 da LGPD, o Encarregado de Proteção de Dados (DPO) da plataforma Meu OVO é a própria entidade Meu OVO, acessível pelo e-mail contato@meuovo.com. O Encarregado é responsável por aceitar reclamações e comunicações dos titulares, receber solicitações da ANPD e adotar providências sobre tratamento de dados pessoais.'
   }
 ];
 
