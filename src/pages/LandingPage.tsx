@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X } from 'lucide-react';
+import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X, Package, ClipboardList, Gift, Ticket, Flame, BarChart2, Bell } from 'lucide-react';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
@@ -399,6 +399,43 @@ export default function LandingPage() {
                   <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     {feat.desc}
                   </p>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Mais Funcionalidades (7 cards) ─── */}
+      <section className={`py-24 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
+        <div className="max-w-7xl mx-auto px-4">
+          <ScrollReveal direction="up" delay={0}>
+            <SectionHeader
+              subtitle="E muito mais"
+              title="Tudo que seu restaurante precisa"
+              description="Funcionalidades que grandes apps não oferecem — ou cobram caro por elas."
+              subtitleClass="text-[#FFC928]"
+              titleClass={isDark ? 'text-white' : 'text-[#111]'}
+            />
+          </ScrollReveal>
+
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { icon: <Package size={28} />, title: 'Controle de Estoque', desc: 'Saiba exatamente o que tem, o que falta e o que vence. Estoque atualizado automaticamente a cada pedido.', dark: false },
+              { icon: <ClipboardList size={28} />, title: 'Ficha Técnica', desc: 'Cadastre ingredientes, custos e margens. Saiba o lucro real de cada prato antes de colocar no cardápio.', dark: false },
+              { icon: <Gift size={28} />, title: 'Fidelidade & Cashback', desc: 'Seus clientes ganham crédito a cada pedido. Voltem sempre — sem cupom de terceiro, sem plataforma intermediária.', dark: true },
+              { icon: <Ticket size={28} />, title: 'Cupons de Desconto', desc: 'Crie cupons personalizados com limite de uso, validade e valor mínimo. Perfeito para promoções exclusivas.', dark: true },
+              { icon: <Flame size={28} />, title: 'Flash Deals', desc: 'Promoções relâmpago visíveis para todos. Crie ofertas por tempo limitado e aumente o volume de pedidos.', dark: false },
+              { icon: <BarChart2 size={28} />, title: 'Relatórios & Financeiro', desc: 'Dashboard com faturamento, pedidos por período, ticket médio e performance. Tudo em tempo real.', dark: false },
+              { icon: <Bell size={28} />, title: 'Modo Garçom', desc: 'Atenda mesas sem app extra. O garçom vê o cardápio do cliente e registra o pedido direto no sistema.', dark: true },
+            ].map((feat, i) => (
+              <ScrollReveal key={i} direction="up" delay={i * 50}>
+                <div className={`${feat.dark ? (isDark ? 'bg-[#111] border-white/5' : 'bg-[#111] border-white/10') : (isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-100')} rounded-3xl p-8 border shadow-lg shadow-black/5 hover:border-[#FFC928]/30 transition-all group h-full`}>
+                  <div className={`w-14 h-14 ${feat.dark ? 'bg-white/5 border-white/10' : (isDark ? 'bg-white/5 border-white/10' : 'bg-[#F9F9F9] border-gray-100')} rounded-2xl flex items-center justify-center mb-6 border shadow-inner group-hover:bg-[#FFC928]/10 transition-colors`}>
+                    <span className="text-[#FFC928]">{feat.icon}</span>
+                  </div>
+                  <h3 className={`text-xl font-black mb-3 leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
+                  <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{feat.desc}</p>
                 </div>
               </ScrollReveal>
             ))}

@@ -56,16 +56,24 @@ export default function SocialImpactPage() {
   const [totalDonated, setTotalDonated] = useState(0);
   const [mealsServed, setMealsServed] = useState(0);
   const [families, setFamilies] = useState(0);
+  const [citiesCount, setCitiesCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Reactive listener: count of active restaurants
+    // 1. Reactive listener: count of active restaurants + unique cities
     const unsubRestaurants = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
-      const activeCount = snapshot.docs.filter(doc => {
+      const activeDocs = snapshot.docs.filter(doc => {
         const data = doc.data();
         return data.isActive === true;
-      }).length;
-      setRestaurantsCount(activeCount);
+      });
+      setRestaurantsCount(activeDocs.length);
+
+      const uniqueCities = new Set(
+        activeDocs
+          .map(doc => doc.data().city)
+          .filter((city): city is string => typeof city === 'string' && city.length > 0)
+      );
+      setCitiesCount(uniqueCities.size);
     }, (error) => {
       console.warn("Could not fetch restaurants count:", error);
     });
@@ -207,31 +215,55 @@ export default function SocialImpactPage() {
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
                 <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Total arrecadado</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                  <AnimatedCounter value={totalDonated} prefix="R$ " suffix=",00" />
+                  {totalDonated > 0
+                    ? <AnimatedCounter value={totalDonated} prefix="R$ " suffix=",00" />
+                    : <span className="text-lg sm:text-xl lg:text-2xl">R$ 0,00</span>
+                  }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
                 <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Refeições doadas</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                  <AnimatedCounter value={mealsServed} />
+                  {mealsServed > 0
+                    ? <AnimatedCounter value={mealsServed} />
+                    : <span className="text-lg sm:text-xl lg:text-2xl">0</span>
+                  }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
                 <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Famílias beneficiadas</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                  <AnimatedCounter value={families} />
+                  {families > 0
+                    ? <AnimatedCounter value={families} />
+                    : <span className="text-lg sm:text-xl lg:text-2xl">0</span>
+                  }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Cidades atendidas</span>
+                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Restaurantes ativos</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                  <AnimatedCounter value={3} />
+                  <AnimatedCounter value={restaurantsCount} />
                 </span>
               </div>
+              {citiesCount > 0 && (
+                <div className="flex items-end justify-between border-b border-white/10 pb-4">
+                  <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Cidades atendidas</span>
+                  <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
+                    <AnimatedCounter value={citiesCount} />
+                  </span>
+                </div>
+              )}
             </div>
 
-            <p className="mt-12 text-gray-500 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-1.5">
-              <span>* Dashboard sincronizado com dados do banco em tempo real</span>
+            {totalDonated === 0 && !loading && (
+              <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
+                <p className="text-gray-300 text-sm font-bold mb-2">As doações ainda não começaram</p>
+                <p className="text-gray-500 text-xs font-medium">Quando os clientes doarem no checkout, os números aparecem aqui em tempo real.</p>
+              </div>
+            )}
+
+            <p className="mt-8 text-gray-500 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-1.5">
+              <span>* Dados sincronizados com o banco em tempo real</span>
             </p>
           </div>
           </ScrollReveal>
