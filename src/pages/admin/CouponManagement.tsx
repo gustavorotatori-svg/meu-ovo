@@ -944,10 +944,9 @@ export default function CouponManagement() {
                           <p className="font-black text-slate-900 text-sm">{order.customerName}</p>
                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{order.customerPhone}</p>
                         </div>
-                      </div>
-import BackButton from '../../components/BackButton';
+                       </div>
 
-                      <div className="text-right flex items-center gap-6">
+                       <div className="text-right flex items-center gap-6">
                         <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center justify-end gap-1">
                             <Clock size={10} /> Data e Hora

@@ -198,7 +198,7 @@ export default function LoyaltyManagement() {
         code: finalCode,
         type: 'percent',
         value: discount,
-        minimumOrder: 30,
+        minOrderValue: 30,
         isActive: true,
         expiryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
         description: `Ref: Cliente VIP ${selectedProfileHistory.customerName}`

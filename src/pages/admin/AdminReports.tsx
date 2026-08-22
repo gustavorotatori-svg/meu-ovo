@@ -39,6 +39,8 @@ export default function AdminReports() {
   const { currentRestaurant: restaurant } = useRestaurant();
   const [loyaltyProfiles, setLoyaltyProfiles] = useState<any[]>([]);
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
 
   // Filter States
   const [quickPeriod, setQuickPeriod] = useState<string>('7d');
@@ -91,143 +93,100 @@ export default function AdminReports() {
     fetchLoyalty();
   }, [restaurant]);
 
-  // Generates math model matching selections
-  const getFilteredStats = (): FilteredStats => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return {
-        totalRevenue: 0,
-        totalOrders: 0,
-        ticketMedio: 0,
-        newCustomers: 0,
-        chartData: [],
-        channelData: [],
-        topProducts: [],
-        neighborhoodStats: []
-      };
-    }
-
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
-
-    // Base multiplier depending on selected payment method
-    let payMultiplier = 1.0;
-    if (paymentMethod === 'Pix') payMultiplier = 0.44;
-    else if (paymentMethod === 'Cartão de Crédito') payMultiplier = 0.38;
-    else if (paymentMethod === 'Cartão de Débito') payMultiplier = 0.11;
-    else if (paymentMethod === 'Dinheiro') payMultiplier = 0.05;
-    else if (paymentMethod === 'Vale Refeição') payMultiplier = 0.02;
-
-    const chartData: Array<{ name: string; orders: number; revenue: number }> = [];
-    let totalRevenue = 0;
-    let totalOrders = 0;
-
-    // Dynamic scale depending on diffDays to keep charts neat
-    const step = diffDays > 31 ? Math.ceil(diffDays / 15) : 1;
-
-    for (let i = 0; i < diffDays; i += step) {
-      const currentDay = new Date(start);
-      currentDay.setDate(start.getDate() + i);
-      
-      const dayOfWeek = currentDay.getDay(); 
-      let dayWeight = 1.0;
-      
-      // Friday and weekends represent significant delivery peaks
-      if (dayOfWeek === 5) dayWeight = 1.75; // Friday
-      else if (dayOfWeek === 6) dayWeight = 1.95; // Saturday
-      else if (dayOfWeek === 0) dayWeight = 1.5;  // Sunday
-      else if (dayOfWeek === 4) dayWeight = 1.15; // Thursday
-      else dayWeight = 0.65; // Off-peak Mon-Wed
-
-      const sinValue = Math.sin(i * 0.8) * 0.15;
-      const randomVariance = 0.9 + sinValue;
-
-      // Around 28 orders baseline per day
-      const orders = Math.max(1, Math.round(28 * dayWeight * randomVariance * (step * 0.95) * payMultiplier));
-      const baseTicket = 45.40 + (dayOfWeek % 3) * 4.2 + (Math.cos(i) * 3);
-      const revenue = Math.round(orders * baseTicket);
-
-      const dayLabel = currentDay.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-
-      chartData.push({
-        name: dayLabel,
-        orders,
-        revenue
-      });
-
-      totalRevenue += revenue;
-      totalOrders += orders;
-    }
-
-    const ticketMedio = totalOrders > 0 ? Number((totalRevenue / totalOrders).toFixed(2)) : 0;
-    const newCustomers = Math.max(1, Math.round(totalOrders * 0.29));
-
-    // Channel values
-    const channelData = [
-      { name: 'WhatsApp Web', value: Math.round(45 * payMultiplier) || 45, color: '#25D366' },
-      { name: 'Meu Ovo Market', value: Math.round(30 * payMultiplier) || 30, color: '#FFC928' },
-      { name: 'Mesa Premium (QR)', value: Math.round(25 * payMultiplier) || 25, color: '#111111' },
-    ];
-
-    const channelSum = channelData.reduce((acc, curr) => acc + curr.value, 0);
-    channelData.forEach(item => {
-      item.value = channelSum > 0 ? Math.round((item.value / channelSum) * 100) : 33;
-    });
-
-    const products = [
-      { name: 'Pizza Calabresa Artesanal', pctSales: 0.36, unitPrice: 49.9 },
-      { name: 'Pizza Portuguesa Especial', pctSales: 0.26, unitPrice: 53.0 },
-      { name: 'Pizza Margherita Suprema', pctSales: 0.19, unitPrice: 47.9 },
-      { name: 'Guaraná Antarctica 2L', pctSales: 0.11, unitPrice: 11.5 },
-      { name: 'Brotinho Nutella Cremoso', pctSales: 0.08, unitPrice: 32.0 },
-    ];
-
-    const topProducts = products.map((prod, idx) => {
-      const sales = Math.max(1, Math.round(totalOrders * prod.pctSales));
-      const rev = Math.round(sales * prod.unitPrice);
-      const progress = Math.max(12, Math.round(100 - (idx * 16) - (Math.sin(idx * 2) * 4)));
-      return {
-        name: prod.name,
-        sales,
-        revenue: rev,
-        progress
-      };
-    });
-
-    const neighborhoodsList = [
-      { name: 'Pinheiros', pct: 0.32, avgFee: 4.90, avgTime: '25-35 min' },
-      { name: 'Jardins', pct: 0.24, avgFee: 7.90, avgTime: '30-40 min' },
-      { name: 'Itaim Bibi', pct: 0.18, avgFee: 9.90, avgTime: '35-45 min' },
-      { name: 'Vila Madalena', pct: 0.15, avgFee: 5.90, avgTime: '20-30 min' },
-      { name: 'Moema', pct: 0.11, avgFee: 8.90, avgTime: '30-45 min' }
-    ];
-
-    const neighborhoodStats = neighborhoodsList.map((n, idx) => {
-      const orders = Math.max(1, Math.round(totalOrders * n.pct));
-      const revenue = Math.round(orders * (ticketMedio || 52) + (orders * n.avgFee));
-      const progress = Math.max(15, Math.round(100 - (idx * 18)));
-      return {
-        name: n.name,
-        orders,
-        revenue,
-        avgFee: n.avgFee,
-        avgTime: n.avgTime,
-        progress
-      };
-    });
-
-    return {
-      totalRevenue,
-      totalOrders,
-      ticketMedio,
-      newCustomers,
-      chartData,
-      channelData,
-      topProducts,
-      neighborhoodStats
+  useEffect(() => {
+    if (!restaurant) return;
+    const fetchOrders = async () => {
+      setLoadingOrders(true);
+      try {
+        const q = query(collection(db, 'orders'), where('restaurantId', '==', restaurant.id));
+        const snap = await getDocs(q);
+        const startD = new Date(startDate + 'T00:00:00');
+        const endD = new Date(endDate + 'T23:59:59');
+        const filtered = snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter((o: any) => {
+            if (!o.createdAt) return false;
+            const d = new Date(o.createdAt);
+            return d >= startD && d <= endD;
+          });
+        setOrders(filtered);
+      } catch (err) {
+        console.error('Error fetching orders for reports:', err);
+      } finally {
+        setLoadingOrders(false);
+      }
     };
+    fetchOrders();
+  }, [restaurant, startDate, endDate]);
+
+  const getFilteredStats = (): FilteredStats => {
+    if (!orders.length) {
+      return { totalRevenue: 0, totalOrders: 0, ticketMedio: 0, newCustomers: 0, chartData: [], channelData: [], topProducts: [], neighborhoodStats: [] };
+    }
+    const methodMap: Record<string, string> = { 'Pix': 'pix', 'Cartao de Credito': 'card', 'Cartao de Debito': 'debit', 'Dinheiro': 'cash', 'Vale Refeicao': 'voucher' };
+    const filtered = paymentMethod === 'Todos' ? orders : orders.filter((o: any) => o.paymentMethod === methodMap[paymentMethod]);
+    const finished = filtered.filter((o: any) => o.status !== 'cancelled');
+    const totalRevenue = finished.reduce((sum: number, o: any) => sum + (o.subtotal || 0), 0);
+    const totalOrders = finished.length;
+    const ticketMedio = totalOrders > 0 ? Number((totalRevenue / totalOrders).toFixed(2)) : 0;
+    const uniquePhones = new Set(finished.map((o: any) => o.customerPhone).filter(Boolean));
+    const newCustomers = uniquePhones.size;
+    const dayMap = new Map<string, { orders: number; revenue: number }>();
+    finished.forEach((o: any) => {
+      const key = new Date(o.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      const existing = dayMap.get(key) || { orders: 0, revenue: 0 };
+      existing.orders += 1;
+      existing.revenue += o.subtotal || 0;
+      dayMap.set(key, existing);
+    });
+    const chartData = Array.from(dayMap.entries()).map(([name, data]) => ({ name, orders: data.orders, revenue: Math.round(data.revenue) }));
+    const channelCounts: Record<string, number> = { 'WhatsApp': 0, 'Marketplace': 0, 'Mesa': 0 };
+    finished.forEach((o: any) => {
+      if (o.type === 'dine-in') channelCounts['Mesa']++;
+      else if (o.origin === 'marketplace') channelCounts['Marketplace']++;
+      else channelCounts['WhatsApp']++;
+    });
+    const channelTotal = Object.values(channelCounts).reduce((a, b) => a + b, 0) || 1;
+    const channelData = [
+      { name: 'WhatsApp', value: Math.round((channelCounts['WhatsApp'] / channelTotal) * 100), color: '#25D366' },
+      { name: 'Meu Ovo Market', value: Math.round((channelCounts['Marketplace'] / channelTotal) * 100), color: '#FFC928' },
+      { name: 'Mesa (QR)', value: Math.round((channelCounts['Mesa'] / channelTotal) * 100), color: '#111111' },
+    ];
+    const productMap = new Map<string, { name: string; sales: number; revenue: number }>();
+    finished.forEach((o: any) => {
+      (o.items || []).forEach((item: any) => {
+        const key = item.productId || item.name;
+        const existing = productMap.get(key) || { name: item.name || 'Produto', sales: 0, revenue: 0 };
+        existing.sales += item.quantity || 1;
+        existing.revenue += (item.price || 0) * (item.quantity || 1);
+        productMap.set(key, existing);
+      });
+    });
+    const topProducts = Array.from(productMap.values())
+      .sort((a, b) => b.sales - a.sales)
+      .slice(0, 5)
+      .map((p, idx) => ({ ...p, revenue: Math.round(p.revenue), progress: Math.max(12, 100 - idx * 18) }));
+    const neighborhoodMap = new Map<string, { orders: number; revenue: number; totalFee: number }>();
+    finished.filter((o: any) => o.type === 'delivery').forEach((o: any) => {
+      const hood = o.neighborhood || o.deliveryAddress?.split(',')[0]?.trim() || 'Nao informado';
+      const existing = neighborhoodMap.get(hood) || { orders: 0, revenue: 0, totalFee: 0 };
+      existing.orders += 1;
+      existing.revenue += o.subtotal || 0;
+      existing.totalFee += o.deliveryFee || 0;
+      neighborhoodMap.set(hood, existing);
+    });
+    const neighborhoodStats = Array.from(neighborhoodMap.entries())
+      .sort((a, b) => b[1].orders - a[1].orders)
+      .slice(0, 5)
+      .map(([name, data], idx) => ({
+        name,
+        orders: data.orders,
+        revenue: Math.round(data.revenue + data.totalFee),
+        avgFee: data.orders > 0 ? Number((data.totalFee / data.orders).toFixed(2)) : 0,
+        avgTime: 'N/A',
+        progress: Math.max(15, 100 - idx * 18),
+      }));
+    return { totalRevenue, totalOrders, ticketMedio, newCustomers, chartData, channelData, topProducts, neighborhoodStats };
   };
 
   const { totalRevenue, totalOrders, ticketMedio, newCustomers, chartData, channelData, topProducts, neighborhoodStats } = getFilteredStats();
@@ -907,7 +866,7 @@ export default function AdminReports() {
           </p>
           <div className="flex items-center gap-2 text-emerald-500 font-extrabold uppercase text-[10px]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            Votos e faturamentos reais do Firestore
+            Dados reais do Firestore
           </div>
         </div>
       </div>
@@ -915,20 +874,16 @@ export default function AdminReports() {
       {/* Main Dynamic Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Faturamento Líquido', value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, grow: '+12.6%', isUp: true, icon: <DollarSign size={20} className="text-green-500" /> },
-          { label: 'Pedidos Consolidados', value: totalOrders.toLocaleString('pt-BR'), grow: '+8.5%', isUp: true, icon: <ShoppingBag size={20} className="text-blue-500" /> },
-          { label: 'Ticket Médio', value: `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, grow: '+4.1%', isUp: true, icon: <TrendingUp size={20} className="text-purple-500" /> },
-          { label: 'Novos Clientes', value: newCustomers.toLocaleString('pt-BR'), grow: '+22.3%', isUp: true, icon: <Users size={20} className="text-orange-500" /> },
+          { label: 'Faturamento Líquido', value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, icon: <DollarSign size={20} className="text-green-500" /> },
+          { label: 'Pedidos Consolidados', value: totalOrders.toLocaleString('pt-BR'), icon: <ShoppingBag size={20} className="text-blue-500" /> },
+          { label: 'Ticket Médio', value: `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: <TrendingUp size={20} className="text-purple-500" /> },
+          { label: 'Novos Clientes', value: newCustomers.toLocaleString('pt-BR'), icon: <Users size={20} className="text-orange-500" /> },
         ].map((stat, i) => (
           <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 text-left relative overflow-hidden group hover:border-[#FFC928]/40 transition-colors">
             <div className="absolute top-0 right-0 w-16 h-16 bg-gray-50 rounded-bl-[1.5rem] -z-1 group-hover:bg-[#FFC928]/5 transition-colors" />
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center">
                 {stat.icon}
-              </div>
-              <div className="flex items-center gap-1 text-[10px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded">
-                <TrendingUp size={10} />
-                {stat.grow}
               </div>
             </div>
             <div className="text-3xl font-black text-[#111] leading-none mb-1 font-display">{stat.value}</div>

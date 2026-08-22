@@ -429,6 +429,33 @@ export default function CheckoutPage() {
       console.error('[Checkout] Failed to increment orderCount:', err);
     }
 
+    // Increment soldUnits for flash deals
+    try {
+      const productIds = [...new Set(orderItems.map(i => i.productId))];
+      if (productIds.length > 0) {
+        const dealsQuery = query(
+          collection(db, 'flash_deals'),
+          where('restaurantId', '==', restaurantId),
+          where('isActive', '==', true),
+          where('productId', 'in', productIds)
+        );
+        const dealsSnap = await getDocs(dealsQuery);
+        for (const dealDoc of dealsSnap.docs) {
+          const dealData = dealDoc.data();
+          const matchingQty = orderItems
+            .filter(i => i.productId === dealData.productId)
+            .reduce((sum, i) => sum + i.quantity, 0);
+          if (matchingQty > 0) {
+            await updateDoc(doc(db, 'flash_deals', dealDoc.id), {
+              soldUnits: increment(matchingQty)
+            });
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[Checkout] Failed to increment flash deal soldUnits:', err);
+    }
+
     // Update loyalty profile if reward was used
     if (selectedReward && loyaltyProfile) {
       try {

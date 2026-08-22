@@ -1127,6 +1127,7 @@ export default function RestaurantMenuPage() {
           allProducts={restaurantProducts}
           categories={restaurantCategories}
           currentCategoryName={restaurantCategories.find(c => c.id === selectedProduct.categoryId)?.name || ''}
+          flashDeal={flashDeals.find(d => d.productId === selectedProduct.id)}
         />
       )}
 
@@ -1333,9 +1334,10 @@ interface ProductModalProps {
   allProducts: Product[];
   categories: Category[];
   currentCategoryName: string;
+  flashDeal?: FlashDeal;
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName, categories }) => {
+const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName, categories, flashDeal }) => {
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState('');
   const [selectedAdditionals, setSelectedAdditionals] = useState<{ groupId: string; additionalId: string; name: string; price: number }[]>([]);
@@ -1358,11 +1360,12 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
   };
 
   const additionalsTotal = selectedAdditionals.reduce((s, a) => s + a.price, 0);
-  const basePrice = product.onPromotion && product.promotionPrice ? product.promotionPrice : product.price;
+  const basePrice = flashDeal ? flashDeal.dealPrice : (product.onPromotion && product.promotionPrice ? product.promotionPrice : product.price);
   const itemTotal = (basePrice + additionalsTotal) * quantity;
 
   const handleAdd = () => {
-    onAdd({ product, quantity, selectedAdditionals, observations });
+    const cartProduct = flashDeal ? { ...product, price: flashDeal.dealPrice } : product;
+    onAdd({ product: cartProduct, quantity, selectedAdditionals, observations });
     toast.success(`${product.name} adicionado!`, {
       icon: '🍳',
       style: {
