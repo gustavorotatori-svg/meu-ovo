@@ -51,42 +51,44 @@ export default function SocialImpactPage() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  // Live statistics state originating from a solid historical baseline
-  const [restaurantsCount, setRestaurantsCount] = useState(512);
-  const [totalDonated, setTotalDonated] = useState(12430);
-  const [mealsServed, setMealsServed] = useState(2486);
-  const [families, setFamilies] = useState(348);
+  // Live statistics state — all derived from real Firestore data
+  const [restaurantsCount, setRestaurantsCount] = useState(0);
+  const [totalDonated, setTotalDonated] = useState(0);
+  const [mealsServed, setMealsServed] = useState(0);
+  const [families, setFamilies] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Reactive listener for restaurants count
+    // 1. Reactive listener: count of active restaurants
     const unsubRestaurants = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
-      // Append database restaurants to active baseline 
-      const liveRestaurantsCount = snapshot.size;
-      setRestaurantsCount(512 + liveRestaurantsCount);
+      const activeCount = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        return data.isActive === true;
+      }).length;
+      setRestaurantsCount(activeCount);
     }, (error) => {
-      console.warn("Could not fetch restaurants collection count:", error);
+      console.warn("Could not fetch restaurants count:", error);
     });
 
-    // 2. Reactive listener for real-time checkout donations
+    // 2. Reactive listener: sum of all donationAmounts from orders
     const unsubOrders = onSnapshot(collection(db, 'orders'), (snapshot) => {
-      let liveDonationsSum = 0;
+      let donationsSum = 0;
       
       snapshot.forEach((docSnap) => {
         const orderData = docSnap.data();
         if (orderData && typeof orderData.donationAmount === 'number' && orderData.donationAmount > 0) {
-          liveDonationsSum += orderData.donationAmount;
+          donationsSum += orderData.donationAmount;
         }
       });
 
-      // Sum dynamic donations on top of baseline
-      const finalDonated = 12430 + liveDonationsSum;
-      const finalMeals = 2486 + Math.floor(liveDonationsSum / 5); // R$ 5 per meal donation
-      const finalFamilies = 348 + Math.floor(liveDonationsSum / 35); // Approx R$ 35 per grocery basket
+      // Derive impact metrics from real donation totals
+      const donated = donationsSum;
+      const meals = Math.floor(donated / 5); // R$ 5 per meal donation
+      const familyCount = Math.floor(donated / 35); // Approx R$ 35 per grocery basket
       
-      setTotalDonated(finalDonated);
-      setMealsServed(finalMeals);
-      setFamilies(finalFamilies);
+      setTotalDonated(donated);
+      setMealsServed(meals);
+      setFamilies(familyCount);
       setLoading(false);
     }, (error) => {
       console.warn("Could not fetch orders donation sum:", error);

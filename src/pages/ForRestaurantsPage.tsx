@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2, Sticker, ChefHat, Package, ClipboardList, Gift, Ticket, Flame, Bell } from 'lucide-react';
+import { CheckCircle, ArrowRight, Zap, QrCode, BarChart2, Smartphone, Heart, ShoppingBag, Trophy, Shield, Star, CheckCircle2, Sticker, ChefHat, Package, ClipboardList, Gift, Ticket, Flame, Bell, X } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
@@ -442,6 +442,87 @@ export default function ForRestaurantsPage() {
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
           </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Comparativo Meu Ovo vs Grandes Apps */}
+      <section className="py-24 bg-white border-t border-gray-100/80">
+        <div className="max-w-5xl mx-auto px-4">
+          <ScrollReveal direction="up" delay={0}>
+            <div className="text-center mb-16">
+              <span className="text-[10px] font-black uppercase tracking-widest text-[#FFC928] mb-3 block">A comparação que importa</span>
+              <h2 className="text-4xl font-black text-[#111]">Meu Ovo vs. Grandes Apps</h2>
+              <p className="text-gray-500 text-lg font-medium mt-4">Veja a diferença na sua margem de lucro</p>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal direction="up" delay={100}>
+            <div className="rounded-[2.5rem] overflow-hidden border border-gray-100 bg-white shadow-2xl shadow-black/5">
+              {/* Header */}
+              <div className="grid grid-cols-3 gap-0">
+                <div className="p-6 md:p-8 bg-gray-50" />
+                <div className="p-6 md:p-8 text-center border-x border-gray-100 bg-[#FFF8E1]">
+                  <div className="text-xs font-black uppercase tracking-widest text-[#FFC928] mb-1">Meu Ovo</div>
+                  <div className="text-[10px] font-bold uppercase text-gray-500">Cardápio Digital Próprio</div>
+                </div>
+                <div className="p-6 md:p-8 text-center bg-gray-100">
+                  <div className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">iFood / Rappi / 99</div>
+                  <div className="text-[10px] font-bold uppercase text-gray-400">Marketplace</div>
+                </div>
+              </div>
+
+              {/* Rows */}
+              {[
+                { feature: 'Comissão por pedido', meuOvo: '0%', competitor: '12–27%+' , highlight: true },
+                { feature: 'Mensalidade', meuOvo: 'Grátis', competitor: 'Variável', highlight: false },
+                { feature: 'Pedido chega no WhatsApp', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Cliente é do restaurante', meuOvo: true, competitor: false, highlight: true },
+                { feature: 'Restaurante avalia o cliente', meuOvo: true, competitor: false, highlight: true },
+                { feature: 'KDS (Painel de Cozinha)', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Ficha Técnica + Estoque', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Fidelidade & Cashback', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Cupons próprios', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Flash Deals', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'QR Code para mesa', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Etiquetas automáticas', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Doação no checkout', meuOvo: true, competitor: false, highlight: false },
+                { feature: 'Tempo de setup', meuOvo: '<10 min', competitor: 'Dias/semanas', highlight: false },
+                { feature: 'Dono dos dados do cliente', meuOvo: true, competitor: false, highlight: true },
+              ].map((row, i) => (
+                <div key={i} className={`grid grid-cols-3 gap-0 border-t border-gray-100 ${row.highlight ? 'bg-[#FFF8E1]/50' : ''}`}>
+                  <div className="p-4 md:p-5 flex items-center text-xs md:text-sm font-bold text-gray-700">{row.feature}</div>
+                  <div className="p-4 md:p-5 flex items-center justify-center border-x border-gray-100">
+                    {typeof row.meuOvo === 'boolean' ? (
+                      <CheckCircle size={18} className="text-emerald-500" />
+                    ) : (
+                      <span className="text-xs md:text-sm font-black text-[#FFC928]">{row.meuOvo}</span>
+                    )}
+                  </div>
+                  <div className="p-4 md:p-5 flex items-center justify-center">
+                    {typeof row.competitor === 'boolean' ? (
+                      row.competitor ? <CheckCircle size={18} className="text-emerald-500" /> : <X size={18} className="text-red-400" />
+                    ) : (
+                      <span className="text-xs md:text-sm font-bold text-gray-400">{row.competitor}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+
+          {/* Savings highlight */}
+          <ScrollReveal direction="up" delay={200}>
+            <div className="mt-12 bg-[#111] rounded-[2rem] p-8 md:p-12 text-center text-white relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
+              <div className="relative z-10">
+                <p className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-3">Economia real em 1 mês</p>
+                <p className="text-4xl md:text-6xl font-black text-[#FFC928] mb-4">R$ 3.500+</p>
+                <p className="text-gray-400 text-sm font-medium max-w-lg mx-auto">
+                  Se um restaurante fatura R$ 15.000/mês e paga 23% de comissão no iFood, são <span className="text-white font-bold">R$ 3.450/mês</span> que vão para o bolso do app. No Meu Ovo, essa grana é sua.
+                </p>
+              </div>
+            </div>
           </ScrollReveal>
         </div>
       </section>
