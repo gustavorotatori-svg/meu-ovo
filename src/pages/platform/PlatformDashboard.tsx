@@ -94,7 +94,7 @@ export default function PlatformDashboard() {
           const data = docSnap.data();
           const createdAt = data.createdAt?.toMillis?.() || data.createdAt || 0;
           const orderTotal = data.total || data.totalAmount || 0;
-          const donationAmt = data.donationAmount || data.caixinhaAmount || 0;
+          const donationAmt = data.donationAmount || 0;
           const restName = restaurantNames[data.restaurantId] || data.restaurantName || 'Restaurante';
 
           if (createdAt > oneDayAgo) {

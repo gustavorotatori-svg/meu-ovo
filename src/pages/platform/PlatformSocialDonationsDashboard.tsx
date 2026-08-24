@@ -29,7 +29,7 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState('2026-05'); // Default to active system month
+  const [selectedMonth, setSelectedMonth] = useState(''); // Will be set dynamically to most recent month with data
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'success'>('all');
   
@@ -66,118 +66,100 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
     };
   }, []);
 
-  // Preset historical baseline data for other months to provide rich audit trails
-  const historicalData: Record<string, {
-    totalDonated: number;
-    meals: number;
-    families: number;
-    restaurantsBreakdown: { id: string; name: string; slug: string; phone: string; orders: number; amount: number; status: 'success' | 'pending' }[];
-  }> = {
-    '2026-04': {
-      totalDonated: 14520,
-      meals: 2904,
-      families: 414,
-      restaurantsBreakdown: [
-        { id: '1', name: 'Pizzaria do João', slug: 'joao', phone: '5511999999991', orders: 184, amount: 2450.00, status: 'success' },
-        { id: '2', name: 'Burger da Praça', slug: 'burger', phone: '5511999999992', orders: 240, amount: 3120.00, status: 'success' },
-        { id: '3', name: 'Sushi Master', slug: 'sushi', phone: '5511999999993', orders: 110, amount: 1850.50, status: 'success' },
-        { id: '4', name: 'Marmita Dona Ana', slug: 'marmita', phone: '5511999999994', orders: 315, amount: 4120.00, status: 'success' },
-        { id: '5', name: 'Churrasquinho do Bigode', slug: 'churras', phone: '5511999999995', orders: 154, amount: 2012.00, status: 'success' },
-        { id: '6', name: 'Pastelaria Oriental', slug: 'pastel', phone: '5511999999996', orders: 90, amount: 967.50, status: 'success' },
-      ]
-    },
-    '2026-03': {
-      totalDonated: 11210,
-      meals: 2242,
-      families: 320,
-      restaurantsBreakdown: [
-        { id: '1', name: 'Pizzaria do João', slug: 'joao', phone: '5511999999991', orders: 120, amount: 1650.00, status: 'success' },
-        { id: '2', name: 'Burger da Praça', slug: 'burger', phone: '5511999999992', orders: 195, amount: 2600.00, status: 'success' },
-        { id: '3', name: 'Sushi Master', slug: 'sushi', phone: '5511999999993', orders: 85, amount: 1350.00, status: 'success' },
-        { id: '4', name: 'Marmita Dona Ana', slug: 'marmita', phone: '5511999999994', orders: 247, amount: 3500.00, status: 'success' },
-        { id: '5', name: 'Churrasquinho do Bigode', slug: 'churras', phone: '5511999999995', orders: 122, amount: 1515.00, status: 'success' },
-        { id: '6', name: 'Pastelaria Oriental', slug: 'pastel', phone: '5511999999996', orders: 60, amount: 595.00, status: 'success' },
-      ]
-    }
-  };
+  // Derive available months from real order data
+  const getAvailableMonths = (): { value: string; label: string; isActive: boolean }[] => {
+    const monthMap = new Map<string, number>();
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  // Compute live active statistics (Maio/2026) using orders with real donationAmount
-  const getLiveActiveData = (): RestaurantDonationInfo[] => {
-    // Map with default baselines for standard items in the system to not display an empty slate
-    const activeMapping: Record<string, { name: string; slug: string; phone: string; orders: number; amount: number; checkoutAmount: number; postPaymentAmount: number; pixKey?: string }> = {
-      'joao': { name: 'Pizzaria do João', slug: 'joao', phone: '(11) 98765-4321', orders: 48, amount: 124.00, checkoutAmount: 124.00, postPaymentAmount: 0, pixKey: 'joao@pix.com' },
-      'burger': { name: 'Burger da Praça', slug: 'burger', phone: '(11) 91234-5678', orders: 62, amount: 195.00, checkoutAmount: 195.00, postPaymentAmount: 0, pixKey: 'burgerpraca@pix.com' },
-      'sushi': { name: 'Sushi Master', slug: 'sushi', phone: '(11) 99888-7766', orders: 25, amount: 88.00, checkoutAmount: 88.00, postPaymentAmount: 0, pixKey: 'sushimaster@pix.com' },
-      'marmita': { name: 'Marmita Dona Ana', slug: 'marmita', phone: '(11) 95555-4444', orders: 94, amount: 285.00, checkoutAmount: 285.00, postPaymentAmount: 0, pixKey: 'ana.marmita@pix.com' },
-      'churras': { name: 'Churrasquinho do Bigode', slug: 'churras', phone: '(11) 97777-1111', orders: 38, amount: 115.00, checkoutAmount: 115.00, postPaymentAmount: 0, pixKey: 'bigode@pix.com' },
-    };
-
-    // Inject any new restaurants signed up in database
-    restaurants.forEach(r => {
-      const slug = r.slug || r.id;
-      if (!activeMapping[slug]) {
-        activeMapping[slug] = {
-          name: r.name || 'Restaurante Parceiro',
-          slug: slug,
-          phone: r.whatsapp || r.phone || 'Sem telefone',
-          orders: 0,
-          amount: 0,
-          checkoutAmount: 0,
-          postPaymentAmount: 0,
-          pixKey: r.pixKey || `${slug}@pix.com`
-        };
-      }
-    });
-
-    // Sum actual database orders that are loaded live
     orders.forEach(o => {
       if (typeof o.donationAmount === 'number' && o.donationAmount > 0) {
-        // Find corresponding restaurant mapping by id or slug
-        const rDetails = restaurants.find(r => r.id === o.restaurantId);
-        const slug = rDetails?.slug || o.restaurantId || 'unknown';
-        const isPostPayment = o.donationMethod === 'post-payment';
-        
-        if (activeMapping[slug]) {
-          activeMapping[slug].orders += 1;
-          activeMapping[slug].amount += o.donationAmount;
-          if (isPostPayment) {
-            activeMapping[slug].postPaymentAmount += o.donationAmount;
-          } else {
-            activeMapping[slug].checkoutAmount += o.donationAmount;
-          }
-        } else {
-          // Fallback dynamic entry
-          activeMapping[slug] = {
-            name: rDetails?.name || `Restaurante #${o.restaurantId.slice(0, 5)}`,
-            slug: slug,
-            phone: rDetails?.whatsapp || 'Sem contato',
-            orders: 1,
-            amount: o.donationAmount,
-            checkoutAmount: isPostPayment ? 0 : o.donationAmount,
-            postPaymentAmount: isPostPayment ? o.donationAmount : 0,
-            pixKey: rDetails?.pixKey || 'admin@meuovo.com'
-          };
+        const ts = o.createdAt?.toDate?.() || (typeof o.createdAt === 'number' ? new Date(o.createdAt) : null);
+        if (ts) {
+          const key = `${ts.getFullYear()}-${String(ts.getMonth() + 1).padStart(2, '0')}`;
+          monthMap.set(key, (monthMap.get(key) || 0) + 1);
         }
       }
     });
 
-    // Convert mapping to response list
-    return Object.entries(activeMapping).map(([key, item]) => {
-      // Check settled state (paid vs pending) — only applies to checkout donations
-      const currentStatus = settledStates[key] || 'pending';
-      return {
-        id: key,
-        name: item.name,
-        slug: item.slug,
-        contactPhone: item.phone,
-        ordersCount: item.orders,
-        donationTotal: item.amount,
-        checkoutDonations: item.checkoutAmount,
-        postPaymentDonations: item.postPaymentAmount,
-        status: currentStatus,
-        pixKey: item.pixKey
-      };
+    // Always include current month even if empty
+    if (!monthMap.has(currentMonthKey)) {
+      monthMap.set(currentMonthKey, 0);
+    }
+
+    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+    return Array.from(monthMap.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([key, count]) => {
+        const [y, m] = key.split('-');
+        const isActive = key === currentMonthKey;
+        return {
+          value: key,
+          label: `${monthNames[parseInt(m) - 1]} / ${y}${isActive ? ' (Ativo)' : ''}`,
+          isActive
+        };
+      });
+  };
+
+  const availableMonths = getAvailableMonths();
+
+  // Set default selectedMonth to most recent month with data
+  useEffect(() => {
+    if (availableMonths.length > 0 && !selectedMonth) {
+      setSelectedMonth(availableMonths[0].value);
+    }
+  }, [availableMonths, selectedMonth]);
+
+  // Compute live data for the selected month from real orders
+  const getMonthData = (): RestaurantDonationInfo[] => {
+    const [selYear, selMonth] = selectedMonth.split('-').map(Number);
+    const activeMapping: Record<string, { name: string; slug: string; phone: string; orders: number; amount: number; checkoutAmount: number; postPaymentAmount: number; pixKey?: string }> = {};
+
+    // Filter orders for the selected month that have donations
+    orders.forEach(o => {
+      if (typeof o.donationAmount !== 'number' || o.donationAmount <= 0) return;
+      const ts = o.createdAt?.toDate?.() || (typeof o.createdAt === 'number' ? new Date(o.createdAt) : null);
+      if (!ts) return;
+      if (ts.getFullYear() !== selYear || ts.getMonth() + 1 !== selMonth) return;
+
+      const rDetails = restaurants.find(r => r.id === o.restaurantId);
+      const slug = rDetails?.slug || o.restaurantId || 'unknown';
+      const isPostPayment = o.donationMethod === 'post-payment';
+
+      if (!activeMapping[slug]) {
+        activeMapping[slug] = {
+          name: rDetails?.name || `Restaurante #${(o.restaurantId || '').slice(0, 5)}`,
+          slug,
+          phone: rDetails?.whatsapp || rDetails?.phone || 'Sem contato',
+          orders: 0,
+          amount: 0,
+          checkoutAmount: 0,
+          postPaymentAmount: 0,
+          pixKey: rDetails?.pixKey || 'admin@meuovo.com'
+        };
+      }
+      activeMapping[slug].orders += 1;
+      activeMapping[slug].amount += o.donationAmount;
+      if (isPostPayment) {
+        activeMapping[slug].postPaymentAmount += o.donationAmount;
+      } else {
+        activeMapping[slug].checkoutAmount += o.donationAmount;
+      }
     });
+
+    return Object.entries(activeMapping).map(([key, item]) => ({
+      id: key,
+      name: item.name,
+      slug: item.slug,
+      contactPhone: item.phone,
+      ordersCount: item.orders,
+      donationTotal: item.amount,
+      checkoutDonations: item.checkoutAmount,
+      postPaymentDonations: item.postPaymentAmount,
+      status: settledStates[key] || 'pending',
+      pixKey: item.pixKey
+    }));
   };
 
   // Toggle settled status (Paid/Conciliated vs Pending) for a restaurant
@@ -194,21 +176,8 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
   };
 
   // Determine active metrics
-  const isHistorical = selectedMonth !== '2026-05';
-  const displayList = isHistorical 
-    ? (historicalData[selectedMonth]?.restaurantsBreakdown.map(r => ({
-        id: r.id,
-        name: r.name,
-        slug: r.slug,
-        contactPhone: r.phone,
-        ordersCount: r.orders,
-        donationTotal: r.amount,
-        checkoutDonations: r.amount,
-        postPaymentDonations: 0,
-        status: r.status as 'pending' | 'success',
-        pixKey: `${r.slug}@pix.com`
-      })) || [])
-    : getLiveActiveData();
+  const isHistorical = !availableMonths.find(m => m.value === selectedMonth)?.isActive;
+  const displayList = getMonthData();
 
   // Perform search and filter
   const filteredList = displayList.filter(item => {
@@ -229,11 +198,8 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
   const totalPostPayment = displayList.reduce((acc, curr) => acc + curr.postPaymentDonations, 0);
 
   // Translate month representation label
-  const monthLabels: Record<string, string> = {
-    '2026-05': 'Maio / 2026 (Ativo)',
-    '2026-04': 'Abril / 2026 (Histórico)',
-    '2026-03': 'Março / 2026 (Histórico)',
-  };
+  const monthLabels: Record<string, string> = {};
+  availableMonths.forEach(m => { monthLabels[m.value] = m.label; });
 
   // Copy beautiful message text to send to restaurant
   const handleCopyRestaurantDraft = (item: RestaurantDonationInfo) => {
@@ -341,9 +307,9 @@ export default function PlatformSocialDonationsDashboard({ isDark }: PlatformSoc
               onChange={(e) => setSelectedMonth(e.target.value)}
               className="font-black text-lg bg-transparent border-none text-[#111] dark:text-white focus:ring-0 cursor-pointer pr-8 uppercase"
             >
-              <option value="2026-05" className="bg-white dark:bg-neutral-900 text-[#111] dark:text-white">Maio / 2026 (Período Ativo)</option>
-              <option value="2026-04" className="bg-white dark:bg-neutral-900 text-[#111] dark:text-white">Abril / 2026 (Fechado/Pago)</option>
-              <option value="2026-03" className="bg-white dark:bg-neutral-900 text-[#111] dark:text-white">Março / 2026 (Fechado/Pago)</option>
+              {availableMonths.map(m => (
+                <option key={m.value} value={m.value} className="bg-white dark:bg-neutral-900 text-[#111] dark:text-white">{m.label}</option>
+              ))}
             </select>
           </div>
         </div>
