@@ -313,7 +313,6 @@ export default function AdminOrders() {
     try {
       await updateDoc(doc(db, 'orders', orderId), {
         paymentStatus: 'paid',
-        paymentConfirmedAt: new Date().toISOString(),
       });
       toast.success('Pagamento confirmado!');
     } catch (error) {
