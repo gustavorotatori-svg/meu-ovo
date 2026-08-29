@@ -165,6 +165,7 @@ export default function WaiterMode() {
         total: subtotal,
         status: 'received',
         paymentMethod: 'on-site',
+        paymentStatus: 'pending',
         createdAt: new Date().toISOString()
       };
 

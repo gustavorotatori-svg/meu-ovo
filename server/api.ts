@@ -134,12 +134,23 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
   }
 }
 
-// Health check (no rate limit)
-app.get('/api/health', (_req, res) => {
-  res.json({
-    status: 'ok',
+// Health check (no rate limit) — verifies real DB connectivity
+app.get('/api/health', async (_req, res) => {
+  const base = {
     timestamp: new Date().toISOString(),
-  });
+    env: process.env.VERCEL_ENV || 'development',
+    region: process.env.VERCEL_REGION || undefined,
+  };
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ ...base, status: 'degraded', db: 'not_initialized' });
+  }
+  try {
+    await adminDb().collection('restaurants').limit(1).get();
+    res.json({ ...base, status: 'ok', db: 'ok' });
+  } catch (error) {
+    console.error('[Health] DB check failed:', error);
+    res.status(503).json({ ...base, status: 'degraded', db: 'error' });
+  }
 });
 
 // Apply rate limiting to all /api routes

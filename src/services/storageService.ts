@@ -1,9 +1,16 @@
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getAuth } from 'firebase/auth';
 import { app } from '../lib/firebase-core';
 
 const storage = getStorage(app);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+function ownerSegment(): string {
+  const uid = getAuth(app).currentUser?.uid;
+  if (!uid) throw new Error('Sessão expirada. Faça login novamente.');
+  return uid;
+}
 
 function validateFile(file: File): void {
   if (file.size > MAX_FILE_SIZE) {
@@ -20,7 +27,7 @@ export async function uploadProductImage(
   file: File
 ): Promise<string> {
   validateFile(file);
-  const storageRef = ref(storage, `restaurants/${restaurantId}/products/${productId}`);
+  const storageRef = ref(storage, `restaurants/${restaurantId}/${ownerSegment()}/products/${productId}`);
   const snapshot = await uploadBytes(storageRef, file);
   return getDownloadURL(snapshot.ref);
 }
@@ -31,7 +38,7 @@ export async function uploadCategoryImage(
   file: File
 ): Promise<string> {
   validateFile(file);
-  const storageRef = ref(storage, `restaurants/${restaurantId}/categories/${categoryId}`);
+  const storageRef = ref(storage, `restaurants/${restaurantId}/${ownerSegment()}/categories/${categoryId}`);
   const snapshot = await uploadBytes(storageRef, file);
   return getDownloadURL(snapshot.ref);
 }

@@ -99,6 +99,10 @@ service cloud.firestore {
         && incoming().status == 'received'
         && incoming().restaurantId is string
         && incoming().customerPhone is string
+        && (incoming().customerPhone == 'N/A' || incoming().customerPhone.size() >= 8)
+        && incoming().paymentMethod in ['pix', 'cash', 'card-on-delivery', 'on-site', 'credit', 'debit', 'voucher']
+        && incoming().paymentStatus == 'pending'
+        && incoming().items is list && incoming().items.size() > 0
         && (incoming().userId == request.auth.uid
             || !('userId' in incoming()))
         && incoming().createdAt is string;

@@ -428,11 +428,22 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
-app.get("/api/health", (_req, res) => {
-  res.json({
-    status: "ok",
-    timestamp: (/* @__PURE__ */ new Date()).toISOString()
-  });
+app.get("/api/health", async (_req, res) => {
+  const base = {
+    timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+    env: process.env.VERCEL_ENV || "development",
+    region: process.env.VERCEL_REGION || void 0
+  };
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ ...base, status: "degraded", db: "not_initialized" });
+  }
+  try {
+    await adminDb().collection("restaurants").limit(1).get();
+    res.json({ ...base, status: "ok", db: "ok" });
+  } catch (error) {
+    console.error("[Health] DB check failed:", error);
+    res.status(503).json({ ...base, status: "degraded", db: "error" });
+  }
 });
 app.use("/api", rateLimit(30, 6e4));
 var MAX_STRING_LEN = 500;

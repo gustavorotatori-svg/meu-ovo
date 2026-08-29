@@ -372,6 +372,7 @@ export default function MenuDisplay() {
         donationAmount,
         status: 'received',
         paymentMethod: formData.paymentMethod,
+        paymentStatus: 'pending',
         appliedReward: appliedReward ? { id: appliedReward.id, pointsRequired: appliedReward.pointsRequired } : null,
         appliedCoupon: appliedCoupon ? { id: appliedCoupon.id, code: appliedCoupon.code, discount: couponDiscount } : null,
         createdAt: new Date().toISOString(),
