@@ -3,21 +3,21 @@
 const base = (process.argv[2] || process.env.APP_URL || 'https://meu-ovo-pi.vercel.app').replace(/\/$/, '');
 
 const checks = [
-  { name: 'GET /api/health', url: '/api/health', expect: (r) => r.status === 200 && r.json?.status === 'ok' },
-  { name: 'GET /', url: '/', expect: (r) => r.status === 200 && (r.text || '').includes('MEU OVO') },
-  { name: 'GET /busca', url: '/busca', expect: (r) => r.status === 200 },
-  { name: 'GET /mais-pedidos', url: '/mais-pedidos', expect: (r) => r.status === 200 },
-  { name: 'GET /cadastro-restaurante', url: '/cadastro-restaurante', expect: (r) => r.status === 200 },
-  { name: 'GET /api/sitemap.xml', url: '/api/sitemap.xml', expect: (r) => r.status === 200 && (r.text || '').includes('<loc>') },
-  { name: 'GET /api/account/export (401 esperado)', url: '/api/account/export', expect: (r) => r.status === 401 },
-  { name: 'GET /api/order/:id/status (id invalido)', url: '/api/order/invalid/status', expect: (r) => [400, 404, 503].includes(r.status) },
-  { name: 'POST /api/order/:id/payment-confirm (401 esperado)', url: '/api/order/invalid/payment-confirm', expect: (r) => r.status === 401 },
+  { name: 'GET /api/health', url: '/api/health', method: 'GET', expect: (r) => r.status === 200 && r.json?.status === 'ok' },
+  { name: 'GET /', url: '/', method: 'GET', expect: (r) => r.status === 200 && (r.text || '').includes('MEU OVO') },
+  { name: 'GET /busca', url: '/busca', method: 'GET', expect: (r) => r.status === 200 },
+  { name: 'GET /mais-pedidos', url: '/mais-pedidos', method: 'GET', expect: (r) => r.status === 200 },
+  { name: 'GET /cadastro-restaurante', url: '/cadastro-restaurante', method: 'GET', expect: (r) => r.status === 200 },
+  { name: 'GET /api/sitemap.xml', url: '/api/sitemap.xml', method: 'GET', expect: (r) => r.status === 200 && (r.text || '').includes('<loc>') },
+  { name: 'GET /api/account/export (401 esperado)', url: '/api/account/export', method: 'GET', expect: (r) => r.status === 401 },
+  { name: 'GET /api/order/:id/status (id invalido)', url: '/api/order/invalid/status', method: 'GET', expect: (r) => [400, 404, 503].includes(r.status) },
+  { name: 'POST /api/order/:id/payment-confirm (401 esperado)', url: '/api/order/invalid/payment-confirm', method: 'POST', expect: (r) => r.status === 401 },
 ];
 
 let failed = 0;
 for (const c of checks) {
   try {
-    const res = await fetch(base + c.url, { headers: { 'User-Agent': 'meuovo-smoke-test' } });
+    const res = await fetch(base + c.url, { method: c.method || 'GET', headers: { 'User-Agent': 'meuovo-smoke-test' } });
     const text = await res.text();
     let json = null;
     try { json = JSON.parse(text); } catch { }
