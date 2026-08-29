@@ -41,6 +41,7 @@ export default function AdminReports() {
   const [loadingLoyalty, setLoadingLoyalty] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [voteStats, setVoteStats] = useState<{ count: number; avg: number } | null>(null);
 
   // Filter States
   const [quickPeriod, setQuickPeriod] = useState<string>('7d');
@@ -91,6 +92,23 @@ export default function AdminReports() {
       }
     };
     fetchLoyalty();
+  }, [restaurant]);
+
+  useEffect(() => {
+    if (!restaurant) return;
+    const fetchVotes = async () => {
+      try {
+        const qVotes = query(collection(db, 'dish_ratings'), where('restaurantId', '==', restaurant.id));
+        const votesSnap = await getDocs(qVotes);
+        const ratings = votesSnap.docs.map(d => d.data().rating).filter((r: any) => typeof r === 'number');
+        const avg = ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : 0;
+        setVoteStats({ count: votesSnap.size, avg });
+      } catch (err) {
+        console.error('Error fetching dish ratings for reports:', err);
+        setVoteStats(null);
+      }
+    };
+    fetchVotes();
   }, [restaurant]);
 
   useEffect(() => {
@@ -1023,11 +1041,11 @@ export default function AdminReports() {
             <div className="bg-white/5 p-3.5 rounded-2xl border border-white/5 space-y-2">
               <div className="flex items-center justify-between text-[11px] font-black uppercase">
                 <span>Votos Totais</span>
-                <span className="text-[#FFC928]">{totalOrders > 0 ? Math.round(totalOrders * 0.44) : 10} votos</span>
+                <span className="text-[#FFC928]">{voteStats ? `${voteStats.count} votos` : '— votos'}</span>
               </div>
               <div className="flex items-center justify-between text-[11px] font-black uppercase">
-                <span>Média Estimada</span>
-                <span className="text-[#FFC928]">4.8 ★ (Secreto)</span>
+                <span>Média Registrada</span>
+                <span className="text-[#FFC928]">{voteStats && voteStats.count > 0 ? `${voteStats.avg.toFixed(1)} ★ (Secreto)` : '— (Secreto)'}</span>
               </div>
             </div>
             

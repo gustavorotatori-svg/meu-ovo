@@ -870,7 +870,7 @@ export default function RestaurantOnboarding() {
               <div className="bg-white rounded-2xl p-6 mb-6 text-left">
                 <h3 className="font-bold text-[#111] mb-4">Seu link de cardápio</h3>
                 <div className="bg-[#F5F5F5] rounded-xl p-4 flex items-center justify-between">
-                  <span className="text-sm font-mono text-[#111]">meuovo.com.br/r/{finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}</span>
+                  <span className="text-sm font-mono text-[#111]">{window.location.origin}/r/{finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}</span>
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(`${window.location.origin}/r/${finalSlug || form.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '-').replace(/[^\w-]+/g, '')}`);

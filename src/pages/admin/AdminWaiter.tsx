@@ -46,7 +46,7 @@ export default function AdminWaiter() {
         number: tableForm.number,
         active: tableForm.active,
         status: tableForm.active ? 'free' : 'occupied',
-        qrCodeUrl: `https://meuovo.com.br/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
+        qrCodeUrl: `${window.location.origin}/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
       });
       setIsAdding(false);
     } else if (isEditing) {
@@ -55,7 +55,7 @@ export default function AdminWaiter() {
         number: tableForm.number,
         active: tableForm.active,
         status: tableForm.active ? 'free' : 'occupied',
-        qrCodeUrl: `https://meuovo.com.br/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
+        qrCodeUrl: `${window.location.origin}/r/${currentRestaurant?.slug}?mesa=${tableForm.number}`,
       });
       setIsEditing(null);
     }

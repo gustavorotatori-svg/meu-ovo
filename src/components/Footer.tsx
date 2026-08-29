@@ -208,13 +208,15 @@ export default function Footer() {
                   contato@meuovo.com
                 </a>
                 <a 
-                  href="tel:+5511999999999" 
+                  href="https://wa.me/5511942221028" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
                   className={`group flex items-center gap-3 text-xs font-black uppercase tracking-wider transition-all duration-200 hover:translate-x-1 ${
                     isDark ? 'text-zinc-300 hover:text-[#FFC928]' : 'text-zinc-700 hover:text-orange-500'
                   }`}
                 >
                   <Phone size={14} className="text-[#FFC928] shrink-0" />
-                  (11) 99999-9999
+                  (11) 94222-1028
                 </a>
                 <div 
                   className={`flex items-center gap-3 text-xs font-black uppercase tracking-wider ${

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { Order } from '../types';
@@ -32,13 +33,55 @@ export default function OrderTracking() {
   const [problemType, setProblemType] = useState<Order['problemReport']['type'] | ''>('');
   const [problemDesc, setProblemDesc] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGuest, setIsGuest] = useState(true);
 
   const { restaurants } = useRestaurant();
 
   const restaurant = restaurants.find(r => r.slug === slug);
 
   useEffect(() => {
+    const auth = getAuth();
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setIsGuest(!user);
+    });
+    return () => unsubAuth();
+  }, []);
+
+  useEffect(() => {
     if (!orderId) return;
+
+    if (isGuest) {
+      let cancelled = false;
+      const loadGuest = async () => {
+        try {
+          const res = await fetch(`/api/order/${orderId}/status`);
+          if (!res.ok) {
+            if (!cancelled) setLoading(false);
+            return;
+          }
+          const data = await res.json();
+          if (cancelled) return;
+          setOrder({
+            id: data.id,
+            status: data.status,
+            createdAt: data.createdAt,
+            type: data.type,
+            paymentMethod: data.paymentMethod,
+            total: data.total,
+            items: data.items
+          } as Order);
+          setLoading(false);
+        } catch (e) {
+          if (!cancelled) setLoading(false);
+        }
+      };
+      loadGuest();
+      const interval = setInterval(loadGuest, 15000);
+      return () => {
+        cancelled = true;
+        clearInterval(interval);
+      };
+    }
 
     const unsubscribe = onSnapshot(doc(db, 'orders', orderId), (snapshot) => {
       if (snapshot.exists()) {
@@ -48,7 +91,7 @@ export default function OrderTracking() {
     });
 
     return () => unsubscribe();
-  }, [orderId]);
+  }, [orderId, isGuest]);
 
   const handleReportProblem = async () => {
     if (!orderId || !problemType || !problemDesc) {

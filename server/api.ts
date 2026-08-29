@@ -481,6 +481,51 @@ app.post("/api/whatsapp/webhook", async (req, res) => {
   }
 });
 
+/**
+ * Public tracking status for an order (PII-safe: no name, phone, or address).
+ * This is what keeps the WhatsApp status link working for guest checkouts,
+ * which the Firestore web rules intentionally deny (guests can't read orders back).
+ */
+app.get("/api/order/:id/status", async (req, res) => {
+  try {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ error: "Service unavailable" });
+    }
+    const { id } = req.params as { id: string };
+    if (!id || id.length < 8 || id.length > 64) {
+      return res.status(400).json({ error: "invalid_order_id" });
+    }
+    const db = adminDb();
+    const orderDoc = await db.collection('orders').doc(id).get();
+    if (!orderDoc.exists) {
+      return res.status(404).json({ error: "order_not_found" });
+    }
+    const o = orderDoc.data();
+    res.json({
+      id,
+      status: o?.status || 'received',
+      createdAt: o?.createdAt || null,
+      updatedAt: o?.updatedAt || null,
+      type: (o?.type === 'delivery' || o?.type === 'pickup') ? o.type : 'pickup',
+      paymentMethod: typeof o?.paymentMethod === 'string' ? o.paymentMethod : 'pix',
+      total: typeof o?.total === 'number' ? o.total : 0,
+      items: Array.isArray(o?.items)
+        ? o!.items.map((item: any) => ({
+            productName: item?.productName || item?.name || '',
+            quantity: typeof item?.quantity === 'number' ? item.quantity : 0,
+            unitPrice: typeof item?.unitPrice === 'number' ? item.unitPrice : 0,
+            additionals: Array.isArray(item?.additionals)
+              ? item.additionals.filter((a: any) => a).map((a: any) => typeof a === 'string' ? a : (a.name || ''))
+              : [],
+          }))
+        : [],
+    });
+  } catch (error: any) {
+    console.error("[Order Status] Error:", error);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
 const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));
 app.get('*', (req, res) => {

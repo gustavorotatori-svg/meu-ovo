@@ -1,4 +1,4 @@
-import PlatformDashboard from './PlatformDashboard';
+import { Navigate } from 'react-router-dom';
 export default function PlatformIntelligence() {
-  return <PlatformDashboard />;
+  return <Navigate to="/plataforma" replace />;
 }

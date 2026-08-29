@@ -637,6 +637,9 @@ export default function LandingPage() {
               subtitleClass="text-[#FFC928]"
               titleClass={isDark ? 'text-white' : 'text-[#111]'}
             />
+            <p className={`mt-3 text-center text-[11px] font-bold uppercase tracking-wide ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              Depoimentos ilustrativos. Valores de economia são estimativas da proposta de valor e variam por estabelecimento.
+            </p>
           </ScrollReveal>
 
           <div className="relative min-h-[400px] sm:min-h-[340px] md:min-h-[280px] flex flex-col justify-center mt-12">

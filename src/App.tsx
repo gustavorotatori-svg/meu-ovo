@@ -60,6 +60,8 @@ const FlashDealManagement = lazy(() => import('./pages/admin/FlashDealManagement
 const LabelManagement = lazy(() => import('./pages/admin/LabelManagement'));
 const AdminWhatsAppAI = lazy(() => import('./pages/admin/AdminWhatsAppAI'));
 const OrderStatusPage = lazy(() => import('./pages/OrderStatusPage'));
+const MenuDisplay = lazy(() => import('./pages/MenuDisplay'));
+const OrderTracking = lazy(() => import('./pages/OrderTracking'));
 
 const PlatformDashboard = lazy(() => import('./pages/platform/PlatformDashboard'));
 const PlatformRestaurants = lazy(() => import('./pages/platform/PlatformRestaurants'));
@@ -99,6 +101,8 @@ export default function App() {
                     <Route path="/busca" element={<PageSuspense><MarketplacePage /></PageSuspense>} />
                     <Route path="/mais-pedidos" element={<PageSuspense><MaisPedidosPage /></PageSuspense>} />
                     <Route path="/r/:slug" element={<PageSuspense><RestaurantMenuPage /></PageSuspense>} />
+                    <Route path="/r/:slug/status/:orderId" element={<PageSuspense><OrderTracking /></PageSuspense>} />
+                    <Route path="/m/:slug" element={<PageSuspense><MenuDisplay /></PageSuspense>} />
                     <Route path="/carrinho" element={<PageSuspense><CartPage /></PageSuspense>} />
                     <Route path="/checkout" element={<PageSuspense><CheckoutPage /></PageSuspense>} />
                     <Route path="/login" element={<PageSuspense><LoginPage /></PageSuspense>} />
