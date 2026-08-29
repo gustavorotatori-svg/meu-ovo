@@ -8,6 +8,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 
 import ScrollToTop from './components/ScrollToTop';
+import RouteTracker from './components/RouteTracker';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import PageTransition from './components/PageTransition';
@@ -92,6 +93,7 @@ export default function App() {
           <CartProvider>
             <BrowserRouter basename={basename}>
               <ScrollToTop />
+              <RouteTracker />
               <AbandonedCartWatcher />
               <ErrorBoundary>
                 <Routes>

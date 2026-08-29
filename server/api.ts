@@ -526,6 +526,47 @@ app.get("/api/order/:id/status", async (req, res) => {
   }
 });
 
+/**
+ * Customer confirms they paid (PIX/cash/online). Customers are not allowed to
+ * set paymentStatus via Firestore rules, so this runs with the Admin SDK and
+ * only flips 'pending' -> 'awaiting_confirmation'. The restaurant must then
+ * approve and the admin flow sets it to 'paid'.
+ */
+app.post("/api/order/:id/payment-confirm", requireAuth, async (req, res) => {
+  try {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ error: "Service unavailable" });
+    }
+    const { id } = req.params as { id: string };
+    if (!id || id.length < 8 || id.length > 64) {
+      return res.status(400).json({ error: "invalid_order_id" });
+    }
+    const uid = (req as express.Request & { auth?: { uid: string } }).auth!.uid;
+    const db = adminDb();
+    const orderRef = db.collection('orders').doc(id);
+    const orderDoc = await orderRef.get();
+    if (!orderDoc.exists) {
+      return res.status(404).json({ error: "order_not_found" });
+    }
+    const data = orderDoc.data() || {};
+    if (data.userId !== uid) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    if (data.paymentStatus === 'paid' || data.paymentStatus === 'awaiting_confirmation') {
+      return res.json({ ok: true, paymentStatus: data.paymentStatus });
+    }
+    await orderRef.update({
+      paymentStatus: 'awaiting_confirmation',
+      paymentConfirmedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    res.json({ ok: true, paymentStatus: 'awaiting_confirmation' });
+  } catch (error: any) {
+    console.error("[Payment Confirm] Error:", error);
+    res.status(500).json({ error: "Internal error" });
+  }
+});
+
 const distPath = path.join(process.cwd(), 'dist');
 app.use(express.static(distPath));
 app.get('*', (req, res) => {

@@ -11,6 +11,7 @@ import { db } from '../lib/firebase';
 import { doc, getDoc, getDocs, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import { sendEmailVerification } from 'firebase/auth';
 import { getFirebaseErrorMessage } from '../lib/utils';
+import { trackEvent } from '../lib/analytics';
 import { Button } from '../components/Button';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -148,6 +149,7 @@ export default function LoginPage() {
         if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
         const role = isRestaurant ? 'restaurant' : 'customer';
         await signUp(formData.email.trim(), formData.password, formData.name.trim(), role);
+        trackEvent('sign_up', { method: 'email', role });
         if (isRestaurant) {
           try { await updateDoc(doc(db, 'users', auth.currentUser?.uid || ''), { signupIntent: 'restaurant' }); } catch {}
           toast.success('Conta de restaurante criada! Verifique seu email e cadastre seu cardápio.');

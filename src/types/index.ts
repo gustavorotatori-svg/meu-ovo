@@ -210,7 +210,8 @@ export interface Order {
   paymentMethod: 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
   changeFor?: number;
   status: 'received' | 'accepted' | 'preparing' | 'ready' | 'out-for-delivery' | 'finished' | 'cancelled';
-  paymentStatus?: 'pending' | 'paid' | 'failed';
+  paymentStatus?: 'pending' | 'awaiting_confirmation' | 'paid' | 'failed';
+  paymentConfirmedAt?: string;
   acceptedAt?: string;
   rejectedAt?: string;
   rejectionReason?: string;

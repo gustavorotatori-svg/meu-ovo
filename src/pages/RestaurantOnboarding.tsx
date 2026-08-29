@@ -12,6 +12,7 @@ import { useRestaurant } from '../context/RestaurantContext';
 import { toast } from 'react-hot-toast';
 import { encodeGeohash } from '../lib/geohash';
 import { authedFetch } from '../lib/api';
+import { trackEvent } from '../lib/analytics';
 
 export default function RestaurantOnboarding() {
   const { t } = useTranslation();
@@ -252,6 +253,7 @@ export default function RestaurantOnboarding() {
       setFinalSlug(registeredSlug);
       localStorage.removeItem(STORAGE_KEY);
       setStep(2);
+      trackEvent('sign_up', { method: 'onboarding', role: 'restaurant', restaurant_id: restaurantData.id });
       toast.success('Restaurante cadastrado com sucesso!');
     } catch (e) {
       console.error(e);

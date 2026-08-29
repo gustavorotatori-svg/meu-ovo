@@ -62,4 +62,32 @@ export function hasMarketingConsent(): boolean {
   return hasConsentChoice() ? isConsentGranted() : false;
 }
 
+export function trackEvent(name: string, params: Record<string, unknown> = {}): void {
+  if (!hasMarketingConsent()) return;
+  if (window.dataLayer) {
+    window.dataLayer.push({ event: name, ...params });
+  }
+  if (window.fbq) {
+    try {
+      window.fbq('track', name, params);
+    } catch {
+      // ignore tracking errors
+    }
+  }
+}
+
+export function trackRouteChange(path: string): void {
+  if (!hasMarketingConsent()) return;
+  if (window.dataLayer) {
+    window.dataLayer.push({ event: 'page_view', page_path: path });
+  }
+  if (window.fbq) {
+    try {
+      window.fbq('track', 'PageView');
+    } catch {
+      // ignore tracking errors
+    }
+  }
+}
+
 export { getConsentState };

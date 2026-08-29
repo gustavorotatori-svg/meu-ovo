@@ -309,6 +309,19 @@ export default function AdminOrders() {
     }
   }, [restaurant, updateOrderStatus, activeSession, cashierSessions]);
 
+  const confirmPayment = async (orderId: string) => {
+    try {
+      await updateDoc(doc(db, 'orders', orderId), {
+        paymentStatus: 'paid',
+        paymentConfirmedAt: new Date().toISOString(),
+      });
+      toast.success('Pagamento confirmado!');
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      toast.error('Erro ao confirmar pagamento');
+    }
+  };
+
   const printOrder = (order: Order, type: 'ticket' | 'account' = 'ticket') => {
     const printWindow = window.open('', '_blank', 'width=400,height=600');
     if (!printWindow) {
@@ -1342,6 +1355,7 @@ export default function AdminOrders() {
                       order={order}
                       isDark={isDark}
                       onStatusChange={status => handleStatusChange(order.id, status)}
+                      onConfirmPayment={() => confirmPayment(order.id)}
                       onPrint={(type) => printOrder(order, type)}
                       onWhatsAppUpdate={() => sendWhatsAppUpdate(order)}
                       onFiscal={() => handleFiscalSync(order)}
@@ -1602,13 +1616,14 @@ const OrderCard: React.FC<{
   order: Order; 
   onStatusChange: (s: Order['status']) => void; 
   isDark: boolean;
+  onConfirmPayment?: () => void;
   onPrint?: (type: 'ticket' | 'account') => void;
   onWhatsAppUpdate?: () => void;
   onFiscal?: () => void;
   compact?: boolean;
   selected?: boolean;
   onToggleSelection?: () => void;
-}> = ({ order, onStatusChange, isDark, onPrint, onWhatsAppUpdate, onFiscal, compact, selected, onToggleSelection }) => {
+}> = ({ order, onStatusChange, isDark, onConfirmPayment, onPrint, onWhatsAppUpdate, onFiscal, compact, selected, onToggleSelection }) => {
   const [expanded, setExpanded] = useState(false);
   const nextStatus = STATUS_FLOW[order.status];
 
@@ -1701,10 +1716,20 @@ const OrderCard: React.FC<{
                 <div className={`mt-1 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded inline-flex items-center gap-1 ${
                   order.paymentStatus === 'paid' 
                     ? 'bg-emerald-100 text-emerald-700' 
-                    : 'bg-amber-100 text-amber-700'
+                    : order.paymentStatus === 'awaiting_confirmation'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'bg-amber-100 text-amber-700'
                 }`}>
-                  {order.paymentStatus === 'paid' ? '✓ Pago' : '⏳ Pendente'}
+                  {order.paymentStatus === 'paid' ? '✓ Pago' : order.paymentStatus === 'awaiting_confirmation' ? '⏳ Aguardando confirmação' : '⏳ Pendente'}
                 </div>
+              )}
+              {order.status === 'accepted' && order.paymentStatus === 'awaiting_confirmation' && (
+                <button
+                  onClick={() => onConfirmPayment?.()}
+                  className="mt-2 text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                >
+                  ✓ Confirmar pagamento
+                </button>
               )}
             </div>
           )}

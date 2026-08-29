@@ -20,6 +20,7 @@ import { getCustomerStats, checkCouponTargeting, CustomerStats } from '../servic
 import { updateStreak } from '../services/streakService';
 import { awardPlatformPoints } from '../services/platformLoyaltyService';
 import { checkAndAwardAchievements, getAllAchievements } from '../services/achievementService';
+import { trackEvent } from '../lib/analytics';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
@@ -382,6 +383,7 @@ export default function CheckoutPage() {
       tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
       deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
       paymentMethod,
+      paymentStatus: 'pending',
       changeFor: paymentMethod === 'cash' && changeFor ? Number(changeFor) : undefined,
       status: 'received',
       items: orderItems,
@@ -409,6 +411,13 @@ export default function CheckoutPage() {
       return;
     }
     setOrderId(id);
+
+    trackEvent('purchase', {
+      value: total,
+      currency: 'BRL',
+      transaction_id: id,
+      restaurant_id: restaurant.id,
+    });
 
     // Increment orderCount for each product (for "Mais pedido" badge)
     try {

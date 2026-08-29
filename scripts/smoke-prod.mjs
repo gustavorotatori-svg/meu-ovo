@@ -11,6 +11,7 @@ const checks = [
   { name: 'GET /api/sitemap.xml', url: '/api/sitemap.xml', expect: (r) => r.status === 200 && (r.text || '').includes('<loc>') },
   { name: 'GET /api/account/export (401 esperado)', url: '/api/account/export', expect: (r) => r.status === 401 },
   { name: 'GET /api/order/:id/status (id invalido)', url: '/api/order/invalid/status', expect: (r) => [400, 404, 503].includes(r.status) },
+  { name: 'POST /api/order/:id/payment-confirm (401 esperado)', url: '/api/order/invalid/payment-confirm', expect: (r) => r.status === 401 },
 ];
 
 let failed = 0;

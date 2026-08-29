@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { generatePixPayload } from '../lib/pix';
 import { WA_NUMBER } from '../services/whatsappService';
 import { toast } from 'react-hot-toast';
@@ -37,6 +38,7 @@ export default function OrderStatusPage() {
   const navigate = useNavigate();
   const { restaurants } = useRestaurant();
   const { addItem } = useCart();
+  const { user } = useAuth();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
 
@@ -152,13 +154,30 @@ export default function OrderStatusPage() {
 
   const handleConfirmPayment = async () => {
     if (!order) return;
+    if (!user) {
+      toast.error('Envie o comprovante pelo WhatsApp do restaurante para confirmar o pagamento');
+      return;
+    }
     try {
-      await updateDoc(doc(db, 'orders', order.id), {
-        paymentStatus: 'paid'
+      const token = await user.getIdToken();
+      const res = await fetch(`/api/order/${order.id}/payment-confirm`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
-      setPaymentConfirmed(true);
-      setShowPostPayment(true);
-      toast.success('Pagamento confirmado com sucesso!');
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data?.error === 'Forbidden' ? 'Você não pode confirmar este pedido' : 'Erro ao confirmar pagamento');
+        return;
+      }
+      if (data.paymentStatus === 'awaiting_confirmation') {
+        setPaymentConfirmed(true);
+        toast.success('Pagamento em confirmação pelo restaurante!');
+      } else {
+        toast.success('Pagamento já confirmado!');
+      }
     } catch (err) {
       toast.error('Erro ao confirmar pagamento');
     }
@@ -332,8 +351,19 @@ export default function OrderStatusPage() {
           </div>
         )}
 
+        {/* Payment awaiting restaurant confirmation */}
+        {order.status === 'accepted' && order.paymentStatus === 'awaiting_confirmation' && (
+          <div className="bg-blue-50 border-2 border-blue-200 rounded-3xl p-5 flex items-center gap-4">
+            <RefreshCw size={24} className="text-blue-500 shrink-0" />
+            <div>
+              <p className="font-black text-blue-800 uppercase tracking-tighter text-sm">Pagamento em confirmação</p>
+              <p className="text-sm text-blue-700 font-bold">O restaurante confirmará assim que receber seu pagamento.</p>
+            </div>
+          </div>
+        )}
+
         {/* Payment Section (when accepted and not paid) */}
-        {order.status === 'accepted' && order.paymentStatus !== 'paid' && !paymentConfirmed && (
+        {order.status === 'accepted' && order.paymentStatus === 'pending' && !paymentConfirmed && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

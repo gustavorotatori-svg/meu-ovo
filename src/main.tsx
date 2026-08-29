@@ -30,6 +30,8 @@ if (import.meta.env.DEV) {
   const requiredClientVars = [
     'VITE_PLATFORM_PIX_KEY',
     'VITE_SENTRY_DSN',
+    'VITE_GA_ID',
+    'VITE_FB_PIXEL_ID',
   ] as const;
   const missing = requiredClientVars.filter(v => !import.meta.env[v]);
   if (missing.length > 0) {

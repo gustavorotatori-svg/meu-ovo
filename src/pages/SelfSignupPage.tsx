@@ -11,6 +11,7 @@ import BackButton from '../components/BackButton';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
+import { trackEvent } from '../lib/analytics';
 
 export default function SelfSignupPage() {
   const navigate = useNavigate();
@@ -85,6 +86,7 @@ export default function SelfSignupPage() {
 
       setCreated(true);
       setStep(2);
+      trackEvent('sign_up', { method: 'email', role: 'customer' });
       toast.success('Conta criada com sucesso!');
 
       setTimeout(() => {
