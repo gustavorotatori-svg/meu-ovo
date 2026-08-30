@@ -297,7 +297,7 @@ export default function PlatformDashboard() {
             <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-6 border border-gray-100 dark:border-neutral-800 shadow-sm">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Autocheck agendado</p>
               <div className="flex flex-col justify-center h-full mt-2 gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-bold leading-relaxed">
-                <span>• Verificação real do banco a cada 5 min</span>
+                <span>• Verificação real do banco (agendada diariamente)</span>
                 <span>• Incidentes registrados em <code className="bg-gray-100 dark:bg-neutral-800 px-1 rounded">system_checks</code></span>
                 <span>• Sem dependência de terceiros</span>
               </div>
