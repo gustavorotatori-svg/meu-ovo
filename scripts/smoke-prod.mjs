@@ -6,7 +6,7 @@ const checks = [
   { name: 'GET /api/health (db ok)', url: '/api/health', method: 'GET', expect: (r) => r.status === 200 && r.json?.status === 'ok' && r.json?.db === 'ok' },
   { name: 'GET /', url: '/', method: 'GET', expect: (r) => r.status === 200 && (r.text || '').includes('MEU OVO') },
   { name: 'GET /busca', url: '/busca', method: 'GET', expect: (r) => r.status === 200 },
-  { name: 'GET /mais-pedidos', url: '/mais-pedidos', method: 'GET', expect: (r) => r.status === 200 },
+  { name: 'GET /impacto-social', url: '/impacto-social', method: 'GET', expect: (r) => r.status === 200 },
   { name: 'GET /cadastro-restaurante', url: '/cadastro-restaurante', method: 'GET', expect: (r) => r.status === 200 },
   { name: 'GET /api/sitemap.xml', url: '/api/sitemap.xml', method: 'GET', expect: (r) => r.status === 200 && (r.text || '').includes('<loc>') },
   { name: 'GET /api/account/export (401 esperado)', url: '/api/account/export', method: 'GET', expect: (r) => r.status === 401 },

@@ -34,11 +34,7 @@ service cloud.firestore {
         && incoming().slug.matches('^[a-z0-9-]+$')
         && (incoming().createdAt is timestamp || incoming().createdAt is string);
       allow update: if isOwnerOrAdmin(restaurantId)
-        && incoming().ownerId == existing().ownerId
-        || (isSignedIn()
-            && incoming().diff(existing()).affectedKeys().hasOnly(['orderCount'])
-            && incoming().orderCount is number
-            && (!('orderCount' in existing()) || incoming().orderCount > existing().orderCount));
+        && incoming().ownerId == existing().ownerId;
       allow delete: if isOwnerOrAdmin(restaurantId);
     }
 
@@ -57,11 +53,7 @@ service cloud.firestore {
       allow create: if isOwnerOrAdmin(incoming().restaurantId)
         && incoming().name is string && incoming().name.size() <= 100
         && incoming().price is number && incoming().price >= 0;
-      allow update: if isOwnerOrAdmin(existing().restaurantId)
-        || (isSignedIn()
-            && incoming().diff(existing()).affectedKeys().hasOnly(['orderCount'])
-            && incoming().orderCount is number
-            && (!('orderCount' in existing()) || incoming().orderCount > existing().orderCount));
+      allow update: if isOwnerOrAdmin(existing().restaurantId);
       allow delete: if isOwnerOrAdmin(existing().restaurantId);
     }
 

@@ -25,7 +25,6 @@ import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
 import { Restaurant } from '../types';
-import { rankRestaurants } from '../lib/recommendations';
 import { getStreak, getNextMilestone, checkStreakReminder } from '../services/streakService';
 
 export default function Home() {
@@ -33,7 +32,7 @@ export default function Home() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { restaurants, orders, favorites, toggleFavorite } = useRestaurant();
+  const { restaurants, favorites, toggleFavorite } = useRestaurant();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [streak, setStreak] = useState<{ currentStreak: number } | null>(null);
@@ -48,8 +47,8 @@ export default function Home() {
   }, [user?.id]);
   
   const rankedRestaurants = useMemo(() => {
-    return rankRestaurants(restaurants, orders);
-  }, [restaurants, orders]);
+    return [...restaurants].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+  }, [restaurants]);
 
   const [shareData, setShareData] = useState<{ isOpen: boolean; url: string; title: string }>({
     isOpen: false,

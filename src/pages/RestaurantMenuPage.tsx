@@ -982,7 +982,7 @@ export default function RestaurantMenuPage() {
                             <div className="flex-1 min-w-0">
                               <span className="text-[8px] font-extrabold uppercase bg-[#FFC928] text-black px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">
                                 <Star size={8} className="fill-black" />
-                                MAIS PEDIDO
+                                DESTAQUE
                               </span>
                               <h4 className="font-bold text-sm uppercase text-slate-800 dark:text-white truncate mt-1.5">{p.name}</h4>
                               <p className={cn("text-[10px] line-clamp-2 mt-0.5 leading-relaxed", isDark ? "text-gray-400" : "text-gray-500")}>{p.description}</p>
@@ -1179,12 +1179,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, fl
               <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm animate-pulse">
                 <Zap size={8} className="text-yellow-300" />
                 OFERTA RELÂMPAGO
-              </span>
-            )}
-            {((product.bestSeller) || ((product.orderCount ?? 0) >= 10)) && !flashDeal && (
-              <span className="bg-[#FFC928] text-black text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                <Star size={8} className="fill-[#111] text-[#111]" />
-                {(product.orderCount ?? 0) >= 20 ? 'TOP VENDAS' : 'MAIS PEDIDO'}
               </span>
             )}
             {product.onPromotion && !flashDeal && (
@@ -1440,12 +1434,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               </p>
               
               <div className="flex flex-wrap items-center gap-2 pt-2">
-                {product.bestSeller && (
-                  <Badge size="md">
-                    <Star size={10} className="fill-black" />
-                    MAIS PEDIDO
-                  </Badge>
-                )}
                 {product.onPromotion && (
                   <Badge variant="danger" size="md">
                     REDUÇÃO DE PREÇO

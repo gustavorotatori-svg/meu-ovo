@@ -23,7 +23,6 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const InstallAppPage = lazy(() => import('./pages/InstallAppPage'));
 const MarketplacePage = lazy(() => import('./pages/MarketplacePage'));
-const MaisPedidosPage = lazy(() => import('./pages/MaisPedidosPage'));
 const RestaurantMenuPage = lazy(() => import('./pages/RestaurantMenuPage'));
 const CartPage = lazy(() => import('./pages/CartPage'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage'));
@@ -101,7 +100,6 @@ export default function App() {
                     {/* Public */}
                     <Route path="/" element={<PageSuspense><LandingPage /></PageSuspense>} />
                     <Route path="/busca" element={<PageSuspense><MarketplacePage /></PageSuspense>} />
-                    <Route path="/mais-pedidos" element={<PageSuspense><MaisPedidosPage /></PageSuspense>} />
                     <Route path="/r/:slug" element={<PageSuspense><RestaurantMenuPage /></PageSuspense>} />
                     <Route path="/r/:slug/status/:orderId" element={<PageSuspense><OrderTracking /></PageSuspense>} />
                     <Route path="/m/:slug" element={<PageSuspense><MenuDisplay /></PageSuspense>} />

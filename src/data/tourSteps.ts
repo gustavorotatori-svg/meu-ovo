@@ -87,7 +87,7 @@ export const adminTourSteps: TourStep[] = [
   {
     target: '[data-ovinho="admin-analytics"]',
     title: 'Relatórios e Métricas',
-    content: 'Veja suas vendas, pratos mais pedidos e tudo que precisa pra crescer. Dados são o novo ouro! 🥚',
+    content: 'Veja suas vendas e métricas em tempo real pra crescer. Dados são o novo ouro! 🥚',
     placement: 'top',
   },
 ];

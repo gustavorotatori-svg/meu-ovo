@@ -1,4 +1,4 @@
-import { Restaurant, Order } from '../types';
+import { Restaurant } from '../types';
 import { UserProfile } from './userPreferences';
 
 export interface ScoredRestaurant extends Restaurant {
@@ -7,14 +7,8 @@ export interface ScoredRestaurant extends Restaurant {
 
 export function scoreRestaurantsForUser(
   restaurants: Restaurant[],
-  orders: Order[],
   profile: UserProfile
 ): ScoredRestaurant[] {
-  const orderCounts: Record<string, number> = {};
-  orders.forEach(o => {
-    orderCounts[o.restaurantId] = (orderCounts[o.restaurantId] || 0) + 1;
-  });
-
   return restaurants.map(r => {
     let score = 0;
 
@@ -33,9 +27,6 @@ export function scoreRestaurantsForUser(
     }
 
     score += ((r.rating ?? 0) / 5) * 15;
-
-    const orderCount = orderCounts[r.id] || 0;
-    score += Math.min(orderCount * 10, 15);
 
     return { ...r, _score: score };
   }).sort((a, b) => (b._score ?? 0) - (a._score ?? 0));

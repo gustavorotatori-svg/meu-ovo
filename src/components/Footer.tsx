@@ -63,7 +63,6 @@ export default function Footer() {
       { label: 'Portal do Parceiro', to: '/admin' },
       { label: 'Prêmio Ovos de Ouro', to: '/ovos-de-ouro' },
       { label: 'Marketplace', to: '/busca' },
-      { label: 'Ranking Mais Pedidos', to: '/mais-pedidos' },
       { label: 'Etiquetas', to: '/admin/etiquetas' },
     ],
     legal: [
