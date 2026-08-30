@@ -299,6 +299,17 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ─── SYSTEM HEALTH (escrito pelo cron /api/cron/health via Admin SDK) ────
+    match /system_health/{document} {
+      allow read, list: if isPlatformAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
+    match /system_checks/{document} {
+      allow read, list: if isPlatformAdmin();
+      allow write: if false; // Admin SDK only
+    }
+
     // ─── FLASH DEALS (promoções relâmpago) ──────────────────────────────────
     match /flash_deals/{dealId} {
       allow read: if true;

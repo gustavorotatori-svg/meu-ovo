@@ -11,7 +11,7 @@ import BackButton from '../../components/BackButton';
 import { Logo } from '../../components/Logo';
 import Breadcrumbs from '../../components/admin/Breadcrumbs';
 import { db } from '../../lib/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, limit, getDoc, doc } from 'firebase/firestore';
 import PlatformCanceledOrdersReport from './PlatformCanceledOrdersReport';
 import PlatformSocialDonationsDashboard from './PlatformSocialDonationsDashboard';
 
@@ -49,6 +49,38 @@ export default function PlatformDashboard() {
   ]);
 
   const [activityFeed, setActivityFeed] = useState<{ action: string; detail: string; time: string; icon: React.ReactNode }[]>([]);
+
+  // Platform health monitor (system_health/system_checks fed by /api/cron/health)
+  const [monitor, setMonitor] = useState<{ status: string; ts?: string; history: { status: string; ts: string }[]; uptime: string | null }>({
+    status: '...',
+    history: [],
+    uptime: null,
+  });
+
+  useEffect(() => {
+    let active = true;
+    const loadMonitor = async () => {
+      try {
+        const cur = await getDoc(doc(db, 'system_health', 'current'));
+        const hq = query(collection(db, 'system_checks'), orderBy('ts', 'desc'), limit(100));
+        const hs = await getDocs(hq);
+        const history = hs.docs.map(d => ({ status: (d.data().status as string) || 'down', ts: (d.data().ts as string) || '' }));
+        const okCount = history.filter(h => h.status === 'ok').length;
+        if (active) {
+          setMonitor({
+            status: cur.data()?.status ?? history[0]?.status ?? '...',
+            ts: cur.data()?.ts ?? undefined,
+            history,
+            uptime: history.length ? `${Math.round((okCount / history.length) * 100)}%` : null,
+          });
+        }
+      } catch (e) {
+        console.error('Monitor load error:', e);
+      }
+    };
+    loadMonitor();
+    return () => { active = false; };
+  }, []);
 
   // Load candidates and votes from Firestore
   useEffect(() => {
@@ -230,6 +262,46 @@ export default function PlatformDashboard() {
 
           <div className="px-6 pt-6">
             <BackButton to="/" />
+          </div>
+
+          {/* Platform Health Monitor (fed by Vercel Cron /api/cron/health) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-6 border border-gray-100 dark:border-neutral-800 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saúde da Plataforma</p>
+                <Activity size={18} className={monitor.status === 'ok' ? 'text-emerald-500' : 'text-red-500'} />
+              </div>
+              <div className="flex items-baseline gap-2 mt-4">
+                <p className={`text-2xl font-black font-display italic leading-none ${monitor.status === 'ok' ? 'text-emerald-500' : monitor.status === '...' ? 'text-gray-400' : 'text-red-500'}`}>
+                  {monitor.status === 'ok' ? 'Operacional' : monitor.status === '...' ? 'Carregando' : 'Instável'}
+                </p>
+              </div>
+              <div className="mt-3 text-[10px] text-gray-400 font-extrabold">
+                Última checagem: {monitor.ts ? new Date(monitor.ts).toLocaleString('pt-BR') : '—'}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-6 border border-gray-100 dark:border-neutral-800 shadow-sm">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Uptime (últimos checks)</p>
+              <div className="flex items-baseline gap-2 mt-4">
+                <p className="text-2xl font-black font-display italic leading-none text-[#111] dark:text-white">{monitor.uptime ?? '—'}</p>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-1">
+                {monitor.history.slice(-24).map((h, i) => (
+                  <span key={i} title={h.ts} className={`w-2 h-4 rounded-sm ${h.status === 'ok' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                ))}
+                {monitor.history.length === 0 && <span className="text-[10px] text-gray-400 font-bold">Sem histórico ainda</span>}
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-neutral-900 rounded-[2rem] p-6 border border-gray-100 dark:border-neutral-800 shadow-sm">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Autocheck agendado</p>
+              <div className="flex flex-col justify-center h-full mt-2 gap-1 text-[11px] text-gray-500 dark:text-gray-400 font-bold leading-relaxed">
+                <span>• Verificação real do banco a cada 5 min</span>
+                <span>• Incidentes registrados em <code className="bg-gray-100 dark:bg-neutral-800 px-1 rounded">system_checks</code></span>
+                <span>• Sem dependência de terceiros</span>
+              </div>
+            </div>
           </div>
 
           {/* DYNAMIC CONDITIONAL ROUTE RENDERER */}

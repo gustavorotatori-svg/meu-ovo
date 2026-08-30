@@ -12,6 +12,7 @@ const checks = [
   { name: 'GET /api/account/export (401 esperado)', url: '/api/account/export', method: 'GET', expect: (r) => r.status === 401 },
   { name: 'GET /api/order/:id/status (id invalido)', url: '/api/order/invalid/status', method: 'GET', expect: (r) => [400, 404, 503].includes(r.status) },
   { name: 'POST /api/order/:id/payment-confirm (401 esperado)', url: '/api/order/invalid/payment-confirm', method: 'POST', expect: (r) => r.status === 401 },
+  { name: 'GET /api/cron/health (403 esperado)', url: '/api/cron/health', method: 'GET', expect: (r) => r.status === 403 },
 ];
 
 let failed = 0;

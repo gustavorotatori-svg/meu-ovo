@@ -445,6 +445,47 @@ app.get("/api/health", async (_req, res) => {
     res.status(503).json({ ...base, status: "degraded", db: "error" });
   }
 });
+app.get("/api/cron/health", async (req, res) => {
+  const expected = process.env.CRON_SECRET || process.env.API_SECRET_KEY;
+  const provided = req.headers.authorization;
+  if (!expected || provided !== `Bearer ${expected}`) {
+    return res.status(403).json({ error: "forbidden" });
+  }
+  try {
+    if (!firebaseAdminInitialized) {
+      return res.status(503).json({ status: "degraded", db: "not_initialized" });
+    }
+    const db = adminDb();
+    let ok = true;
+    try {
+      await db.collection("restaurants").limit(1).get();
+    } catch (e) {
+      ok = false;
+      console.error("[Cron] DB check failed:", e);
+    }
+    const status = ok ? "ok" : "down";
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const currentRef = db.collection("system_health").doc("current");
+    let previous = null;
+    try {
+      previous = (await currentRef.get()).data()?.status ?? null;
+    } catch {
+    }
+    await currentRef.set({ status, ts: now });
+    if (!ok || previous !== status) {
+      await db.collection("system_checks").add({
+        status,
+        ts: now,
+        env: process.env.VERCEL_ENV || "development",
+        region: process.env.VERCEL_REGION || void 0
+      });
+    }
+    res.json({ ok, status, ts: now });
+  } catch (error) {
+    console.error("[Cron] Error:", error);
+    res.status(500).json({ status: "error" });
+  }
+});
 app.use("/api", rateLimit(30, 6e4));
 var MAX_STRING_LEN = 500;
 function sanitizeString(input, maxLen = MAX_STRING_LEN) {
