@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X, Package, ClipboardList, Gift, Ticket, Flame, BarChart2, Bell } from 'lucide-react';
+import { ArrowRight, CheckCircle, Plus, Star, ChevronLeft, ChevronRight, Sticker, ChevronDown, X, Package, ClipboardList, Gift, Ticket, Flame, BarChart2, Bell, FileText, Wallet, MessageSquare, ChefHat, Smartphone } from 'lucide-react';
 import ScrollReveal from '../components/ScrollReveal';
 import { useTranslation } from 'react-i18next';
 import Navbar from '../components/Navbar';
@@ -421,13 +421,18 @@ export default function LandingPage() {
 
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: <Package size={28} />, title: 'Controle de Estoque', desc: 'Saiba exatamente o que tem, o que falta e o que vence. Estoque atualizado automaticamente a cada pedido.', dark: false },
+              { icon: <Package size={28} />, title: 'Controle de Estoque', desc: 'Saiba exatamente o que tem, o que falta e o que vence. Estoque baixado automaticamente quando você aceita o pedido (via ficha técnica).', dark: false },
               { icon: <ClipboardList size={28} />, title: 'Ficha Técnica', desc: 'Cadastre ingredientes, custos e margens. Saiba o lucro real de cada prato antes de colocar no cardápio.', dark: false },
               { icon: <Gift size={28} />, title: 'Fidelidade & Cashback', desc: 'Seus clientes ganham crédito a cada pedido. Voltem sempre — sem cupom de terceiro, sem plataforma intermediária.', dark: true },
               { icon: <Ticket size={28} />, title: 'Cupons de Desconto', desc: 'Crie cupons personalizados com limite de uso, validade e valor mínimo. Perfeito para promoções exclusivas.', dark: true },
               { icon: <Flame size={28} />, title: 'Flash Deals', desc: 'Promoções relâmpago visíveis para todos. Crie ofertas por tempo limitado e aumente o volume de pedidos.', dark: false },
-              { icon: <BarChart2 size={28} />, title: 'Relatórios & Financeiro', desc: 'Dashboard com faturamento, pedidos por período, ticket médio e performance. Tudo em tempo real.', dark: false },
+              { icon: <BarChart2 size={28} />, title: 'Relatórios & Financeiro', desc: 'Dashboard com faturamento, pedidos por período, ticket médio e performance. Exporte relatórios em PDF a qualquer momento.', dark: false },
               { icon: <Bell size={28} />, title: 'Modo Garçom', desc: 'Atenda mesas sem app extra. O garçom vê o cardápio do cliente e registra o pedido direto no sistema.', dark: true },
+              { icon: <ChefHat size={28} />, title: 'Modo Cozinha', desc: 'Tela dedicada para a cozinha: pedidos em tempo real, tempos de preparo e alertas de atraso.', dark: false },
+              { icon: <Wallet size={28} />, title: 'Fluxo de Caixa', desc: 'Abertura, sangria e fechamento de caixa integrados ao sistema. Controle financeiro do dia a dia sem planilha.', dark: true },
+              { icon: <FileText size={28} />, title: 'Auditoria Fiscal (SEFAZ)', desc: 'Valida notas fiscais eletrônicas Layout 4.00, integridade XML e consistência dos totais antes do envio à SEFAZ.', dark: false },
+              { icon: <MessageSquare size={28} />, title: 'WhatsApp AI', desc: 'Assistente inteligente no WhatsApp: responda pedidos, dúvidas e atendimento automaticamente com IA.', dark: true },
+              { icon: <Smartphone size={28} />, title: 'PWA Instalável', desc: 'O cliente instala o app direto do navegador — sem loja de aplicativos. Notificações push e tela cheia nativa.', dark: false },
             ].map((feat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 50}>
                 <div className={`${feat.dark ? (isDark ? 'bg-[#111] border-white/5' : 'bg-[#111] border-white/10') : (isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-100')} rounded-3xl p-8 border shadow-lg shadow-black/5 hover:border-[#FFC928]/30 transition-all group h-full`}>
