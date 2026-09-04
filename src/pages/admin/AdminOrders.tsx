@@ -36,13 +36,13 @@ const STATUS_LABELS: Record<Order['status'], string> = {
 };
 
 const STATUS_BADGE: Record<Order['status'], string> = {
-  received: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-violet-100 text-violet-700 font-bold',
-  preparing: 'bg-yellow-100 text-yellow-700 font-bold',
-  ready: 'bg-emerald-100 text-emerald-700 font-bold',
-  'out-for-delivery': 'bg-purple-100 text-purple-700 font-bold',
-  finished: 'bg-gray-100 text-gray-600',
-  cancelled: 'bg-red-100 text-red-700',
+  received: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+  accepted: 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 font-bold',
+  preparing: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400 font-bold',
+  ready: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 font-bold',
+  'out-for-delivery': 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 font-bold',
+  finished: 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400',
+  cancelled: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
 };
 
 const STATUS_ICONS: Record<Order['status'], React.ReactNode> = {
@@ -991,15 +991,15 @@ export default function AdminOrders() {
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-3xl flex items-center justify-between gap-4 shadow-sm animate-pulse"
+            className={`mb-6 p-4 rounded-3xl flex items-center justify-between gap-4 shadow-sm animate-pulse ${isDark ? 'bg-rose-500/10 border-2 border-rose-500/25' : 'bg-rose-50 border-2 border-rose-200'}`}
           >
             <div className="flex items-center gap-3">
               <span className="p-2.5 bg-rose-500 text-white rounded-2xl animate-spin" style={{ animationDuration: '4s' }}>
                 <AlertTriangle size={18} />
               </span>
               <div>
-                <h4 className="text-xs font-black uppercase text-rose-700 tracking-wider">Atenção no Forno! Pedidos Pendentes</h4>
-                <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wide leading-tight">
+                <h4 className={`text-xs font-black uppercase tracking-wider ${isDark ? 'text-rose-400' : 'text-rose-700'}`}>Atenção no Forno! Pedidos Pendentes</h4>
+                <p className={`text-[10px] font-bold uppercase tracking-wide leading-tight ${isDark ? 'text-rose-400' : 'text-rose-500'}`}>
                   Existem {stale.length} pedido(s) aguardando confirmação há mais de 10 minutos! Aceite-os para não atrasar a entrega.
                 </p>
               </div>

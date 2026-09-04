@@ -20,11 +20,14 @@ import { cn, formatCurrency } from '../../lib/utils';
 import { Product } from '../../types';
 import AdminLayout from './AdminLayout';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
 
 import { Skeleton } from '../../components/Skeleton';
 
 export default function LoyaltyManagement() {
   const { t } = useTranslation();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const { currentRestaurant: restaurant } = useRestaurant();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -236,8 +239,8 @@ export default function LoyaltyManagement() {
       <div className="max-w-4xl space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">{t('loyalty.title')}</h2>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('loyalty.subtitle')}</p>
+            <h2 className={`text-xl font-extrabold uppercase tracking-tight ${isDark ? 'text-[#FFC928]' : 'text-slate-900'}`}>{t('loyalty.title')}</h2>
+            <p className={`text-[10px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -267,25 +270,25 @@ export default function LoyaltyManagement() {
         {activeTab === 'settings' ? (
           <div className="grid gap-6">
             {/* Main Activation */}
-            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div className={`rounded-xl border p-6 shadow-sm ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-slate-200'}`}>
                <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4">
                     <div className={cn(
                       "p-3 rounded-xl transition-colors",
-                      settings.enabled ? "bg-orange-100 text-orange-600" : "bg-slate-100 text-slate-400"
+                      settings.enabled ? "bg-orange-500/10 text-orange-500" : `${isDark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400'}`
                     )}>
                       <Gift size={24} />
                     </div>
                     <div>
-                       <h3 className="font-bold text-slate-900">{t('loyalty.activateProgram')}</h3>
-                       <p className="text-xs text-slate-400 font-medium">{t('loyalty.activateProgramSubtitle')}</p>
+                       <h3 className={`font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('loyalty.activateProgram')}</h3>
+                       <p className={`text-xs font-medium ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('loyalty.activateProgramSubtitle')}</p>
                     </div>
                   </div>
                   <button 
                     onClick={() => setSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
                     className={cn(
                       "h-6 w-12 rounded-full relative transition-colors duration-200",
-                      settings.enabled ? "bg-orange-500" : "bg-slate-300"
+                      settings.enabled ? "bg-orange-500" : `${isDark ? 'bg-white/15' : 'bg-slate-300'}`
                     )}
                   >
                     <div className={cn(
@@ -297,37 +300,37 @@ export default function LoyaltyManagement() {
 
                <div className="space-y-6">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('loyalty.accumulationType')}</label>
+                    <label className={`text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.accumulationType')}</label>
                     <div className="grid grid-cols-2 gap-3">
                        <button 
                          onClick={() => setSettings(prev => ({ ...prev, accumulationType: 'amount' }))}
                          className={cn(
                            "p-4 rounded-xl border-2 transition-all text-left",
-                           settings.accumulationType === 'amount' ? "border-orange-500 bg-orange-50" : "border-slate-100 bg-white"
+                           settings.accumulationType === 'amount' ? "border-orange-500 bg-orange-500/10" : `${isDark ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-white'}`
                          )}
                        >
-                          <p className="text-xs font-black uppercase mb-1">{t('loyalty.byAmount')}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{t('loyalty.byAmountSubtitle')}</p>
+                          <p className={`text-xs font-black uppercase mb-1 ${isDark ? 'text-white' : ''}`}>{t('loyalty.byAmount')}</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-tight ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{t('loyalty.byAmountSubtitle')}</p>
                        </button>
                        <button 
                          onClick={() => setSettings(prev => ({ ...prev, accumulationType: 'order' }))}
                          className={cn(
                            "p-4 rounded-xl border-2 transition-all text-left",
-                           settings.accumulationType === 'order' ? "border-orange-500 bg-orange-50" : "border-slate-100 bg-white"
+                           settings.accumulationType === 'order' ? "border-orange-500 bg-orange-500/10" : `${isDark ? 'border-white/10 bg-white/5' : 'border-slate-100 bg-white'}`
                          )}
                        >
-                          <p className="text-xs font-black uppercase mb-1">{t('loyalty.byOrder')}</p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{t('loyalty.byOrderSubtitle')}</p>
+                          <p className={`text-xs font-black uppercase mb-1 ${isDark ? 'text-white' : ''}`}>{t('loyalty.byOrder')}</p>
+                          <p className={`text-[10px] font-bold uppercase tracking-tight ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>{t('loyalty.byOrderSubtitle')}</p>
                        </button>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('loyalty.scoringRule')}</label>
+                    <label className={`text-[10px] font-black uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.scoringRule')}</label>
                     <div className="flex items-center gap-3">
                        {settings.accumulationType === 'amount' ? (
-                          <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-md border border-slate-200">
-                             <span className="text-sm font-bold text-slate-900">R$ 1.00 gasto =</span>
+                          <div className={`flex-1 flex items-center gap-2 px-4 py-2 rounded-md border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                             <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>R$ 1.00 gasto =</span>
                              <input 
                                type="number" 
                                min="1"
@@ -335,11 +338,11 @@ export default function LoyaltyManagement() {
                                value={settings.pointsPerReal}
                                onChange={(e) => setSettings(prev => ({ ...prev, pointsPerReal: parseInt(e.target.value) || 0 }))}
                              />
-                             <span className="text-sm font-bold text-slate-900">{t('loyalty.points')}</span>
-                          </div>
-                       ) : (
-                          <div className="flex-1 flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-md border border-slate-200">
-                             <span className="text-sm font-bold text-slate-900">1 Pedido =</span>
+                              <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('loyalty.points')}</span>
+                           </div>
+                        ) : (
+                           <div className={`flex-1 flex items-center gap-2 px-4 py-2 rounded-md border ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                              <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>1 Pedido =</span>
                              <input 
                                type="number" 
                                min="1"
@@ -347,10 +350,10 @@ export default function LoyaltyManagement() {
                                value={settings.pointsPerOrder}
                                onChange={(e) => setSettings(prev => ({ ...prev, pointsPerOrder: parseInt(e.target.value) || 0 }))}
                              />
-                             <span className="text-sm font-bold text-slate-900">{t('loyalty.points')}</span>
-                          </div>
-                       )}
-                    </div>
+                              <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{t('loyalty.points')}</span>
+                           </div>
+                        )}
+                     </div>
                   </div>
                </div>
             </div>
@@ -358,7 +361,7 @@ export default function LoyaltyManagement() {
             {/* Redemption Rules */}
             <div className="space-y-4">
                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">{t('loyalty.rewards')}</h3>
+                  <h3 className={`text-xs font-black uppercase tracking-widest ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('loyalty.rewards')}</h3>
                   <Button variant="outline" size="sm" onClick={addRule} className="text-[10px] font-black tracking-widest uppercase">
                      <Plus size={14} className="mr-1" /> {t('loyalty.addReward')}
                   </Button>
@@ -366,7 +369,7 @@ export default function LoyaltyManagement() {
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                    {settings.redemptionRules.map((rule: { id: string; type: string; value: string | number; pointsRequired: number; description: string }) => (
-                    <div key={rule.id} className="bg-white rounded-xl border border-slate-200 p-4 space-y-4 relative group">
+                    <div key={rule.id} className={`rounded-xl border p-4 space-y-4 relative group ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
                         <button 
                           onClick={() => removeRule(rule.id)}
                           className="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -378,9 +381,9 @@ export default function LoyaltyManagement() {
                        <div className="space-y-3">
                           <div className="flex gap-2">
                              <div className="flex-1 space-y-1">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{t('loyalty.type')}</label>
-                                <select 
-                                  className="w-full text-xs font-bold border border-slate-100 rounded bg-slate-50 p-1.5 focus:ring-1 focus:ring-orange-500 outline-none"
+                                 <label className={`text-[9px] font-black uppercase tracking-tighter ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.type')}</label>
+                                 <select 
+                                   className={`w-full text-xs font-bold border rounded bg-white p-1.5 focus:ring-1 focus:ring-orange-500 outline-none ${isDark ? 'border-white/10 bg-white/5 text-white' : 'border-slate-100 bg-slate-50'}`}
                                   value={rule.type}
                                   onChange={(e) => {
                                     const newType = e.target.value;
@@ -397,11 +400,11 @@ export default function LoyaltyManagement() {
                                    <option value="free_product">{t('loyalty.freeProduct')}</option>
                                 </select>
                              </div>
-                             <div className="w-24 space-y-1">
-                                <label className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{t('loyalty.pointsRequired')}</label>
-                                <input 
-                                  type="number"
-                                  className="w-full text-xs font-bold border border-slate-100 rounded bg-slate-50 p-1.5 focus:ring-1 focus:ring-orange-500 outline-none"
+                              <div className="w-24 space-y-1">
+                                 <label className={`text-[9px] font-black uppercase tracking-tighter ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.pointsRequired')}</label>
+                                 <input 
+                                   type="number"
+                                   className={`w-full text-xs font-bold border rounded p-1.5 focus:ring-1 focus:ring-orange-500 outline-none ${isDark ? 'border-white/10 bg-white/5 text-white' : 'border-slate-100 bg-slate-50'}`}
                                   value={rule.pointsRequired}
                                   onChange={(e) => updateRule(rule.id, { pointsRequired: parseInt(e.target.value) || 0 })}
                                 />
@@ -410,19 +413,19 @@ export default function LoyaltyManagement() {
 
                           {rule.type === 'discount_percent' ? (
                             <div className="space-y-1">
-                               <label className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{t('loyalty.discountLabel')}</label>
+                               <label className={`text-[9px] font-black uppercase tracking-tighter ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.discountLabel')}</label>
                                <input 
                                 type="number"
-                                className="w-full text-xs font-bold border border-slate-100 rounded bg-slate-50 p-1.5 focus:ring-1 focus:ring-orange-500 outline-none"
+                                className={`w-full text-xs font-bold border rounded p-1.5 focus:ring-1 focus:ring-orange-500 outline-none ${isDark ? 'border-white/10 bg-white/5 text-white' : 'border-slate-100 bg-slate-50'}`}
                                 value={rule.value}
                                 onChange={(e) => updateRule(rule.id, { value: parseInt(e.target.value) || 0, description: `${e.target.value}% ${t('loyalty.discountPercent')}` })}
                               />
                             </div>
                           ) : (
                             <div className="space-y-1">
-                               <label className="text-[9px] font-black text-slate-500 uppercase tracking-tighter">{t('loyalty.productLabel')}</label>
+                               <label className={`text-[9px] font-black uppercase tracking-tighter ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.productLabel')}</label>
                                <select 
-                                  className="w-full text-xs font-bold border border-slate-100 rounded bg-slate-50 p-1.5 focus:ring-1 focus:ring-orange-500 outline-none"
+                                  className={`w-full text-xs font-bold border rounded p-1.5 focus:ring-1 focus:ring-orange-500 outline-none ${isDark ? 'border-white/10 bg-white/5 text-white' : 'border-slate-100 bg-slate-50'}`}
                                   value={rule.value}
                                   onChange={(e) => {
                                     const prod = products.find(p => p.id === e.target.value);
@@ -436,7 +439,7 @@ export default function LoyaltyManagement() {
                           )}
 
                           <div className="pt-2">
-                             <div className="bg-orange-50 text-orange-600 rounded p-2 border border-orange-100">
+                             <div className={`rounded p-2 border ${isDark ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
                                 <p className="text-[10px] font-black uppercase tracking-tight">{rule.description || t('loyalty.rewards')}</p>
                              </div>
                           </div>
@@ -445,9 +448,9 @@ export default function LoyaltyManagement() {
                   ))}
                   
                   {settings.redemptionRules.length === 0 && (
-                    <div className="col-span-full py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                       <Gift className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                       <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{t('loyalty.noRules')}</p>
+                    <div className={`col-span-full py-12 text-center rounded-xl border border-dashed ${isDark ? 'bg-white/5 border-white/15' : 'bg-slate-50 border-slate-200'}`}>
+                       <Gift className={`mx-auto h-8 w-8 mb-2 ${isDark ? 'text-slate-600' : 'text-slate-300'}`} />
+                       <p className={`text-[11px] font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('loyalty.noRules')}</p>
                     </div>
                   )}
                </div>
@@ -459,39 +462,39 @@ export default function LoyaltyManagement() {
                 <input 
                    type="text" 
                    placeholder={t('common.search')}
-                   className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all pl-10"
+                   className={`w-full border rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-orange-500 outline-none transition-all pl-10 ${isDark ? 'bg-white/5 border-white/10 text-white' : 'bg-white border-slate-200'}`}
                    value={searchTerm}
                    onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <Gift className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <Gift className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
              </div>
 
-             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+             <div className={`rounded-xl border overflow-hidden shadow-sm ${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200'}`}>
                 <div className="overflow-x-auto">
                    <table className="w-full text-left">
                       <thead>
-                         <tr className="bg-slate-50 border-b border-slate-200">
-                            <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('checkout.name')}</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('order.phone')}</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('loyalty.balance')}</th>
-                            <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">{t('common.actions')}</th>
+                         <tr className={`border-b ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('checkout.name')}</th>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('order.phone')}</th>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.balance')}</th>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.actions')}</th>
                          </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-100'}`}>
                          {filteredProfiles.map(profile => (
-                           <tr key={profile.id} className="hover:bg-slate-50 transition-colors">
+                           <tr key={profile.id} className={`transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
                               <td className="px-6 py-4">
-                                 <p className="text-sm font-bold text-slate-900">{profile.customerName || t('checkout.name')}</p>
+                                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.customerName || t('checkout.name')}</p>
                               </td>
-                              <td className="px-6 py-4 text-xs font-medium text-slate-500">
+                              <td className={`px-6 py-4 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                  {profile.customerPhone}
                               </td>
                               <td className="px-6 py-4">
                                  <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-500/10 text-orange-400' : 'bg-orange-50 text-orange-600'}`}>
                                        <Gift size={14} />
                                     </div>
-                                    <span className="text-sm font-black text-slate-900">{profile.pointsBalance || 0} pts</span>
+                                    <span className={`text-sm font-black ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.pointsBalance || 0} pts</span>
                                  </div>
                               </td>
                               <td className="px-6 py-4 text-right">
@@ -504,13 +507,13 @@ export default function LoyaltyManagement() {
                               </td>
                            </tr>
                          ))}
-                         {filteredProfiles.length === 0 && (
+                          {filteredProfiles.length === 0 && (
                            <tr>
-                              <td colSpan={4} className="px-6 py-12 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+                              <td colSpan={4} className={`px-6 py-12 text-center text-xs font-bold uppercase tracking-widest ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                                  {t('menu.noProductsFound')}
                               </td>
                            </tr>
-                         )}
+                          )}
                       </tbody>
                    </table>
                 </div>

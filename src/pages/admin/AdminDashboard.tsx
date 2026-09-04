@@ -13,9 +13,12 @@ import { toast } from 'react-hot-toast';
 
 const COLORS = ['#FFC928', '#111111', '#FF7A00'];
 const STATUS_COLORS: Record<string, string> = {
-  received: 'bg-blue-100 text-blue-700', preparing: 'bg-yellow-100 text-yellow-700',
-  ready: 'bg-emerald-100 text-emerald-700', 'out-for-delivery': 'bg-purple-100 text-purple-700',
-  finished: 'bg-gray-100 text-gray-600', cancelled: 'bg-red-100 text-red-700',
+  received: 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400',
+  preparing: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-400',
+  ready: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400',
+  'out-for-delivery': 'bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400',
+  finished: 'bg-gray-100 text-gray-600 dark:bg-gray-500/20 dark:text-gray-400',
+  cancelled: 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400',
 };
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   received: <Clock size={12} />, preparing: <ChefHat size={12} />, ready: <Package size={12} />,

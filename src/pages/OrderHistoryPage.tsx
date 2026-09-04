@@ -12,7 +12,6 @@ import {
   MapPin, 
   Clock, 
   ChevronRight, 
-  ArrowLeft,
   Calendar,
   Package,
   History,
@@ -23,6 +22,7 @@ import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import BackButton from '../components/BackButton';
 
 export default function OrderHistoryPage() {
   const navigate = useNavigate();
@@ -170,16 +170,7 @@ export default function OrderHistoryPage() {
       
       <main className="max-w-3xl mx-auto px-6 pt-32 pb-24">
         <div className="flex items-center gap-4 mb-8">
-          <button 
-            onClick={() => navigate(-1)}
-            className={cn(
-              "p-3 rounded-2xl transition-all",
-              isDark ? "bg-white/5 text-white hover:bg-white/10" : "bg-white text-brand-black hover:bg-gray-50 shadow-sm"
-            )}
-            aria-label="Voltar"
-          >
-            <ArrowLeft size={20} />
-          </button>
+          <BackButton to="/busca" label="Voltar" />
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-brand-egg text-brand-black shadow-lg shadow-yellow-500/10">
               <History size={24} />

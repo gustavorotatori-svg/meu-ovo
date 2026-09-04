@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRestaurant } from '../../context/RestaurantContext';
+import { useTheme } from '../../context/ThemeContext';
 import { db } from '../../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { Button } from '../../components/Button';
@@ -13,6 +14,8 @@ import { validateFiscalXML, generateDemoValidFiscalXML, isValidCNPJ } from '../.
 
 export default function StoreSettings() {
   const { currentRestaurant: restaurant, setCurrentRestaurant } = useRestaurant();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [testXml, setTestXml] = useState('');
@@ -536,11 +539,11 @@ export default function StoreSettings() {
       <div className="max-w-5xl mx-auto space-y-6 pb-20">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-display font-black text-brand-black tracking-tighter uppercase italic">Configurações</h2>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Gerencie seu império digital</p>
+            <h2 className={`text-2xl font-display font-black italic uppercase tracking-tighter ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>Configurações</h2>
+            <p className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-widest mt-1`}>Gerencie seu império digital</p>
           </div>
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 pr-3 border-r border-slate-200">
+             <div className={`flex items-center gap-2 pr-3 border-r ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Delivery</span>
                <button
                  type="button"
@@ -565,31 +568,31 @@ export default function StoreSettings() {
       <div className="grid lg:grid-cols-12 gap-6">
         <form onSubmit={handleUpdate} className="lg:col-span-8 space-y-4">
           {/* Basic Info */}
-          <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-             <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+          <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4`}>
+             <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                <div className="p-1.5 bg-brand-egg rounded-lg text-brand-black shadow-sm">
                  <Store size={16} />
                </div>
-               <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Perfil MEU OVO</h3>
+               <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Perfil MEU OVO</h3>
              </div>
-             
+              
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Nome Comercial</label>
+                   <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Nome Comercial</label>
                    <input 
                      type="text" 
                      value={formData.name}
                      onChange={e => setFormData({...formData, name: e.target.value})}
-                     className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                     className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                    />
                 </div>
                 <div className="space-y-1.5 font-sans">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">WhatsApp de Vendas</label>
+                   <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>WhatsApp de Vendas</label>
                    <input 
                      type="text" 
                      value={formData.whatsapp}
                      onChange={e => setFormData({...formData, whatsapp: e.target.value})}
-                     className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 font-sans"
+                     className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 font-sans`}
                      placeholder="(00) 00000-0000"
                    />
                 </div>
@@ -597,7 +600,7 @@ export default function StoreSettings() {
 
               <div className="grid sm:grid-cols-1 gap-4 font-sans">
                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center justify-between">
+                   <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider flex items-center justify-between`}>
                      <span>Chave Pix de Recebimento</span>
                      <span className="text-[9px] text-orange-600 font-semibold uppercase italic tracking-normal">Ativa QR Code Dinâmico</span>
                    </label>
@@ -605,7 +608,7 @@ export default function StoreSettings() {
                      type="text" 
                      value={formData.pixKey}
                      onChange={e => setFormData({...formData, pixKey: e.target.value})}
-                     className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 font-mono"
+                     className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-300 font-mono`}
                      placeholder="Celular, CPF/CNPJ, E-mail ou Chave Aleatória"
                    />
                    <p className="text-[9px] text-slate-400 font-medium italic">Insira sua chave Pix para habilitar o pagamento automático por Pix Copia e Cola no checkout dos clientes.</p>
@@ -614,11 +617,11 @@ export default function StoreSettings() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tipo de Cozinha</label>
+                   <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Tipo de Cozinha</label>
                    <select 
                      value={formData.cuisineType}
                      onChange={e => setFormData({...formData, cuisineType: e.target.value})}
-                     className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                     className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                    >
                      <option value="">Selecione...</option>
                      <option value="Pizza">Pizza</option>
@@ -641,11 +644,11 @@ export default function StoreSettings() {
                    </select>
                 </div>
                 <div className="space-y-1.5">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Faixa de Preço</label>
+                   <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Faixa de Preço</label>
                    <select 
                      value={formData.priceRange}
                       onChange={e => setFormData({...formData, priceRange: e.target.value as 'low' | 'medium' | 'high'})}
-                     className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                     className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                    >
                      <option value="low">Econômico (R$)</option>
                      <option value="medium">Moderado (R$$)</option>
@@ -654,14 +657,14 @@ export default function StoreSettings() {
                 </div>
               </div>
 
-              <div className="bg-slate-50 rounded-lg p-3 border border-slate-100">
+              <div className={`${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg p-3 border`}>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 italic">Guia de Preços Recomendado:</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div className="space-y-1">
                     <p className="text-[9px] font-bold text-slate-600">Econômico</p>
                     <p className="text-[8px] text-slate-400 leading-tight">Açaí, Pastel, Marmitas. Áreas residenciais.</p>
                   </div>
-                  <div className="space-y-1 border-x border-slate-200 px-2">
+                  <div className={`space-y-1 border-x ${isDark ? 'border-white/10' : 'border-slate-200'} px-2`}>
                     <p className="text-[9px] font-bold text-slate-600">Moderado</p>
                     <p className="text-[8px] text-slate-400 leading-tight">Pizzas, Burger, Casual. Centros comerciais.</p>
                   </div>
@@ -673,42 +676,42 @@ export default function StoreSettings() {
               </div>
 
              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Bio / Descrição Curta</label>
+                <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Bio / Descrição Curta</label>
                 <textarea 
                   value={formData.description}
                   onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full border border-slate-200 rounded-md p-2 text-sm h-16 resize-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                  className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm h-16 resize-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                   placeholder="Ex: Pizzaria artesanal com forno à lenha..."
                 />
              </div>
 
              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Endereço Físico</label>
+                <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Endereço Físico</label>
                 <div className="relative">
                   <MapPin size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
                   <input 
                     type="text" 
                     value={formData.address}
                     onChange={e => setFormData({...formData, address: e.target.value})}
-                    className="w-full border border-slate-200 rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                    className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                   />
                 </div>
              </div>
           </section>
 
           {/* Delivery Settings */}
-          <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-             <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+          <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4`}>
+             <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                <div className="p-1.5 bg-brand-black rounded-lg text-brand-egg shadow-sm">
                  <Truck size={16} />
                </div>
-                <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Funcionamento</h3>
+                <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Funcionamento</h3>
               </div>
 
-              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+              <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                  <div>
                     <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Restaurante Aberto</p>
-                    <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Aceitar novos pedidos agora</p>
+                    <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-semibold uppercase tracking-wider`}>Aceitar novos pedidos agora</p>
                  </div>
                  <button
                    type="button"
@@ -725,10 +728,10 @@ export default function StoreSettings() {
                  </button>
               </div>
 
-              <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+              <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                  <div>
                     <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Status do Delivery</p>
-                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Permitir pedidos online agora</p>
+                   <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-semibold uppercase tracking-wider`}>Permitir pedidos online agora</p>
                 </div>
                 <button
                   type="button"
@@ -745,10 +748,10 @@ export default function StoreSettings() {
                 </button>
              </div>
 
-             <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+             <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                 <div>
                    <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Status do Salão (Mesas)</p>
-                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Permitir pedidos nas mesas via QR Code</p>
+                   <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-semibold uppercase tracking-wider`}>Permitir pedidos nas mesas via QR Code</p>
                 </div>
                 <button
                   type="button"
@@ -765,10 +768,10 @@ export default function StoreSettings() {
                 </button>
              </div>
 
-             <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+             <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                 <div>
                    <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Status Retirada</p>
-                   <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Permitir retirada no balcão</p>
+                   <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-semibold uppercase tracking-wider`}>Permitir retirada no balcão</p>
                 </div>
                 <button
                   type="button"
@@ -787,7 +790,7 @@ export default function StoreSettings() {
 
              <div className="grid sm:grid-cols-3 gap-4 pt-2">
                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Zero Taxa Padrão (R$)</label>
+                  <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Zero Taxa Padrão (R$)</label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-2.5 text-[10px] font-bold text-slate-400">R$</span>
                     <input 
@@ -795,12 +798,12 @@ export default function StoreSettings() {
                       step="0.01"
                       value={formData.deliveryFee}
                       onChange={e => setFormData({...formData, deliveryFee: e.target.value})}
-                      className="w-full border border-slate-200 rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-bold"
+                      className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-bold`}
                     />
                   </div>
                </div>
                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Pedido Mínimo (R$)</label>
+                  <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Pedido Mínimo (R$)</label>
                   <div className="relative">
                     <span className="absolute left-2.5 top-2.5 text-[10px] font-bold text-slate-400">R$</span>
                     <input 
@@ -808,12 +811,12 @@ export default function StoreSettings() {
                       step="0.01"
                       value={formData.minOrder}
                       onChange={e => setFormData({...formData, minOrder: e.target.value})}
-                      className="w-full border border-slate-200 rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-bold"
+                      className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all font-bold`}
                     />
                   </div>
                </div>
                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tempo de Espera</label>
+                  <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Tempo de Espera</label>
                   <div className="relative">
                     <Clock size={14} className="absolute left-2.5 top-2.5 text-slate-400" />
                     <input 
@@ -821,15 +824,15 @@ export default function StoreSettings() {
                       placeholder="Ex: 30-45 min"
                       value={formData.estimatedTime}
                       onChange={e => setFormData({...formData, estimatedTime: e.target.value})}
-                      className="w-full border border-slate-200 rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all"
+                      className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all`}
                     />
                   </div>
                </div>
              </div>
 
-             <div className="space-y-3 pt-4 border-t border-slate-50">
+             <div className={`space-y-3 pt-4 border-t ${isDark ? 'border-white/5' : 'border-slate-50'}`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                   <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Zero Taxa por Bairro (Exceções)</h4>
+                   <h4 className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Zero Taxa por Bairro (Exceções)</h4>
                    <Button 
                     type="button" 
                     variant="ghost" 
@@ -845,13 +848,13 @@ export default function StoreSettings() {
                 </div>
                 
                 {formData.feeByNeighborhood.length === 0 ? (
-                  <div className="bg-slate-50 border border-dashed border-slate-200 rounded-lg p-6 text-center group hover:bg-white hover:border-orange-200 transition-all cursor-pointer"
+                  <div className={`${isDark ? 'bg-[#151515] border-dashed border-white/10 hover:bg-[#1a1a1a] hover:border-orange-200' : 'bg-slate-50 border-dashed border-slate-200 hover:bg-white hover:border-orange-200'} border rounded-lg p-6 text-center group transition-all cursor-pointer`}
                    onClick={() => setFormData({
                      ...formData, 
                      feeByNeighborhood: [...formData.feeByNeighborhood, { neighborhood: '', fee: 0 }]
                    })}
                   >
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                    <div className={`w-10 h-10 ${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-slate-100'} rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm border group-hover:scale-110 transition-transform`}>
                       <Plus size={16} className="text-slate-400 group-hover:text-orange-500" />
                     </div>
                     <p className="text-[10px] font-black text-slate-400 uppercase italic tracking-widest">Nenhuma Zero Taxa regional configurada</p>
@@ -860,7 +863,7 @@ export default function StoreSettings() {
                 ) : (
                   <div className="space-y-3">
                     {formData.feeByNeighborhood.map((item, index) => (
-                      <div key={index} className="flex gap-3 items-end bg-slate-50/50 p-3 rounded-xl border border-slate-100 group hover:border-slate-200 transition-all">
+                      <div key={index} className={`flex gap-3 items-end ${isDark ? 'bg-white/5 border-white/5 group-hover:border-white/10' : 'bg-slate-50/50 border-slate-100 group-hover:border-slate-200'} p-3 rounded-xl border transition-all`}>
                         <div className="flex-1 space-y-1.5">
                           <div className="flex items-center gap-1.5">
                             <MapPin size={10} className="text-slate-400" />
@@ -869,7 +872,7 @@ export default function StoreSettings() {
                           <input 
                             type="text" 
                             placeholder="Ex: Pinheiros, Centro..."
-                            className="w-full border border-slate-200 rounded-lg p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none bg-white font-medium"
+                            className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-lg p-2 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none font-medium`}
                             value={item.neighborhood}
                             onChange={(e) => {
                               const newList = [...formData.feeByNeighborhood];
@@ -888,7 +891,7 @@ export default function StoreSettings() {
                             <input 
                               type="number" 
                               step="0.01"
-                              className="w-full border border-slate-200 rounded-lg p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none bg-white font-bold"
+                              className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-lg p-2 pl-8 text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none font-bold`}
                               value={item.fee}
                               onChange={(e) => {
                                 const newList = [...formData.feeByNeighborhood];
@@ -904,7 +907,7 @@ export default function StoreSettings() {
                             const newList = formData.feeByNeighborhood.filter((_, i) => i !== index);
                             setFormData({...formData, feeByNeighborhood: newList});
                           }}
-                          className="h-10 w-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg border border-slate-200 hover:border-red-100 transition-all shrink-0 bg-white shadow-sm"
+                          className={`h-10 w-10 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg border ${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} hover:border-red-100 transition-all shrink-0 shadow-sm`}
                           aria-label="Excluir"
                         >
                           <Trash2 size={16} />
@@ -916,16 +919,16 @@ export default function StoreSettings() {
              </div>
           </section>
 
-           <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+           <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4`}>
+              <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                 <div className="p-1.5 bg-orange-100 rounded-lg text-orange-600 shadow-sm">
                   <Zap size={16} />
                 </div>
-                <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Automação e Alertas</h3>
+                <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Automação e Alertas</h3>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-4">
-                 <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                 <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                     <div className="flex items-center gap-2">
                        <Zap size={14} className="text-orange-500" />
                        <div>
@@ -947,7 +950,7 @@ export default function StoreSettings() {
                     </button>
                  </div>
 
-                 <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                 <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                     <div className="flex items-center gap-2">
                        <Volume2 size={14} className="text-orange-500" />
                        <div>
@@ -969,7 +972,7 @@ export default function StoreSettings() {
                     </button>
                  </div>
 
-                 <div className="flex items-center justify-between py-2 px-3 bg-slate-50 rounded-lg border border-slate-100">
+                 <div className={`flex items-center justify-between py-2 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                     <div className="flex items-center gap-2">
                        <Printer size={14} className="text-orange-500" />
                        <div>
@@ -1004,7 +1007,7 @@ export default function StoreSettings() {
                 </div>
               )}
 
-              <div className="pt-4 border-t border-slate-50 space-y-4">
+              <div className={`pt-4 border-t ${isDark ? 'border-white/5' : 'border-slate-50'} space-y-4`}>
                  <div className="flex items-center justify-between py-2 px-3 bg-green-50 rounded-lg border border-green-100">
                     <div className="flex items-center gap-2">
                        <Smartphone size={14} className="text-green-600" />
@@ -1028,14 +1031,14 @@ export default function StoreSettings() {
                     </button>
                  </div>
 
-                 {formData.whatsappNotificationsEnabled && (
+                  {formData.whatsappNotificationsEnabled && (
                     <div className="space-y-1.5 animate-in slide-in-from-top-2 duration-300">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Webhook da API WhatsApp (Opcional)</label>
+                       <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Webhook da API WhatsApp (Opcional)</label>
                        <input 
                          type="url" 
                          value={formData.whatsappWebhookUrl}
                          onChange={e => setFormData({...formData, whatsappWebhookUrl: e.target.value})}
-                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none transition-all placeholder:text-slate-300"
+                         className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-green-500 focus:border-green-500 outline-none transition-all placeholder:text-slate-300`}
                          placeholder="https://sua-api-whatsapp.com/webhook"
                        />
                        <p className="text-[9px] text-slate-400 font-medium italic">
@@ -1047,20 +1050,20 @@ export default function StoreSettings() {
            </section>
 
                       {/* Payment Settings */}
-            <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-               <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+            <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4`}>
+               <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                  <div className="p-1.5 bg-emerald-100 rounded-lg text-emerald-600 shadow-sm">
                    <CreditCard size={16} />
                  </div>
-                 <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Recebimento & Link de Pagamento</h3>
+                 <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Recebimento & Link de Pagamento</h3>
                </div>
 
-               <p className="text-xs text-slate-500 font-medium font-sans">
+               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium font-sans`}>
                  Configure como seus clientes poderão pagar após a confirmação do pedido. O PIX já está configurado com sua chave acima. Adicione também um link de cartão de crédito se desejar.
                </p>
 
                <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                 <div className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg border border-slate-100">
+                 <div className={`flex items-center justify-between py-3 px-4 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                     <div className="flex items-center gap-2.5 flex-1 text-left">
                        <CreditCard size={16} className="text-emerald-500 shrink-0" />
                        <div className="text-left">
@@ -1087,12 +1090,12 @@ export default function StoreSettings() {
                {formData.acceptCreditCard && (
                  <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                     <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Link de Pagamento (Cartão de Crédito)</label>
+                       <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Link de Pagamento (Cartão de Crédito)</label>
                        <input 
                          type="url" 
                          value={formData.creditCardLink}
                          onChange={e => setFormData({...formData, creditCardLink: e.target.value})}
-                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300"
+                         className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all placeholder:text-slate-300`}
                          placeholder="https://seu-link-pagamento.com/pagar/"
                        />
                        <p className="text-[9px] text-slate-400 font-medium italic">
@@ -1103,7 +1106,7 @@ export default function StoreSettings() {
                 )}
 
                 {/* Débito */}
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className={`flex items-center justify-between p-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                   <div className="flex items-center gap-2.5 flex-1 text-left">
                      <CreditCard size={16} className="text-blue-500 shrink-0" />
                      <div className="text-left">
@@ -1129,12 +1132,12 @@ export default function StoreSettings() {
                 {formData.acceptDebit && (
                   <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                     <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Link de Pagamento (Cartão de Débito)</label>
+                       <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Link de Pagamento (Cartão de Débito)</label>
                        <input 
                          type="url" 
                          value={formData.debitLink}
                          onChange={e => setFormData({...formData, debitLink: e.target.value})}
-                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300"
+                         className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-300`}
                          placeholder="https://seu-link-pagamento.com/debito/"
                        />
                        <p className="text-[9px] text-slate-400 font-medium italic">
@@ -1145,7 +1148,7 @@ export default function StoreSettings() {
                 )}
 
                 {/* Voucher refeição */}
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                <div className={`flex items-center justify-between p-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                   <div className="flex items-center gap-2.5 flex-1 text-left">
                      <CreditCard size={16} className="text-purple-500 shrink-0" />
                      <div className="text-left">
@@ -1171,12 +1174,12 @@ export default function StoreSettings() {
                 {formData.acceptVoucher && (
                   <div className="space-y-3 animate-in slide-in-from-top-2 duration-200">
                     <div className="space-y-1.5">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Link de Pagamento (Vale-Refeição)</label>
+                       <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Link de Pagamento (Vale-Refeição)</label>
                        <input 
                          type="url" 
                          value={formData.voucherLink}
                          onChange={e => setFormData({...formData, voucherLink: e.target.value})}
-                         className="w-full border border-slate-200 rounded-md p-2 text-sm focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all placeholder:text-slate-300"
+                         className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-sm focus:ring-1 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all placeholder:text-slate-300`}
                          placeholder="https://seu-link-pagamento.com/voucher/"
                        />
                        <p className="text-[9px] text-slate-400 font-medium italic">
@@ -1189,20 +1192,20 @@ export default function StoreSettings() {
 
              {/* Módulo de Integração Fiscal (NFC-e / SAT) */}
             {/* Módulo de Segurança, Avaliações e Bloqueio de Clientes (Anti-Trote/Anti-fraude) */}
-            <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 font-sans text-left">
-               <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+            <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4 font-sans text-left`}>
+               <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                  <div className="p-1.5 bg-red-100 rounded-lg text-red-600 shadow-sm">
                    <Shield size={16} />
                  </div>
-                 <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Reputação dos Clientes & Anti-Trote</h3>
+                 <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Reputação dos Clientes & Anti-Trote</h3>
                </div>
 
-               <p className="text-xs text-slate-500 font-medium font-sans">
+               <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium font-sans`}>
                  Evite trotes, grosserias e prejuízos definindo limites de aceitação para clientes baseados nas notas dadas por outros restaurantes da plataforma.
                </p>
 
                <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                 <div className="flex items-center justify-between py-3 px-4 bg-slate-50 rounded-lg border border-slate-100">
+                 <div className={`flex items-center justify-between py-3 px-4 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border`}>
                     <div className="flex items-center gap-2.5 flex-1 text-left">
                        <Shield size={16} className="text-red-500 shrink-0" />
                        <div className="text-left">
@@ -1225,9 +1228,9 @@ export default function StoreSettings() {
                     </button>
                  </div>
 
-                 <div className="space-y-1.5 py-2 px-4 bg-slate-50 rounded-lg border border-slate-100 flex flex-col justify-center">
+                 <div className={`space-y-1.5 py-2 px-4 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border flex flex-col justify-center`}>
                     <div className="flex justify-between items-center">
-                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                       <label className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider flex items-center gap-1`}>
                          <Star size={12} className="text-yellow-500 fill-yellow-500 duration-200" /> Nota Mínima Tolerada
                        </label>
                        <span className="text-xs font-black text-red-600 bg-red-50 px-2 py-0.5 rounded-lg border border-red-100">{(formData.minAcceptableRating ?? 3.0).toFixed(1)} ★</span>
@@ -1248,12 +1251,12 @@ export default function StoreSettings() {
                </div>
             </section>
 
-            <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 font-sans text-left">
-                <div className="flex items-center gap-2 mb-2 border-b border-slate-50 pb-3 italic">
+            <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm space-y-4 font-sans text-left`}>
+                <div className={`flex items-center gap-2 mb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-50'} pb-3 italic`}>
                   <div className="p-1.5 bg-orange-100 rounded-lg text-orange-600 shadow-sm">
                     <FileText size={16} />
                   </div>
-                  <h3 className="text-[11px] font-black text-brand-black uppercase tracking-[0.2em]">Configurações Fiscais (NFC-e / SAT)</h3>
+                  <h3 className={`text-[11px] font-black ${isDark ? 'text-white' : 'text-brand-black'} uppercase tracking-[0.2em]`}>Configurações Fiscais (NFC-e / SAT)</h3>
                 </div>
 
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide leading-relaxed">
@@ -1261,7 +1264,7 @@ export default function StoreSettings() {
                 </p>
 
                 <div className="grid sm:grid-cols-2 gap-4 pt-2">
-                   <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 font-sans">
+                   <div className={`flex items-center justify-between py-2.5 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border font-sans`}>
                       <div className="flex items-center gap-2 text-left">
                          <FileText size={14} className="text-orange-500" />
                          <div>
@@ -1284,7 +1287,7 @@ export default function StoreSettings() {
                       </button>
                    </div>
 
-                   <div className="flex items-center justify-between py-2.5 px-3 bg-slate-50 rounded-lg border border-slate-100 font-sans">
+                   <div className={`flex items-center justify-between py-2.5 px-3 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg border font-sans`}>
                       <div className="flex items-center gap-2 text-left">
                          <Settings size={14} className="text-orange-500" />
                          <div>
@@ -1310,12 +1313,12 @@ export default function StoreSettings() {
 
                 {/* NFC-e configuration details */}
                 {formData.nfeEnabled && (
-                  <div className="space-y-4 border-t border-slate-100 pt-4 animate-in slide-in-from-top-2 duration-200 font-sans text-left">
+                  <div className={`space-y-4 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} pt-4 animate-in slide-in-from-top-2 duration-200 font-sans text-left`}>
                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">Parâmetros de Emissão NFC-e</p>
                      
                      <div className="grid sm:grid-cols-3 gap-4">
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">CNPJ emitente</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>CNPJ emitente</label>
                            <div className="relative flex items-center">
                              <input 
                                type="text"
@@ -1323,12 +1326,12 @@ export default function StoreSettings() {
                                value={formData.nfeCnpj}
                                onChange={handleCnpjChange}
                                className={cn(
-                                 "w-full border rounded-md p-2 pr-8 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none transition-colors",
+                                 `w-full border rounded-md p-2 pr-8 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none transition-colors ${isDark ? 'bg-[#111] text-white' : 'bg-white'}`,
                                  isValidCNPJ(formData.nfeCnpj) 
                                    ? "border-green-500 focus:border-green-500 focus:ring-green-500 text-green-700 bg-green-50/10" 
                                    : (formData.nfeCnpj && formData.nfeCnpj.replace(/\D/g, '').length === 14) 
                                      ? "border-red-500 focus:border-red-500 focus:ring-red-500 text-red-700 bg-red-50/5" 
-                                     : "border-slate-200"
+                                     : `${isDark ? 'border-white/10' : 'border-slate-200'}`
                                )}
                              />
                              {isValidCNPJ(formData.nfeCnpj) && (
@@ -1339,21 +1342,21 @@ export default function StoreSettings() {
                            </div>
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Inscrição Estadual (I.E.)</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Inscrição Estadual (I.E.)</label>
                            <input 
                              type="text"
                              placeholder="Ex: 123.456.789.110"
                              value={formData.nfeInscricaoEstadual}
                              onChange={e => setFormData({...formData, nfeInscricaoEstadual: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Regime Tributário</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Regime Tributário</label>
                            <select
                              value={formData.regimeTributario}
                              onChange={e => setFormData({...formData, regimeTributario: e.target.value as 'simples' | 'regime_normal' | 'mei'})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 bg-white outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            >
                               <option value="simples">Simples Nacional</option>
                               <option value="mei">MEI (Microempreendedor)</option>
@@ -1364,30 +1367,30 @@ export default function StoreSettings() {
 
                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Série NFC-e</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Série NFC-e</label>
                            <input 
                              type="text"
                              placeholder="Ex: 1"
                              value={formData.nfeSerie}
                              onChange={e => setFormData({...formData, nfeSerie: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Próximo Número de Nota</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Próximo Número de Nota</label>
                            <input 
                              type="number"
                              min="1"
                              placeholder="Ex: 101"
                              value={formData.nfeNumber}
                              onChange={e => setFormData({...formData, nfeNumber: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                      </div>
 
                      {/* Certificado Digital upload simulator */}
-                     <div className="p-4 border-2 border-dashed border-slate-200 hover:border-orange-300 rounded-xl bg-slate-50/50 flex flex-col items-center justify-center text-center transition-all">
+                     <div className={`p-4 border-2 border-dashed ${isDark ? 'border-white/10 hover:border-orange-300 bg-white/5' : 'border-slate-200 hover:border-orange-300 bg-slate-50/50'} rounded-xl flex flex-col items-center justify-center text-center transition-all`}>
                         <Upload size={24} className="text-slate-400 mb-2" />
                         <p className="text-xs font-bold text-slate-700 uppercase">Certificado Digital (A1 / .pfx / .p12)</p>
                         <p className="text-[9px] text-slate-400 font-bold mb-3 uppercase tracking-wide">Selecione o arquivo do certificado para assinatura eletrônica</p>
@@ -1426,7 +1429,7 @@ export default function StoreSettings() {
 
                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Senha do Certificado</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Senha do Certificado</label>
                            <div className="relative">
                               <Key size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                               <input 
@@ -1434,16 +1437,16 @@ export default function StoreSettings() {
                                 placeholder="Senha do arquivo .PFX"
                                 value={formData.nfePassword}
                                 onChange={e => setFormData({...formData, nfePassword: e.target.value})}
-                                className="w-full border border-slate-200 rounded-md py-2 pl-8 pr-3 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                                className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md py-2 pl-8 pr-3 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                               />
                            </div>
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Ambiente Sefaz</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Ambiente Sefaz</label>
                            <select
                              value={formData.nfeEnvironment}
                              onChange={e => setFormData({...formData, nfeEnvironment: e.target.value as 'homologacao' | 'producao'})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 bg-white outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            >
                               <option value="homologacao">Homologação (Ambiente de Testes)</option>
                               <option value="producao">Produção (Documento Fiscal Real)</option>
@@ -1453,23 +1456,23 @@ export default function StoreSettings() {
 
                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">ID do Token CSC (Ex: 000001)</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>ID do Token CSC (Ex: 000001)</label>
                            <input 
                              type="text"
                              placeholder="Identificador CSC no portal SEFAZ"
                              value={formData.nfeCscId}
                              onChange={e => setFormData({...formData, nfeCscId: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Código de Segurança CSC (Token)</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Código de Segurança CSC (Token)</label>
                            <input 
                              type="text"
                              placeholder="Código CSC obtido na SEFAZ"
                              value={formData.nfeCscToken}
                              onChange={e => setFormData({...formData, nfeCscToken: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                      </div>
@@ -1478,40 +1481,40 @@ export default function StoreSettings() {
 
                 {/* SAT Configuration details */}
                 {formData.satEnabled && (
-                  <div className="space-y-4 border-t border-slate-100 pt-4 animate-in slide-in-from-top-2 duration-200 font-sans text-left">
+                  <div className={`space-y-4 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} pt-4 animate-in slide-in-from-top-2 duration-200 font-sans text-left`}>
                      <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">Mapeamento e Parâmetros SAT-CF-e</p>
                      
                      <div className="grid sm:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Número de Série do Equipamento SAT</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Número de Série do Equipamento SAT</label>
                            <input 
                              type="text"
                              placeholder="Ex: 000.123.456-78"
                              value={formData.satSerialNumber}
                              onChange={e => setFormData({...formData, satSerialNumber: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                         <div className="space-y-1">
-                           <label className="text-[9px] font-black text-slate-550 uppercase tracking-wider">Código de Ativação SAT</label>
+                           <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Código de Ativação SAT</label>
                            <input 
                              type="password"
                              placeholder="Senha dita na ativação do SAT"
                              value={formData.satActivationCode}
                              onChange={e => setFormData({...formData, satActivationCode: e.target.value})}
-                             className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
+                             className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none`}
                            />
                         </div>
                      </div>
 
                      <div className="space-y-1">
-                        <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider">Assinatura Digital AC (Assinatura de Vinculação)</label>
+                        <label className={`text-[9px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Assinatura Digital AC (Assinatura de Vinculação)</label>
                         <textarea 
                           rows={2}
                           placeholder="Assinatura digital base64 gerada pela software house para comunicação com o SAT"
                           value={formData.satAssinaturaAC}
                           onChange={e => setFormData({...formData, satAssinaturaAC: e.target.value})}
-                          className="w-full border border-slate-200 rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none font-mono"
+                          className={`w-full border ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} rounded-md p-2 text-xs font-semibold focus:ring-1 focus:ring-orange-500 outline-none font-mono`}
                         />
                         <p className="text-[9px] text-slate-400 font-bold italic uppercase leading-relaxed pt-1">
                            O equipamento físico deve estar conectado na rede local e pareado via integração de driver DLL de comunicação SAT.
@@ -1522,10 +1525,10 @@ export default function StoreSettings() {
              </section>
 
 {/* Validador de Schema e Consistência XML SEFAZ */}
-            <div id="fiscal-validator-section" className="mt-6 pt-5 border-t border-slate-100 font-sans">
+            <div id="fiscal-validator-section" className={`mt-6 pt-5 border-t ${isDark ? 'border-white/5' : 'border-slate-100'} font-sans`}>
                <div className="flex items-center gap-1.5 mb-2.5 text-left">
                   <Shield size={14} className="text-orange-500 animate-pulse" />
-                  <p className="text-[10px] font-black text-slate-700 uppercase tracking-widest leading-none">Validador de XML Fiscal (SEFAZ - Layout 4.00)</p>
+                  <p className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-700'} uppercase tracking-widest leading-none`}>Validador de XML Fiscal (SEFAZ - Layout 4.00)</p>
                </div>
                <p className="text-[9px] text-slate-400 font-bold uppercase mb-3 text-left">
                   Garanta a integridade, sintaxe XML, dígito verificador da Chave de Acesso, validade de CNPJ e consistência matemática dos totais antes do envio para a SEFAZ.
@@ -1587,9 +1590,9 @@ export default function StoreSettings() {
                          setValidationResult(null);
                          toast.success("Rascunho de demonstração de XML gerado!");
                        }}
-                       className="py-2 px-3 bg-white text-slate-700 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all shadow-sm cursor-pointer"
-                     >
-                       Preencher XML Demonstrativo
+                       className={`py-2 px-3 ${isDark ? 'bg-[#111] text-white border-white/10 hover:bg-[#1a1a1a]' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'} border rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-sm cursor-pointer`}
+                      >
+                        Preencher XML Demonstrativo
                      </button>
                   </div>
 
@@ -1631,10 +1634,10 @@ export default function StoreSettings() {
                         )}
 
                         {validationResult.metadata && (
-                           <div className="border-t border-slate-200/50 pt-3 mt-3 grid grid-cols-2 gap-y-2 gap-x-4 text-left font-sans">
+                           <div className={`border-t ${isDark ? 'border-white/10' : 'border-slate-200/50'} pt-3 mt-3 grid grid-cols-2 gap-y-2 gap-x-4 text-left font-sans`}>
                               <div>
                                  <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1 font-sans">Chave de Acesso</span>
-                                 <span className="text-[10px] font-mono font-bold tracking-tight break-all">{validationResult.metadata.chaveAcesso || 'Gerada Dinamicamente'}</span>
+                                 <span className={`text-[10px] font-mono font-bold tracking-tight break-all ${isDark ? 'text-white' : ''}`}>{validationResult.metadata.chaveAcesso || 'Gerada Dinamicamente'}</span>
                               </div>
                               <div>
                                  <span className="block text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none mb-1 font-sans">Modelo / Série / Número</span>
@@ -1665,11 +1668,11 @@ export default function StoreSettings() {
                     (() => {
                       const analysis = getPatternAnalysis();
                       return (
-                        <div className="mt-4 p-5 rounded-xl border border-orange-200/50 bg-[#FFFDF5]/40 text-left font-sans space-y-3 shadow-sm">
+                        <div className={`mt-4 p-5 rounded-xl border ${isDark ? 'border-orange-200/20 bg-[#151515]' : 'border-orange-200/50 bg-[#FFFDF5]/40'} text-left font-sans space-y-3 shadow-sm`}>
                           <div className="flex items-center gap-2">
                             <AlertTriangle size={15} className="text-amber-500 animate-pulse" />
                             <div>
-                              <h4 className="text-[10px] font-black text-slate-700 uppercase tracking-widest leading-none">Análise de IA & Padrões de Rejeição</h4>
+                              <h4 className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-700'} uppercase tracking-widest leading-none`}>Análise de IA & Padrões de Rejeição</h4>
                               <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Erros reincidentes mapeados e propostas para atualização de schema</p>
                             </div>
                           </div>
@@ -1686,7 +1689,7 @@ export default function StoreSettings() {
                               
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
                                  {analysis.commonFails.slice(0, 4).map((fail: { count: number; category: string; code: string; suggestion: string }, idx: number) => (
-                                  <div key={idx} className="p-3 bg-white border border-slate-150 rounded-lg shadow-sm space-y-1">
+                                  <div key={idx} className={`p-3 ${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-150'} border rounded-lg shadow-sm space-y-1`}>
                                     <div className="flex justify-between items-center">
                                       <span className="text-[8px] font-black uppercase text-rose-500 tracking-wider font-sans bg-rose-50/50 px-1.5 py-0.5 rounded">
                                         {fail.category}
@@ -1695,10 +1698,10 @@ export default function StoreSettings() {
                                         Reincidência: {fail.count}x
                                       </span>
                                     </div>
-                                    <h5 className="text-[10px] font-black text-slate-800 font-mono tracking-tight">{fail.code}</h5>
-                                    <div className="pt-1.5 border-t border-slate-100/50">
-                                      <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-                                        <strong className="text-slate-700 font-bold">Solução & Schema:</strong> {fail.suggestion}
+                                    <h5 className={`text-[10px] font-black ${isDark ? 'text-white' : 'text-slate-800'} font-mono tracking-tight`}>{fail.code}</h5>
+                                    <div className={`pt-1.5 border-t ${isDark ? 'border-white/5' : 'border-slate-100/50'}`}>
+                                      <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium leading-relaxed`}>
+                                        <strong className={`${isDark ? 'text-white' : 'text-slate-700'} font-bold`}>Solução & Schema:</strong> {fail.suggestion}
                                       </p>
                                     </div>
                                   </div>
@@ -1712,11 +1715,11 @@ export default function StoreSettings() {
                   )}
 
                   {validationLogs.length > 0 && (
-                     <div className="mt-4 p-4 bg-slate-50 border border-slate-250/60 rounded-xl text-left font-sans space-y-3.5 animate-in fade-in duration-200">
+                     <div className={`mt-4 p-4 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-250/60'} border rounded-xl text-left font-sans space-y-3.5 animate-in fade-in duration-200`}>
                         {/* Header Section */}
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200 pb-3">
+                        <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b ${isDark ? 'border-white/10' : 'border-slate-200'} pb-3`}>
                            <div>
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-0.5">Histórico & Logs de Auditoria</span>
+                              <span className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-widest block mb-0.5`}>Histórico & Logs de Auditoria</span>
                               <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">Histórico de validações fiscais locais ({validationLogs.length})</p>
                            </div>
                            <div className="flex items-center gap-2 shrink-0">
@@ -1752,7 +1755,7 @@ export default function StoreSettings() {
                                  placeholder="Buscar por NF, chave, CNPJ ou trecho..."
                                  value={logSearch}
                                  onChange={e => setLogSearch(e.target.value)}
-                                 className="w-full bg-white border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-[10px] font-semibold text-slate-705 outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder:text-slate-400 shadow-xs"
+                                 className={`w-full ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-705'} border rounded-lg py-1.5 pl-8 pr-3 text-[10px] font-semibold outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder:text-slate-400 shadow-xs`}
                               />
                            </div>
                            
@@ -1762,9 +1765,9 @@ export default function StoreSettings() {
                                  onClick={() => setLogFilter('all')}
                                  className={cn(
                                     "px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 border",
-                                    logFilter === 'all' 
-                                       ? "bg-slate-800 text-white border-slate-800" 
-                                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-100"
+                                     logFilter === 'all' 
+                                        ? "bg-slate-800 text-white border-slate-800" 
+                                        : `${isDark ? 'bg-[#111] text-slate-400 border-white/10 hover:bg-[#1a1a1a]' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-100'}`
                                  )}
                               >
                                  Todos ({validationLogs.length})
@@ -1774,9 +1777,9 @@ export default function StoreSettings() {
                                  onClick={() => setLogFilter('valid')}
                                  className={cn(
                                     "px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 border",
-                                    logFilter === 'valid' 
-                                       ? "bg-emerald-600 text-white border-emerald-600" 
-                                       : "bg-white text-emerald-600 border-emerald-200/60 hover:bg-emerald-50/50"
+                                     logFilter === 'valid' 
+                                        ? "bg-emerald-600 text-white border-emerald-600" 
+                                        : `${isDark ? 'bg-[#111] text-emerald-400 border-emerald-200/30 hover:bg-emerald-50/10' : 'bg-white text-emerald-600 border-emerald-200/60 hover:bg-emerald-50/50'}`
                                  )}
                               >
                                  Válidos ({validationLogs.filter(l => l.isValid).length})
@@ -1786,9 +1789,9 @@ export default function StoreSettings() {
                                  onClick={() => setLogFilter('invalid')}
                                  className={cn(
                                     "px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer shrink-0 border",
-                                    logFilter === 'invalid' 
-                                       ? "bg-red-650 text-white border-red-650" 
-                                       : "bg-white text-red-650 border-red-200/65 hover:bg-red-50/50"
+                                     logFilter === 'invalid' 
+                                        ? "bg-red-650 text-white border-red-650" 
+                                        : `${isDark ? 'bg-[#111] text-red-400 border-red-200/30 hover:bg-red-50/10' : 'bg-white text-red-650 border-red-200/65 hover:bg-red-50/50'}`
                                  )}
                               >
                                  Rejeitados ({validationLogs.filter(l => !l.isValid).length})
@@ -1799,7 +1802,7 @@ export default function StoreSettings() {
                         {/* Logs List View */}
                         <div className="space-y-2 max-h-68 overflow-y-auto pr-1">
                            {filteredValidationLogs.length === 0 ? (
-                              <div className="text-center py-6 bg-white border border-slate-150 rounded-lg">
+                              <div className={`text-center py-6 ${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-150'} border rounded-lg`}>
                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nenhuma validação correspondente encontrada</p>
                               </div>
                            ) : (
@@ -1808,16 +1811,16 @@ export default function StoreSettings() {
                                  return (
                                     <div 
                                        key={log.id}
-                                       className={cn(
-                                          "rounded-lg border transition-all overflow-hidden",
-                                          log.isValid ? "bg-emerald-50/5 border-slate-200" : "bg-red-50/5 border-slate-200",
-                                          isExpanded && (log.isValid ? "border-emerald-300 ring-1 ring-emerald-350/20" : "border-red-300 ring-1 ring-red-350/20")
-                                       )}
-                                    >
+                                        className={cn(
+                                           "rounded-lg border transition-all overflow-hidden",
+                                           log.isValid ? `${isDark ? 'border-white/10' : 'border-slate-200'} bg-emerald-50/5` : `${isDark ? 'border-white/10' : 'border-slate-200'} bg-red-50/5`,
+                                           isExpanded && (log.isValid ? "border-emerald-300 ring-1 ring-emerald-350/20" : "border-red-300 ring-1 ring-red-350/20")
+                                        )}
+                                     >
                                        {/* Header clickable row */}
                                        <div 
                                           onClick={() => setExpandedLogId(isExpanded ? null : log.id)}
-                                          className="p-2.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-100/40 select-none transition-colors"
+                                          className={`p-2.5 flex items-center justify-between gap-3 cursor-pointer ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100/40'} select-none transition-colors`}
                                        >
                                           <div className="space-y-1 text-left">
                                              <div className="flex items-center gap-1.5 flex-wrap">
@@ -1829,14 +1832,14 @@ export default function StoreSettings() {
                                                 )}>
                                                    {log.isValid ? "Válido" : "Rejeitado"}
                                                 </span>
-                                                <p className="text-[10px] font-bold text-slate-700 leading-none">
+                                                <p className={`text-[10px] font-bold ${isDark ? 'text-white' : 'text-slate-700'} leading-none`}>
                                                    {log.metadata?.numeroNota ? `NF-e nº ${log.metadata.numeroNota}` : 'Nota sem Número'}
                                                    {log.metadata?.modelo && ` (Mod ${log.metadata.modelo})`}
                                                 </p>
                                              </div>
                                              
-                                             <p className="text-[9px] text-slate-500 font-bold uppercase tracking-wide leading-none">
-                                                {new Date(log.timestamp).toLocaleDateString('pt-BR')} às {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                                              <p className={`text-[9px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-bold uppercase tracking-wide leading-none`}>
+                                                 {new Date(log.timestamp).toLocaleDateString('pt-BR')} às {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
                                                 {log.metadata?.valorTotalNota ? ` &bull; R$ ${parseFloat(log.metadata.valorTotalNota).toFixed(2)}` : ''}
                                                 {log.errorsCount > 0 ? ` &bull; Erros: ${log.errorsCount}` : ''}
                                                 {log.warningsCount > 0 ? ` &bull; Avisos: ${log.warningsCount}` : ''}
@@ -1859,13 +1862,13 @@ export default function StoreSettings() {
                                                       elem.scrollIntoView({ behavior: 'smooth' });
                                                    }
                                                 }}
-                                                className="p-1 text-slate-500 hover:text-orange-605 hover:bg-slate-150 rounded transition-all cursor-pointer"
-                                                aria-label="Visualizar"
+                                                 className={`p-1 ${isDark ? 'text-slate-400 hover:bg-white/10' : 'text-slate-500 hover:bg-slate-150'} hover:text-orange-605 rounded transition-all cursor-pointer`}
+                                                 aria-label="Visualizar"
                                              >
                                                 <Eye size={12} />
                                              </button>
-                                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-0.5">
-                                                {isExpanded ? "Fechar" : "Histórico"}
+                                              <span className={`text-[8px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider flex items-center gap-0.5`}>
+                                                 {isExpanded ? "Fechar" : "Histórico"}
                                                 {isExpanded ? <ChevronUp size={10} className="stroke-[3]" /> : <ChevronDown size={10} className="stroke-[3]" />}
                                              </span>
                                           </div>
@@ -1873,15 +1876,15 @@ export default function StoreSettings() {
 
                                        {/* Expandable Panel */}
                                        {isExpanded && (
-                                          <div className="border-t border-slate-200/50 bg-white/70 p-3 text-[10px] space-y-2.5 animate-in slide-in-from-top-1 duration-200 select-text">
-                                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 border-b border-slate-100 pb-2.5">
+                                          <div className={`border-t ${isDark ? 'border-white/10 bg-[#1a1a1a]' : 'border-slate-200/50 bg-white/70'} p-3 text-[10px] space-y-2.5 animate-in slide-in-from-top-1 duration-200 select-text`}>
+                                             <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 border-b ${isDark ? 'border-white/5' : 'border-slate-100'} pb-2.5`}>
                                                 <div>
                                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Valor da Nota</span>
-                                                   <span className="font-sans font-bold text-slate-700">R$ {parseFloat(log.metadata?.valorTotalNota || 0).toFixed(2)}</span>
+                                                   <span className={`font-sans font-bold ${isDark ? 'text-white' : 'text-slate-700'}`}>R$ {parseFloat(log.metadata?.valorTotalNota || 0).toFixed(2)}</span>
                                                 </div>
                                                 <div>
                                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">Modelo / Série / Nº</span>
-                                                   <span className="font-bold text-slate-700 uppercase">{log.metadata?.modelo || '--'} / {log.metadata?.serie || '--'} / {log.metadata?.numeroNota || '--'}</span>
+                                                   <span className={`font-bold ${isDark ? 'text-white' : 'text-slate-700'} uppercase`}>{log.metadata?.modelo || '--'} / {log.metadata?.serie || '--'} / {log.metadata?.numeroNota || '--'}</span>
                                                 </div>
                                                 <div>
                                                    <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest">CNPJ Emitente</span>
@@ -1900,7 +1903,7 @@ export default function StoreSettings() {
 
                                              <div>
                                                 <span className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Chave de Acesso Sefaz</span>
-                                                <div className="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded border border-slate-150 font-mono text-[9px] font-semibold break-all text-slate-600 justify-between select-all leading-tight">
+                                                <div className={`flex items-center gap-1.5 ${isDark ? 'bg-[#111] border-white/10' : 'bg-slate-50 border-slate-150'} p-1.5 rounded border font-mono text-[9px] font-semibold break-all ${isDark ? 'text-slate-300' : 'text-slate-600'} justify-between select-all leading-tight`}>
                                                    <span>{log.metadata?.chaveAcesso || 'Gerada pelo validador'}</span>
                                                    {log.metadata?.chaveAcesso && (
                                                       <button
@@ -1952,13 +1955,13 @@ export default function StoreSettings() {
 
         {/* Links and QR Code */}
         <div className="lg:col-span-4 space-y-4">
-           <section className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+           <section className={`${isDark ? 'bg-[#111] border-white/10' : 'bg-white border-slate-200'} p-5 rounded-2xl border shadow-sm overflow-hidden flex flex-col`}>
              <h3 className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                <QrIcon size={16} className="text-orange-500" /> Cardápio Público
              </h3>
              
-             <div className="p-4 bg-slate-50 rounded-lg mb-4 text-center border border-slate-100 shadow-inner group/qr">
-                <div ref={qrRef} className="bg-white p-3 rounded shadow-sm inline-block border border-slate-100 mb-3 group-hover/qr:scale-105 transition-transform duration-500">
+             <div className={`p-4 ${isDark ? 'bg-[#151515] border-white/5' : 'bg-slate-50 border-slate-100'} rounded-lg mb-4 text-center border shadow-inner group/qr`}>
+                <div ref={qrRef} className={`${isDark ? 'bg-white/5 border-white/10' : 'bg-white border-slate-100'} p-3 rounded shadow-sm inline-block border mb-3 group-hover/qr:scale-105 transition-transform duration-500`}>
                    <QRCodeSVG value={menuUrl} size={140} />
                 </div>
                 <div className="flex items-center justify-center gap-2">
@@ -1972,9 +1975,9 @@ export default function StoreSettings() {
                    <button 
                      type="button"
                      onClick={() => window.print()}
-                     className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-50 transition-colors shadow-sm"
-                   >
-                     <Printer size={12} /> Imprimir
+                     className={`flex items-center gap-1.5 px-3 py-1.5 ${isDark ? 'bg-[#111] text-slate-300 border-white/10 hover:bg-[#1a1a1a]' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'} border rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors shadow-sm`}
+                    >
+                      <Printer size={12} /> Imprimir
                    </button>
                 </div>
              </div>
@@ -1983,9 +1986,9 @@ export default function StoreSettings() {
                <button 
                  type="button"
                  onClick={copyMenuLink}
-                 className="w-full h-10 border border-slate-200 rounded-md flex items-center justify-between px-3 hover:bg-slate-50 transition-all text-left group"
+                 className={`w-full h-10 border ${isDark ? 'border-white/10 hover:bg-[#1a1a1a]' : 'border-slate-200 hover:bg-slate-50'} rounded-md flex items-center justify-between px-3 transition-all text-left group`}
                >
-                  <p className="truncate text-[10px] font-mono font-bold text-slate-500 uppercase tracking-tighter w-full mr-2">{menuUrl}</p>
+                  <p className={`truncate text-[10px] font-mono font-bold ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-tighter w-full mr-2`}>{menuUrl}</p>
                   <Copy size={14} className="shrink-0 text-slate-400 group-hover:text-orange-500 transition-colors" />
                </button>
                <a href={menuUrl} target="_blank" rel="noreferrer" className="block w-full">
