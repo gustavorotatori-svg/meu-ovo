@@ -21,15 +21,15 @@ export default function LanguageSwitcher({ isDark }: { isDark?: boolean }) {
         value={i18n.language.startsWith('pt') ? 'pt' : i18n.language.startsWith('es') ? 'es' : 'en'}
         onChange={(e) => i18n.changeLanguage(e.target.value)}
         className={cn(
-          "appearance-none pl-8 pr-7 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors cursor-pointer",
+          "appearance-none pl-7 pr-5 sm:pl-8 sm:pr-7 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-colors cursor-pointer",
           isDark
             ? "bg-white/5 text-gray-300 hover:bg-white/10 border-0"
             : "bg-slate-100 text-slate-700 hover:bg-slate-200 border-0"
         )}
       >
         {languages.map((lang) => (
-          <option key={lang.code} value={lang.code}>
-            {lang.flag} {lang.name}
+          <option key={lang.code} value={lang.code} title={lang.name}>
+            {lang.flag} {lang.code.toUpperCase()}
           </option>
         ))}
       </select>

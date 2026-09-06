@@ -94,8 +94,9 @@ export default function App() {
               <ScrollToTop />
               <RouteTracker />
               <AbandonedCartWatcher />
-              <ErrorBoundary>
-                <Routes>
+<ErrorBoundary>
+                  <div className="overflow-x-clip">
+                    <Routes>
                   <Route element={<PageTransition><Outlet /></PageTransition>}>
                     {/* Public */}
                     <Route path="/" element={<PageSuspense><LandingPage /></PageSuspense>} />
@@ -268,6 +269,7 @@ export default function App() {
                     <Route path="*" element={<PageSuspense><NotFoundPage /></PageSuspense>} />
                   </Route>
                 </Routes>
+                </div>
                 <OvosDeOuroVotePopup />
                 <PwaInstallPrompt />
               </ErrorBoundary>

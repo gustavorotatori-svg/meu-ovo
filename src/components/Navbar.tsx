@@ -25,11 +25,16 @@ export default function Navbar() {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-colors ${isDark ? 'bg-black/95 backdrop-blur-md' : 'bg-white/95 backdrop-blur-md'} border-b ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center h-16 lg:h-20">
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex items-center h-16 lg:h-20">
 
         {/* Logo (sempre à esquerda) */}
-        <Link to="/" className="flex items-center justify-center shrink-0 mr-auto pr-4 xl:pr-10">
-          <Logo size="md" variant={isDark ? 'dark-colored' : 'colored'} />
+        <Link to="/" className="flex items-center justify-center shrink-0 mr-auto pr-2 sm:pr-4 xl:pr-10">
+          <span className="sm:hidden">
+            <Logo size="sm" variant={isDark ? 'dark-colored' : 'colored'} />
+          </span>
+          <span className="hidden sm:flex">
+            <Logo size="md" variant={isDark ? 'dark-colored' : 'colored'} />
+          </span>
         </Link>
 
         {/* Bloco único à direita: nav links + ícones + botão + hamburguer */}
@@ -59,7 +64,7 @@ export default function Navbar() {
             whileHover={buttonHover}
             whileTap={buttonTap}
             onClick={() => navigate('/carrinho')}
-            className={`relative p-2.5 rounded-xl shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`relative p-2 sm:p-2.5 rounded-xl shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <ShoppingBag size={20} />
             {itemCount > 0 && (
@@ -103,7 +108,7 @@ export default function Navbar() {
           </Link>
 
           {/* Hamburguer (mobile) */}
-          <button className={`lg:hidden p-2.5 rounded-xl transition-colors shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
+          <button className={`lg:hidden p-2 sm:p-2.5 rounded-xl transition-colors shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>

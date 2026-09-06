@@ -439,8 +439,8 @@ export default function LandingPage() {
                   <div className={`w-14 h-14 ${feat.dark ? 'bg-white/5 border-white/10' : (isDark ? 'bg-white/5 border-white/10' : 'bg-[#F9F9F9] border-gray-100')} rounded-2xl flex items-center justify-center mb-6 border shadow-inner group-hover:bg-[#FFC928]/10 transition-colors`}>
                     <span className="text-[#FFC928]">{feat.icon}</span>
                   </div>
-                  <h3 className={`text-xl font-black mb-3 leading-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
-                  <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{feat.desc}</p>
+                  <h3 className={`text-xl font-black mb-3 leading-tight ${feat.dark ? 'text-white' : (isDark ? 'text-white' : 'text-[#111]')}`}>{feat.title}</h3>
+                  <p className={`text-sm font-medium leading-relaxed ${feat.dark ? 'text-gray-400' : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{feat.desc}</p>
                 </div>
               </ScrollReveal>
             ))}
