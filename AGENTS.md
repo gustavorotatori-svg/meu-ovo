@@ -212,3 +212,32 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 - **Workflow obrigatório**: toda mudança em `server/api.ts`/`server.ts` deve rodar `npm run build` (regenera `api/index.js`) e commitar o bundle junto. Não editar `api/index.js` à mão.
 - **Verificação**: deploy → `https://meu-ovo-pi.vercel.app/api/health` 200 JSON, `/api/account/export` 401 sem token, sitemap OK.
 - **Integração GitHub→Vercel CONFIRMADA FUNCIONANDO** (12/08/2026, commit `036fb57`): todo push em `master` gera deploy automático de produção via GitHub (`githubDeployment: "1"`, READY/PROMOTED, inclui as 2 lambdas API+sitemap). Para conferir: `npx vercel ls meu-ovo` e, se preciso, `npx vercel api "/v13/deployments/<id>"`. `vercel --prod` é apenas fallback. CUIDADO: não confundir idade relativa do `vercel ls` com hora do push — checar a data do commit (`git log -1`) antes de concluir que "não deployou". Deployments raw e branch alias são protegidos por SSO (login Vercel) — smoke test sempre em `https://meu-ovo-pi.vercel.app`.
+
+---
+
+## Sessão (09/09/2026) — Header mobile profissional + E2E cadastro/checkout em produção
+
+### Commits
+- `160117a` — header: botões de ícone unificados, hambúrguer 36px, overflow-x-clip na raiz, cards escuros no landing.
+- `476e504` — truthfulness (página única de pedidos, sem "histórico" ficcionar).
+- `19923ea` — UX pós-login (redireciona para próximo passo após login).
+- `a232caa` — 4 arquivos: `LanguageSwitcher` (dropdown custom: globo+bandeira, chevron, role=listbox, fecha ao clicar fora), `Navbar` (botões `w-9 h-9 sm:w-auto sm:h-auto`), `CheckoutPage` (botão "Acompanhar pedido" só com `user.id`), `OrderStatusPage` (fallback "Pedido não encontrado" em vez de skeleton infinito — erro no onSnapshot).
+- `64052a4` — **fix reload `/checkout`**: `RestaurantContext` ganhou flag `restaurantsLoaded` (setado no `onSnapshot` `next`/error). Guard e `<Navigate>` do CheckoutPage agora esperam a descoberta real dos restaurantes em vez de confiar em `restaurants.length` (que inicia em `mockRestaurants` e sempre tinha length>0 → kick para `/carrinho` em reload direto).
+- `92c8456` — **fix nome no perfil**: `refreshUserProfile` ignora o `displayName` do Firebase; agora `displayName: data?.displayName || data?.full_name || auth.currentUser?.displayName`. Email-signup via `updateProfile` preenche displayName, mas o refresh sobrescrevia com undefined → "Gourmet Explorer".
+
+### Verificação ao vivo (Playwright, prod `https://meu-ovo-pi.vercel.app`)
+- Header: bloco direito 156px (era 200px), 4 botões de 36px, `docOverflowX=0` em 320/360/390/430 e 640/768/1024/1440.
+- Dropdown de idioma abre e troca pt→es→pt.
+- Reload em `/checkout` **mantém na página** (corrigido por `64052a4`).
+- Jornada cliente E2E completa: landing → /busca → cardápio → modal → Adicionar à Sacola → /carrinho → /checkout → pedido criado → popup WhatsApp. (pedido teste `#ORDMTRZOCEGZZ1HZK`)
+- Cadastro E2E: toast "Conta criada!", redireciona a `/install-app?next=/busca`, avatar no header do `/busca`, `/perfil` protegido renderiza nome do cliente, login com email não verificado bloqueado com mensagem.
+- Login/cadastro sem verificação de email não acessa áreas do cliente (regra Firestore: orders get/list só owner/admin ou userId malhado).
+- 0 erros de JS em todos os fluxos.
+
+### Ambiente de teste
+- Contas de teste prod: `e2e.audit.<timestamp>@mailinator.com` / `Audit#2026x` (aceitável — Firestore é dev deste projeto).
+- Probes E2E ad-hoc vivem em `C:\Users\rotat\AppData\Local\Temp\opencode\` (`postdeploy-check.mjs`, `signup-deep-check.mjs`, `signup-final-check.mjs`, etc.) — **nunca commitar**.
+
+### Pendente (débito consciente)
+- i18n parcial: textos de client flow ainda em português após trocar idioma.
+- Concluir verificação manual nos demais fluxos (admin, onboarding restaurante) pós-refactor do header; nenhum erro conhecido.
