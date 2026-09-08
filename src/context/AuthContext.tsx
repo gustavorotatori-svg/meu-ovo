@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: data?.role || 'customer',
               profile_image_url: data?.profile_image_url,
               photoURL: data?.photoURL,
-              displayName: data?.displayName,
+displayName: data?.displayName || data?.full_name || auth.currentUser?.displayName,
               customerRating: data?.customerRating,
               customerRatingCount: data?.customerRatingCount,
               pwaInstallPending: data?.pwaInstallPending,
