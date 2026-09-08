@@ -64,7 +64,8 @@ export default function Navbar() {
             whileHover={buttonHover}
             whileTap={buttonTap}
             onClick={() => navigate('/carrinho')}
-            className={`relative p-2 sm:p-2.5 rounded-xl shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
+            aria-label="Carrinho"
+            className={`relative w-9 h-9 sm:w-auto sm:h-auto sm:p-2.5 rounded-xl shrink-0 flex items-center justify-center ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}
           >
             <ShoppingBag size={20} />
             {itemCount > 0 && (
@@ -89,13 +90,13 @@ export default function Navbar() {
 
 
           {!user ? (
-            <button onClick={() => navigate('/login')} className={`flex items-center gap-1 px-1.5 sm:px-3 py-2 rounded-xl text-[9px] font-black uppercase tracking-wider border-2 transition-all shrink-0 ${isDark ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'}`}>
+            <button onClick={() => navigate('/login')} className={`flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 rounded-xl text-[9px] font-black uppercase tracking-wider border-2 transition-all shrink-0 ${isDark ? 'border-white/10 text-white hover:border-[#FFC928] hover:text-[#FFC928]' : 'border-slate-200 text-slate-800 hover:border-black hover:text-black'}`}>
               <User size={12} />
               <span className="hidden sm:inline">Cliente</span>
             </button>
           ) : (
-            <button onClick={() => navigate('/perfil')} className={`flex items-center gap-2 p-2 rounded-xl transition-all shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
-              <div className="w-8 h-8 rounded-full bg-[#FFC928] flex items-center justify-center text-black font-black text-xs overflow-hidden">
+            <button onClick={() => navigate('/perfil')} aria-label="Meu perfil" className={`flex items-center justify-center w-9 h-9 sm:w-auto sm:h-auto sm:p-1.5 rounded-xl transition-all shrink-0 ${isDark ? 'text-gray-300 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-100'}`}>
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#FFC928] flex items-center justify-center text-black font-black text-xs overflow-hidden">
                 {user.photoURL ? <img src={user.photoURL} alt={user.displayName || ''} /> : (user.displayName?.charAt(0) || <User size={16} />)}
               </div>
             </button>
@@ -108,8 +109,8 @@ export default function Navbar() {
           </Link>
 
           {/* Hamburguer (mobile) */}
-          <button className={`lg:hidden p-2 sm:p-2.5 rounded-xl transition-colors shrink-0 ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          <button className={`lg:hidden w-9 h-9 sm:w-auto sm:h-auto sm:p-2.5 rounded-xl transition-colors shrink-0 flex items-center justify-center ${isDark ? 'bg-white/5 text-white' : 'bg-gray-100 text-[#111]'}`} onClick={() => setMenuOpen(!menuOpen)} aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}>
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </div>

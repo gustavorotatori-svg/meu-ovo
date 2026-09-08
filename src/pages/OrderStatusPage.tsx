@@ -68,6 +68,10 @@ export default function OrderStatusPage() {
         }
       }
       setLoading(false);
+    }, (err) => {
+      console.error('OrderStatusPage: unable to read order', err);
+      setOrder(null);
+      setLoading(false);
     });
 
     return () => unsub();

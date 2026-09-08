@@ -192,12 +192,12 @@ export default function CheckoutPage() {
   }, [phone, restaurant?.id]);
 
   useEffect(() => {
+    if (submitted) return;
+    if (restaurants.length === 0) return;
     if (!restaurant || items.length === 0) {
-      if (!submitted) {
-        navigate('/carrinho');
-      }
+      navigate('/carrinho');
     }
-  }, [restaurant, items.length, navigate, submitted]);
+  }, [restaurant, items.length, restaurants.length, navigate, submitted]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -743,12 +743,14 @@ export default function CheckoutPage() {
           </AnimatePresence>
 
           <div className="space-y-3">
-            <button
-              onClick={() => navigate(`/pedido/${orderId}`)}
-              className="w-full bg-[#FFC928] text-[#111] font-black py-5 rounded-2xl hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-yellow-500/20"
-            >
-              Acompanhar pedido em tempo real
-            </button>
+            {user?.id && (
+              <button
+                onClick={() => navigate(`/pedido/${orderId}`)}
+                className="w-full bg-[#FFC928] text-[#111] font-black py-5 rounded-2xl hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-yellow-500/20"
+              >
+                Acompanhar pedido em tempo real
+              </button>
+            )}
             <button
               onClick={() => navigate(`/r/${restaurant?.slug || ''}`)}
               className="w-full bg-[#111111] text-white font-black py-5 rounded-2xl hover:bg-[#222] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/10"
@@ -762,6 +764,13 @@ export default function CheckoutPage() {
   }
 
   if (!restaurant) {
+    if (restaurants.length === 0) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+          <div className="w-10 h-10 rounded-full border-4 border-[#FFC928] border-t-transparent animate-spin" />
+        </div>
+      );
+    }
     return <Navigate to="/carrinho" replace />;
   }
 
