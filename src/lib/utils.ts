@@ -19,6 +19,7 @@ export function formatCurrency(value: number, locale: string = 'pt-BR') {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'BRL',
+    currencyDisplay: 'narrowSymbol',
   }).format(value);
 }
 
