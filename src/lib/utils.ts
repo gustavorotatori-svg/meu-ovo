@@ -15,11 +15,17 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;');
 }
 
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
+export function formatCurrency(value: number, locale: string = 'pt-BR') {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: 'BRL',
   }).format(value);
+}
+
+export function currencyLocale(lang: string): string {
+  if (lang.startsWith('en')) return 'en-US';
+  if (lang.startsWith('es')) return 'es-ES';
+  return 'pt-BR';
 }
 
 export function translateFirebaseError(code: string): string {

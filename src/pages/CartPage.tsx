@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useTheme } from '../context/ThemeContext';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../lib/utils';
 import { WA_NUMBER } from '../services/whatsappService';
 import SEO from '../components/SEO';
 import OptimizedImage from '../components/OptimizedImage';
@@ -13,7 +13,8 @@ import { toast } from 'react-hot-toast';
 import { fadeInScale, buttonHover, buttonTap, badgePop, durations, easings, springSnap, spring } from '../lib/motion';
 
 export default function CartPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, subtotal, itemCount, tableNumber } = useCart();
   const { restaurants } = useRestaurant();
@@ -66,7 +67,7 @@ export default function CartPage() {
 
   return (
     <div className={cn("min-h-screen", isDark ? 'bg-[#1a1a1a]' : 'bg-[#F5F5F5]')}>
-      <SEO title="Carrinho" description="Revise seu carrinho de compras no MEU OVO antes de finalizar o pedido." url="/carrinho" />
+      <SEO title={t('cart.seoTitle')} description={t('cart.seoDescription')} url="/carrinho" />
       <div className={cn("bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10", isDark ? 'bg-[#111111] border-[#2a2a2a]' : '')}>
         <div className="max-w-2xl mx-auto flex items-center gap-4">
           <motion.button 
@@ -83,7 +84,7 @@ export default function CartPage() {
               {restaurant && <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">{restaurant.name}</p>}
               {tableNumber && (
                 <span className="bg-[#FFC928] text-[#111] text-[9px] font-black px-2 py-0.5 rounded-md uppercase tracking-wider">
-                  Mesa {tableNumber}
+                  {t('cart.mesaLabel', { n: tableNumber })}
                 </span>
               )}
             </div>
@@ -143,7 +144,7 @@ export default function CartPage() {
                           </div>
                           <button
                             onClick={() => handleRemove(index, item.product.name)}
-                            aria-label={`Remover ${item.product.name}`}
+                            aria-label={t('cart.removeAria', { name: item.product.name })}
                             className="p-3 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-all"
                           >
                             <Trash2 size={16} />
@@ -186,7 +187,7 @@ export default function CartPage() {
                               <Plus size={14} />
                             </motion.button>
                           </div>
-                          <span className={cn("font-black text-sm", isDark ? 'text-white' : 'text-[#111]')}>R$ {itemTotal.toFixed(2)}</span>
+                          <span className={cn("font-black text-sm", isDark ? 'text-white' : 'text-[#111]')}>{fmt(itemTotal)}</span>
                         </div>
                       </div>
                     </div>
@@ -208,7 +209,7 @@ export default function CartPage() {
           <div className="space-y-3">
             <div className={cn("flex justify-between text-xs font-bold uppercase tracking-widest", isDark ? 'text-gray-500' : 'text-gray-400')}>
               <span>{t('cart.subtotal')}</span>
-              <span className="text-slate-800 dark:text-slate-200">R$ {subtotal.toFixed(2)}</span>
+              <span className="text-slate-800 dark:text-slate-200">{fmt(subtotal)}</span>
             </div>
             <div className={cn("flex justify-between text-xs font-bold uppercase tracking-widest", isDark ? 'text-gray-500' : 'text-gray-400')}>
               <span>{t('cart.serviceFee')}</span>
@@ -218,8 +219,8 @@ export default function CartPage() {
           <div className={cn("border-t mt-6 pt-6 flex justify-between items-end", isDark ? 'border-[#2a2a2a]' : 'border-gray-50')}>
             <div className="flex flex-col">
               <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{t('cart.subtotal')}</span>
-              <span className="font-display font-black text-3xl leading-none text-[#FFC928]">R$ {subtotal.toFixed(2)}</span>
-              <span className="text-[10px] text-gray-400 mt-1">+ frete calculado no checkout</span>
+              <span className="font-display font-black text-3xl leading-none text-[#FFC928]">{fmt(subtotal)}</span>
+              <span className="text-[10px] text-gray-400 mt-1">{t('cart.freightAtCheckout')}</span>
             </div>
             {restaurant && (
               <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest italic text-right px-2 py-1 bg-slate-50 dark:bg-white/5 rounded-lg">
@@ -243,7 +244,7 @@ export default function CartPage() {
               <ShoppingBag size={24} className="text-[#FFC928] group-hover:-rotate-12 transition-transform" />
               <span>{t('cart.checkout')}</span>
             </div>
-            <span className="text-[#FFC928]">R$ {subtotal.toFixed(2)}</span>
+            <span className="text-[#FFC928]">{fmt(subtotal)}</span>
           </motion.button>
 
           <motion.button
@@ -254,12 +255,11 @@ export default function CartPage() {
             whileTap={buttonTap}
             onClick={() => {
               if (!restaurant) return;
-              const itemsText = items.map(item => `${item.quantity}x ${item.product.name} - R$ ${((item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price) * item.quantity).toFixed(2)}`).join('\n');
-              const msg = `*MEU OVO 🥚 - NOVO PEDIDO (INICIAL)*\n\n` +
-                          `Olá! Gostaria de fazer um pedido:\n\n` +
-                          `*ITENS:*\n${itemsText}\n\n` +
-                          `*SUBTOTAL: R$ ${subtotal.toFixed(2)}*\n\n` +
-                          `Gostaria de combinar a entrega/retirada por aqui!`;
+              const itemsText = items.map(item => `${item.quantity}x ${item.product.name} - ${fmt((item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price) * item.quantity)}`).join('\n');
+              const msg = t('cart.waMessage', {
+                items: itemsText,
+                subtotal: fmt(subtotal),
+              });
               const whatsAppNumber = restaurant?.whatsapp || WA_NUMBER;
               const url = `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(msg)}`;
               window.open(url, '_blank');

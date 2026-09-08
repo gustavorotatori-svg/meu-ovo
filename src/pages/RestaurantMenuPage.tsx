@@ -38,7 +38,7 @@ import SEO from '../components/SEO';
 import { useTheme } from '../context/ThemeContext';
 import { Skeleton } from '../components/Skeleton';
 import { WA_NUMBER } from '../services/whatsappService';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../lib/utils';
 
 // Helper to match emojis to category names dynamically
 const getCategoryEmoji = (name: string): string => {
@@ -337,7 +337,8 @@ const getFallbackMenu = (restaurantId: string, cuisineType = '') => {
 };
 
 export default function RestaurantMenuPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { slug } = useParams();
   const [searchParams] = useSearchParams();
   const tableNumber = searchParams.get('mesa');
@@ -601,7 +602,7 @@ export default function RestaurantMenuPage() {
                   : "bg-gray-100 border-gray-200 text-black hover:bg-black hover:text-white"
                 : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-[#FFC928] hover:text-black"
             )}
-            aria-label="Voltar"
+            aria-label={t('menuPage.ariaBack')}
           >
             <ArrowLeft size={18} strokeWidth={2.5} />
           </button>
@@ -649,7 +650,7 @@ export default function RestaurantMenuPage() {
                   : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-black/60"
             )}
             title={isFavorited ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
-            aria-label="Favoritar restaurante"
+            aria-label={t('menuPage.ariaFavorite')}
           >
             <Heart size={18} fill={isFavorited ? "currentColor" : "none"} strokeWidth={2.5} />
           </button>
@@ -663,7 +664,7 @@ export default function RestaurantMenuPage() {
                   : "bg-gray-100 border-gray-200 text-black hover:bg-gray-200"
                 : "bg-black/40 backdrop-blur-sm border-white/10 text-white hover:bg-black/60"
             )}
-            aria-label="Compartilhar restaurante"
+            aria-label={t('menuPage.ariaShare')}
           >
             <Share2 size={18} strokeWidth={2.5} />
           </button>
@@ -718,10 +719,10 @@ export default function RestaurantMenuPage() {
               </div>
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge size="md">🍳 100% DIRETO</Badge>
+                  <Badge size="md">{t('menuPage.direct100')}</Badge>
                   {tableNumber && (
                     <span className="bg-black text-[#FFC928] dark:bg-[#FFC928] dark:text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-                      MESA {tableNumber}
+                      {t('menuPage.tableLabel', { n: tableNumber })}
                     </span>
                   )}
                 </div>
@@ -740,7 +741,7 @@ export default function RestaurantMenuPage() {
                   <span>{restaurant.neighborhood}</span>
                   <span>•</span>
                   <span className={restaurant.isOpen ? "text-green-500 font-extrabold" : "text-red-500 font-extrabold"}>
-                    {restaurant.isOpen ? "Estamos Abertos" : "Fechados no momento"}
+                    {restaurant.isOpen ? t('menuPage.estWeAreOpen') : t('menuPage.estWeAreClosed')}
                   </span>
                 </div>
               </div>
@@ -749,16 +750,16 @@ export default function RestaurantMenuPage() {
             {/* Quick Action Button & Social Sharing Icon */}
             <div className="flex flex-col gap-2.5 min-w-[200px] md:self-stretch justify-center">
               <a
-                href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Olá! Estou vendo o delicioso cardápio de ${restaurant.name} no Meu Ovo e gostaria de tirar uma dúvida.`)}`}
+                href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t('menuPage.waMenuQuestion', { name: restaurant.name }))}`}
                 target="_blank"
                 rel="noreferrer"
                 className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl font-black text-xs uppercase tracking-wider transition-all shadow-xl hover:-translate-y-0.5 active:scale-95 bg-green-500/10 dark:bg-green-500/25 text-green-500 border border-green-500/20 dark:border-green-500/40 hover:bg-green-500 hover:text-white shadow-green-500/5"
               >
                 <MessageCircle size={15} strokeWidth={2.5} />
-                <span>Dúvidas? Chame no Zap</span>
+                <span>{t('menuPage.zapDoubts')}</span>
               </a>
               <p className="text-[9px] text-center text-gray-500 font-bold uppercase tracking-wider">
-                🍳 PEDIDOS SEM INTERMEDIÁRIOS COM IMPACTO REAL
+                {t('menuPage.noIntermediariesTag')}
               </p>
             </div>
           </div>
@@ -772,11 +773,11 @@ export default function RestaurantMenuPage() {
               <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/5 rounded-full blur-xl" />
               <div className="flex items-center gap-1.5 text-gray-400 relative">
                 <Clock size={14} />
-                <span className="text-[10px] font-black uppercase tracking-wider">Preparo</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">{t('menuPage.statPrep')}</span>
               </div>
               <p className="text-xl font-display font-black italic tracking-tight mt-1 relative">
                 ~{restaurant.estimatedTime}{" "}
-                <span className="text-xs font-bold text-gray-400">MIN</span>
+                <span className="text-xs font-bold text-gray-400">{t('menuPage.statMin')}</span>
               </p>
             </div>
 
@@ -787,13 +788,13 @@ export default function RestaurantMenuPage() {
               <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/5 rounded-full blur-xl" />
               <div className="flex items-center gap-1.5 text-gray-400 relative">
                 <Truck size={14} />
-                <span className="text-[10px] font-black uppercase tracking-wider">Entrega</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">{t('menuPage.statDelivery')}</span>
               </div>
               <p className="text-xl font-display font-black italic tracking-tight mt-1 relative">
                 {restaurant.deliveryEnabled ? (
-                  (restaurant.deliverySettings?.fee ?? restaurant.deliveryFee) === 0 ? "Grátis" : `R$ ${(restaurant.deliverySettings?.fee ?? restaurant.deliveryFee).toFixed(2)}`
+                  (restaurant.deliverySettings?.fee ?? restaurant.deliveryFee) === 0 ? t('menuPage.free') : fmt(restaurant.deliverySettings?.fee ?? restaurant.deliveryFee)
                 ) : (
-                  "Retirada local"
+                  t('menuPage.pickupOnly')
                 )}
               </p>
             </div>
@@ -805,10 +806,10 @@ export default function RestaurantMenuPage() {
               <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 rounded-full blur-xl" />
               <div className="flex items-center gap-1.5 text-gray-400 relative">
                 <Sparkles size={14} className="text-[#FFC928]" />
-                <span className="text-[10px] font-black uppercase tracking-wider">Mínimo</span>
+                <span className="text-[10px] font-black uppercase tracking-wider">{t('menuPage.statMinimum')}</span>
               </div>
               <p className="text-xl font-display font-black italic tracking-tight mt-1 relative">
-                R$ {restaurant.minimumOrder.toFixed(2)}
+                {fmt(restaurant.minimumOrder)}
               </p>
             </div>
           </div>
@@ -826,11 +827,11 @@ export default function RestaurantMenuPage() {
                 "text-xs md:text-sm leading-relaxed font-semibold",
                 isDark ? "text-gray-400" : "text-gray-600"
               )}>
-                {restaurant.historyText || "Servindo afeto e as melhores receitas artesanais diretamente do nosso balcão para você, sem intermediários corporativos gulosos."}
+                {restaurant.historyText || t('menuPage.historyFallback')}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <Badge variant="warning">🛡️ SEM COMISSÃO PARA O APP</Badge>
-                <Badge variant="success">⚡ COMPRA 100% DIRETA</Badge>
+                <Badge variant="warning">{t('menuPage.noCommissionBadge')}</Badge>
+                <Badge variant="success">{t('menuPage.directBadge')}</Badge>
               </div>
             </div>
 
@@ -848,7 +849,7 @@ export default function RestaurantMenuPage() {
                   />
                 )}
                 <div>
-                  <span className="text-[9px] font-black uppercase text-gray-400 tracking-wider">Fundador(a) / Chef</span>
+                  <span className="text-[9px] font-black uppercase text-gray-400 tracking-wider">{t('menuPage.founderLabel')}</span>
                   <p className={cn(
                     "font-display font-black text-xs md:text-sm uppercase italic leading-tight mt-0.5",
                     isDark ? "text-white" : "text-slate-800"
@@ -856,7 +857,7 @@ export default function RestaurantMenuPage() {
                     {restaurant.founderName}
                   </p>
                   <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                    {restaurant.foundedYear ? `No bairro desde ${restaurant.foundedYear}` : "Cozinha Autoral"}
+                    {restaurant.foundedYear ? t('menuPage.inNeighborhoodSince', { year: restaurant.foundedYear }) : t('menuPage.authorCuisine')}
                   </p>
                 </div>
               </div>
@@ -878,7 +879,7 @@ export default function RestaurantMenuPage() {
                 : "md:bg-white md:border-[#111111]/5 md:shadow-xl"
             )}>
               <h3 className="hidden md:block font-display font-black uppercase italic tracking-tighter text-xl mb-4">
-                🍳 Categorias
+                {t('menuPage.categories')}
               </h3>
               
               {/* Responsive Container: Scrollable horizontal on mobile, stacked vert on Desktop */}
@@ -964,12 +965,12 @@ export default function RestaurantMenuPage() {
                     <div className="space-y-6 bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-[#FFC928]/10 dark:to-[#FF7A00]/5 p-6 rounded-[2.5rem] border border-amber-500/20 dark:border-[#FFC928]/20 mb-8 select-none">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-black uppercase text-[#FF7A00] dark:text-[#FFC928] tracking-widest leading-none">Recomendação dos Clientes</span>
-                          <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 dark:text-white mt-1">🔥 Destaques e Preferidos do Bairro</h3>
+                          <span className="text-[10px] font-black uppercase text-[#FF7A00] dark:text-[#FFC928] tracking-widest leading-none">{t('menuPage.clientRecommendation')}</span>
+                          <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 dark:text-white mt-1">{t('menuPage.neighborhoodFavorites')}</h3>
                         </div>
                         <Badge size="md" className="self-start sm:self-center">
                           <Star size={10} className="fill-black" />
-                          Favoritos Locais
+                          {t('menuPage.localFavorites')}
                         </Badge>
                       </div>
 
@@ -982,11 +983,11 @@ export default function RestaurantMenuPage() {
                             <div className="flex-1 min-w-0">
                               <span className="text-[8px] font-extrabold uppercase bg-[#FFC928] text-black px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">
                                 <Star size={8} className="fill-black" />
-                                DESTAQUE
+                                {t('menuPage.highlight')}
                               </span>
                               <h4 className="font-bold text-sm uppercase text-slate-800 dark:text-white truncate mt-1.5">{p.name}</h4>
                               <p className={cn("text-[10px] line-clamp-2 mt-0.5 leading-relaxed", isDark ? "text-gray-400" : "text-gray-500")}>{p.description}</p>
-                              <p className="font-display font-black italic text-base mt-2.5 text-[#FF7A00] dark:text-[#FFC928]">R$ {p.price.toFixed(2)}</p>
+                              <p className="font-display font-black italic text-base mt-2.5 text-[#FF7A00] dark:text-[#FFC928]">{fmt(p.price)}</p>
                             </div>
                             {p.imageUrl && (
                               <img src={p.imageUrl} alt={p.name} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0 border-2 border-white/10" referrerPolicy="no-referrer" />
@@ -1001,11 +1002,11 @@ export default function RestaurantMenuPage() {
                             <div className="flex-1 min-w-0">
                               <span className="text-[8px] font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md flex items-center gap-1 w-fit border border-emerald-500/20">
                                 <Star size={8} className="fill-emerald-500" />
-                                RECOMENDADO
+                                {t('menuPage.recommended')}
                               </span>
                               <h4 className="font-bold text-sm uppercase text-slate-800 dark:text-white truncate mt-1.5">{p.name}</h4>
                               <p className={cn("text-[10px] line-clamp-2 mt-0.5 leading-relaxed", isDark ? "text-gray-400" : "text-gray-500")}>{p.description}</p>
-                              <p className="font-display font-black italic text-base mt-2.5 text-emerald-600 dark:text-emerald-400">R$ {p.price.toFixed(2)}</p>
+                              <p className="font-display font-black italic text-base mt-2.5 text-emerald-600 dark:text-emerald-400">{fmt(p.price)}</p>
                             </div>
                             {p.imageUrl && (
                               <img src={p.imageUrl} alt={p.name} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0 border-2 border-white/10" referrerPolicy="no-referrer" />
@@ -1019,10 +1020,10 @@ export default function RestaurantMenuPage() {
                               isDark ? "bg-[#111218] border-white/5" : "bg-white border-gray-100 shadow-sm"
                             )} onClick={() => setSelectedProduct(restaurantProducts[0])}>
                               <div className="flex-1 min-w-0">
-                                <span className="text-[8px] font-extrabold uppercase bg-[#FFC928] text-black px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">⭐ DESTAQUE DA CASA</span>
+                                <span className="text-[8px] font-extrabold uppercase bg-[#FFC928] text-black px-2 py-0.5 rounded-md flex items-center gap-1 w-fit">{t('menuPage.houseHighlight')}</span>
                                 <h4 className="font-bold text-sm uppercase text-slate-800 dark:text-white truncate mt-1.5">{restaurantProducts[0].name}</h4>
                                 <p className={cn("text-[10px] line-clamp-2 mt-0.5 leading-relaxed", isDark ? "text-gray-400" : "text-gray-500")}>{restaurantProducts[0].description}</p>
-                                <p className="font-display font-black italic text-base mt-2.5 text-[#FF7A00] dark:text-[#FFC928]">R$ {restaurantProducts[0].price.toFixed(2)}</p>
+                                <p className="font-display font-black italic text-base mt-2.5 text-[#FF7A00] dark:text-[#FFC928]">{fmt(restaurantProducts[0].price)}</p>
                               </div>
                               {restaurantProducts[0].imageUrl && (
                                 <img src={restaurantProducts[0].imageUrl} alt={restaurantProducts[0].name} className="w-20 h-20 rounded-2xl object-cover flex-shrink-0 border-2 border-white/10" referrerPolicy="no-referrer" />
@@ -1097,12 +1098,12 @@ export default function RestaurantMenuPage() {
                 </span>
                 <span className="text-xs uppercase tracking-widest font-black flex items-center gap-1.5">
                   <ShoppingBag size={14} strokeWidth={2.5} />
-                  Ver sacola de compras
+                  {t('menuPage.viewBag')}
                 </span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mr-1">Total:</span>
-                <span className="text-[#FFC928] font-display font-black italic text-lg">R$ {subtotal.toFixed(2)}</span>
+                <span className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mr-1">{t('menuPage.total')}</span>
+                <span className="text-[#FFC928] font-display font-black italic text-lg">{fmt(subtotal)}</span>
                 <ChevronRight size={16} className="text-[#FFC928]" strokeWidth={2.5} />
               </div>
             </motion.button>
@@ -1118,7 +1119,7 @@ export default function RestaurantMenuPage() {
           onClose={() => setSelectedProduct(null)}
           onAdd={(item) => {
             if (!restaurant.isOpen) {
-              toast.error('Restaurante fechado no momento');
+              toast.error(t('menuPage.restaurantClosed'));
               return;
             }
             addItem(item);
@@ -1159,6 +1160,8 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, flashDeal }) => {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   return (
     <motion.div
       whileHover={{ y: -4 }}
@@ -1178,18 +1181,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, fl
             {flashDeal && (
               <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm animate-pulse">
                 <Zap size={8} className="text-yellow-300" />
-                OFERTA RELÂMPAGO
+                {t('menuPage.flashDeal')}
               </span>
             )}
             {product.onPromotion && !flashDeal && (
               <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg shadow-sm">
-                OFERTA
+                {t('menuPage.offer')}
               </span>
             )}
             {product.estimatedPrepTime && (
               <span className="bg-slate-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1">
                 <Clock size={8} />
-                {product.estimatedPrepTime} MIN
+                {t('menuPage.prepTimeMin', { n: product.estimatedPrepTime })}
               </span>
             )}
             {flashDeal && (
@@ -1218,34 +1221,34 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, fl
             {flashDeal ? (
               <div className="space-y-0.5">
                 <p className="text-[10px] text-red-500 font-extrabold uppercase tracking-widest line-through">
-                  R$ {flashDeal.originalPrice.toFixed(2)}
+                  {fmt(flashDeal.originalPrice)}
                 </p>
                 <p className="font-display font-black italic text-xl leading-none text-red-500">
-                  R$ {flashDeal.dealPrice.toFixed(2)}
+                  {fmt(flashDeal.dealPrice)}
                 </p>
                 <p className="text-[8px] font-black text-orange-500 uppercase tracking-widest">
-                  Restam {flashDeal.maxUnits - flashDeal.soldUnits} un.
+                  {t('menuPage.unitsLeft', { count: flashDeal.maxUnits - flashDeal.soldUnits })}
                 </p>
               </div>
             ) : product.onPromotion && product.promotionPrice ? (
               <div className="space-y-0.5">
                 <p className="text-[10px] text-red-500 font-extrabold uppercase tracking-widest line-through">
-                  R$ {product.price.toFixed(2)}
+                  {fmt(product.price)}
                 </p>
                 <p className={`font-display font-black italic text-xl leading-none ${isDark ? 'text-white' : 'text-black'}`}>
-                  R$ {product.promotionPrice.toFixed(2)}
+                  {fmt(product.promotionPrice)}
                 </p>
               </div>
             ) : (
               <p className={`font-display font-black italic text-xl leading-none ${isDark ? 'text-white' : 'text-black'}`}>
-                R$ {product.price.toFixed(2)}
+                {fmt(product.price)}
               </p>
             )}
           </div>
           
           <div className="bg-[#FFC928] text-black font-black text-[10px] p-2 rounded-2xl flex items-center gap-1 shadow-lg shadow-[#FFC928]/10 group-hover/card:bg-black group-hover/card:text-[#FFC928] border-2 border-[#FFC928] group-hover/card:border-black transition-all">
             <Plus size={14} strokeWidth={3} />
-            <span className="uppercase tracking-widest">ADICIONAR</span>
+            <span className="uppercase tracking-widest">{t('menuPage.add')}</span>
           </div>
         </div>
       </div>
@@ -1332,6 +1335,8 @@ interface ProductModalProps {
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, onAdd, allProducts, currentCategoryName, categories, flashDeal }) => {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const [quantity, setQuantity] = useState(1);
   const [observations, setObservations] = useState('');
   const [selectedAdditionals, setSelectedAdditionals] = useState<{ groupId: string; additionalId: string; name: string; price: number }[]>([]);
@@ -1360,7 +1365,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
   const handleAdd = () => {
     const cartProduct = flashDeal ? { ...product, price: flashDeal.dealPrice } : product;
     onAdd({ product: cartProduct, quantity, selectedAdditionals, observations });
-    toast.success(`${product.name} adicionado!`, {
+    toast.success(t('menuPage.addedSuccess', { name: product.name }), {
       icon: '🍳',
       style: {
         borderRadius: '1.5rem',
@@ -1375,7 +1380,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
 
   return (
     <AnimatePresence>
-      <div role="dialog" aria-modal="true" aria-label="Detalhes do produto" className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+      <div role="dialog" aria-modal="true" aria-label={t('menuPage.ariaProductDetails')} className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
         {/* Blur overlay */}
         <motion.div 
           initial={{ opacity: 0 }}
@@ -1411,7 +1416,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
             <button
               onClick={onClose}
               className="absolute top-4 right-4 bg-black/40 backdrop-blur-md p-2.5 rounded-full hover:bg-black/60 text-white transition-all border border-white/10 active:scale-95"
-              aria-label="Fechar"
+              aria-label={t('menuPage.ariaClose')}
             >
               <X size={18} strokeWidth={3} />
             </button>
@@ -1436,13 +1441,13 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               <div className="flex flex-wrap items-center gap-2 pt-2">
                 {product.onPromotion && (
                   <Badge variant="danger" size="md">
-                    REDUÇÃO DE PREÇO
+                    {t('menuPage.priceReduction')}
                   </Badge>
                 )}
                 {product.estimatedPrepTime && (
                   <Badge variant="outline" size="md">
                     <Clock size={10} />
-                    SAI EM {product.estimatedPrepTime} MIN
+                    {t('menuPage.readyInMin', { n: product.estimatedPrepTime })}
                   </Badge>
                 )}
               </div>
@@ -1457,7 +1462,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                     isDark ? "bg-white/5 border-white/5" : "bg-gray-50 border-gray-100"
                   )}>
                     <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 select-none flex items-center gap-1">
-                      <Info size={11} /> Ingredientes inclusos
+                      <Info size={11} /> {t('menuPage.ingredientsIncluded')}
                     </p>
                     <p className="text-xs text-gray-500 font-medium leading-relaxed">
                       {product.ingredients}
@@ -1467,7 +1472,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                 {(product.selectedAllergens?.length ? product.selectedAllergens : product.allergens) && (
                   <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20">
                     <p className="text-[9px] font-black text-red-500 uppercase tracking-widest mb-2 select-none flex items-center gap-1">
-                      <AlertTriangle size={11} /> Informações de Alergia
+                      <AlertTriangle size={11} /> {t('menuPage.allergenInfo')}
                     </p>
                     {product.selectedAllergens?.length ? (
                       <div className="flex flex-wrap gap-1.5">
@@ -1500,7 +1505,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                     {group.name}
                   </h4>
                   <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1.5">
-                    {group.type === 'single' || group.maxSelection === 1 ? 'Escolha exclusivamente 1 opção' : 'Escolha quantas opções desejar'}
+                    {group.type === 'single' || group.maxSelection === 1 ? t('menuPage.selectOne') : t('menuPage.selectMany')}
                   </p>
                 </div>
                 
@@ -1535,10 +1540,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                         </div>
                         <span className="text-xs font-mono font-bold text-gray-400">
                           {item.price > 0 
-                            ? `+ R$ ${item.price.toFixed(2)}` 
+                            ? `+ ${fmt(item.price)}` 
                             : item.price < 0 
-                              ? `- R$ ${Math.abs(item.price).toFixed(2)}` 
-                              : 'Grátis'}
+                              ? `- ${fmt(Math.abs(item.price))}` 
+                              : t('menuPage.free')}
                         </span>
                       </button>
                     );
@@ -1553,7 +1558,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                 <div className="flex items-center gap-2">
                   <Sparkles size={14} className="text-[#FFC928]" />
                   <h4 className="font-display font-black text-xs uppercase tracking-widest text-[#111111] dark:text-white italic">
-                    Complete seu pedido
+                    {t('menuPage.completeOrder')}
                   </h4>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
@@ -1562,7 +1567,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                       key={s.id}
                       onClick={() => {
                         onAdd({ product: s, quantity: 1, selectedAdditionals: [], observations: '' });
-                        toast.success(`${s.name} adicionado!`, {
+                        toast.success(t('menuPage.addedSuccess', { name: s.name }), {
                           icon: '🍳',
                           style: {
                             borderRadius: '1.5rem',
@@ -1587,11 +1592,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                         )}
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-black dark:text-white truncate">{s.name}</p>
-                          <p className="text-[9px] text-gray-400 font-semibold">R$ {s.price.toFixed(2)}</p>
+                          <p className="text-[9px] text-gray-400 font-semibold">{fmt(s.price)}</p>
                         </div>
                       </div>
                       <span className="shrink-0 text-[10px] font-black text-[#FFC928] bg-[#FFC928]/10 px-3 py-1.5 rounded-xl uppercase tracking-wider hover:bg-[#FFC928] hover:text-black transition-all">
-                        + ADD
+                        {t('menuPage.quickAdd')}
                       </span>
                     </button>
                   ))}
@@ -1603,16 +1608,16 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="block font-display font-black text-xs uppercase tracking-widest text-[#111111] dark:text-white italic">
-                  📝 Detalhes do Preparo
+                  {t('menuPage.prepDetails')}
                 </label>
                 <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest border border-gray-200 dark:border-white/5 px-2 py-0.5 rounded-md">
-                  Opcional
+                  {t('menuPage.optional')}
                 </span>
               </div>
               <textarea
                 value={observations}
                 onChange={e => setObservations(e.target.value)}
-                placeholder="Exemplo: sem cebola, ponto bem passado, sem pimenta..."
+                placeholder={t('menuPage.prepPlaceholder')}
                 className={cn(
                   "w-full border-2 rounded-2xl p-4 text-xs resize-none h-20 outline-none transition-all placeholder:text-slate-400",
                   isDark 
@@ -1635,7 +1640,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               <button
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
                 className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors shadow-sm active:scale-90"
-                aria-label="Diminuir quantidade"
+                aria-label={t('menuPage.ariaDecreaseQty')}
               >
                 <Minus size={14} strokeWidth={2.5} />
               </button>
@@ -1645,7 +1650,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               <button
                 onClick={() => setQuantity(q => q + 1)}
                 className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-800 text-black dark:text-white flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-700 transition-colors shadow-sm active:scale-95"
-                aria-label="Aumentar quantidade"
+                aria-label={t('menuPage.ariaIncreaseQty')}
               >
                 <Plus size={14} strokeWidth={2.5} />
               </button>
@@ -1660,10 +1665,10 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
             >
               <div className="flex items-center gap-1">
                 <Plus size={14} strokeWidth={3} />
-                <span className="text-xs uppercase tracking-widest font-black">Adicionar à Sacola</span>
+                <span className="text-xs uppercase tracking-widest font-black">{t('menuPage.addToBag')}</span>
               </div>
               <span className="font-display font-black italic text-sm">
-                R$ {itemTotal.toFixed(2)}
+                {fmt(itemTotal)}
               </span>
             </motion.button>
 

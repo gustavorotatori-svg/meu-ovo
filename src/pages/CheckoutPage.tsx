@@ -11,7 +11,7 @@ import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, limit, doc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
 import { Order, Coupon, LoyaltyProfile, SavedAddress } from '../types';
 import { toast } from 'react-hot-toast';
-import { formatCurrency, cn } from '../lib/utils';
+import { formatCurrency, currencyLocale, cn } from '../lib/utils';
 import { WA_NUMBER } from '../services/whatsappService';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -26,7 +26,8 @@ type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
 
 export default function CheckoutPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const navigate = useNavigate();
   const { items, subtotal, clearCart, tableNumber: cartTableNumber } = useCart();
   const { restaurants, restaurantsLoaded, deliverySettings, addOrder } = useRestaurant();
@@ -216,7 +217,7 @@ export default function CheckoutPage() {
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
-        toast.error('Cupom não encontrado ou inválido');
+        toast.error(t('checkout.couponNotFound'));
         setAppliedCoupon(null);
         return;
       }
@@ -226,19 +227,19 @@ export default function CheckoutPage() {
       // Validation
       const now = new Date();
       if (new Date(coupon.expiryDate) < now) {
-        toast.error('Este cupom já expirou');
+        toast.error(t('checkout.couponExpired'));
         setAppliedCoupon(null);
         return;
       }
 
       if (coupon.usageLimit && (coupon.usageCount || 0) >= coupon.usageLimit) {
-        toast.error('Este cupom atingiu o limite de usos');
+        toast.error(t('checkout.couponLimitReached'));
         setAppliedCoupon(null);
         return;
       }
 
       if (subtotal < coupon.minOrderValue) {
-        toast.error(`Pedido mínimo para este cupom: R$ ${coupon.minOrderValue.toFixed(2)}`);
+        toast.error(t('checkout.minOrderToast', { value: fmt(coupon.minOrderValue) }));
         setAppliedCoupon(null);
         return;
       }
@@ -246,17 +247,17 @@ export default function CheckoutPage() {
       // Check customer targeting
       const targeting = await checkCouponTargeting(coupon, phone, restaurant.id);
       if (!targeting.valid) {
-        toast.error(targeting.reason || 'Este cupom não é válido para o seu perfil');
+        toast.error(targeting.reason || t('checkout.couponNotValidForProfile'));
         setAppliedCoupon(null);
         return;
       }
 
       setAppliedCoupon(coupon);
       if (selectedReward) setSelectedReward(null);
-      toast.success('Cupom aplicado com sucesso!');
+      toast.success(t('checkout.couponAppliedToast'));
     } catch (error) {
       console.error('Error validating coupon:', error);
-      toast.error('Erro ao validar cupom');
+      toast.error(t('checkout.couponError'));
     } finally {
       setIsValidatingCoupon(false);
     }
@@ -297,12 +298,12 @@ export default function CheckoutPage() {
       if (!name) setName(`Mesa ${tableNumber}`);
     } else {
       if (!name || !phone) {
-        toast.error('Preencha nome e telefone');
+        toast.error(t('checkout.fillNamePhone'));
         return;
       }
       if (!isPhoneValid(phone)) {
-        setPhoneError('Por favor, insira um telefone válido com DDD');
-        toast.error('Telefone inválido');
+        setPhoneError(t('checkout.invalidPhoneWithDdd'));
+        toast.error(t('checkout.invalidPhone'));
         return;
       }
     }
@@ -310,7 +311,7 @@ export default function CheckoutPage() {
     // Check stock availability
     for (const item of items) {
       if (!item.product.isAvailable) {
-        toast.error(`"${item.product.name}" não está mais disponível`);
+        toast.error(t('checkout.itemUnavailable', { name: item.product.name }));
         return;
       }
     }
@@ -321,7 +322,7 @@ export default function CheckoutPage() {
       try {
         const stats = await getCustomerStats(phone);
         if (stats.totalRatings > 0 && stats.averageRating < minRating) {
-          toast.error(`Pedido Negado: Devido ao seu histórico de incidentes em entregas anteriores (Nota: ${stats.averageRating.toFixed(1)}★), este estabelecimento não está aceitando seus pedidos automáticos.`);
+          toast.error(t('checkout.reputationDenied', { rating: stats.averageRating.toFixed(1) }));
           return;
         }
       } catch (err) {
@@ -330,23 +331,23 @@ export default function CheckoutPage() {
     }
 
     if (orderType === 'delivery' && (!deliveryAddress || (restaurant.deliverySettings?.feeByNeighborhood?.length ? !selectedNeighborhood : false))) {
-      toast.error('Preencha os dados de entrega');
+      toast.error(t('checkout.fillDeliveryData'));
       return;
     }
 
     if (orderType === 'dine-in' && !tableNumber) {
-      toast.error('Informe o número da mesa');
+      toast.error(t('checkout.fillTableNumber'));
       return;
     }
 
     if (scheduledAt) {
       const scheduledTime = new Date(scheduledAt).getTime();
       if (isNaN(scheduledTime)) {
-        toast.error('Data de agendamento inválida');
+        toast.error(t('checkout.invalidScheduleDate'));
         return;
       }
       if (scheduledTime < Date.now() + 15 * 60 * 1000) {
-        toast.error('Agende com pelo menos 15 minutos de antecedência');
+        toast.error(t('checkout.scheduleMinAdvance'));
         return;
       }
     }
@@ -406,7 +407,7 @@ export default function CheckoutPage() {
       await addOrder(order);
     } catch (err) {
       console.error('[Checkout] Failed to save order:', err);
-      toast.error('Erro ao salvar pedido. Seu carrinho foi preservado.');
+      toast.error(t('checkout.errorSavingOrder'));
       setSubmitting(false);
       return;
     }
@@ -460,7 +461,7 @@ export default function CheckoutPage() {
         });
       } catch (err) {
         console.error('Error redeeming points:', err);
-        toast.error('Erro ao deduzir pontos de fidelidade. Entre em contato com o suporte.');
+        toast.error(t('checkout.errorPointsDeduct'));
       }
     }
 
@@ -492,13 +493,13 @@ export default function CheckoutPage() {
         });
       } catch (err) {
         console.error('Error incrementing coupon usage:', err);
-        toast.error('Erro ao registrar uso do cupom. Entre em contato com o suporte.');
+        toast.error(t('checkout.errorCouponUsage'));
       }
     }
 
     // Build WhatsApp message
-    const typePt = { 'dine-in': 'Salão', 'delivery': 'Delivery', 'pickup': 'Retirada' };
-    const payPt: Record<string, string> = { pix: 'PIX', cash: 'Dinheiro', 'card-on-delivery': 'Cartão na entrega', 'on-site': 'Pagamento no local', credit: 'Cartão Crédito Online', debit: 'Cartão Débito Online', voucher: 'Vale-Refeição' };
+    const typePt = { 'dine-in': t('checkout.waTypeDineIn'), 'delivery': t('checkout.waTypeDelivery'), 'pickup': t('checkout.waTypePickup') };
+    const payPt: Record<string, string> = { pix: 'PIX', cash: t('checkout.payCash'), 'card-on-delivery': t('checkout.payCardOnDeliveryLabel'), 'on-site': t('checkout.payOnSiteLabel'), credit: t('checkout.credit'), debit: t('checkout.debit'), voucher: t('checkout.voucher') };
 
     const getPaymentLink = () => {
       if (paymentMethod === 'credit') return restaurant?.paymentSettings?.creditCardLink;
@@ -510,50 +511,50 @@ export default function CheckoutPage() {
 
     const itemsText = items.map(item => {
       const addText = item.selectedAdditionals.length ? `\n   + ${item.selectedAdditionals.map(a => a.name).join(', ')}` : '';
-      const obsText = item.observations ? `\n   Obs: ${item.observations}` : '';
+      const obsText = item.observations ? `\n   ${t('checkout.waObsLabel')} ${item.observations}` : '';
       const price = item.product.onPromotion && item.product.promotionPrice ? item.product.promotionPrice : item.product.price;
-      return `${item.quantity}x ${item.product.name} - R$ ${(price * item.quantity).toFixed(2)}${addText}${obsText}`;
+      return `${item.quantity}x ${item.product.name} - ${fmt(price * item.quantity)}${addText}${obsText}`;
     }).join('\n');
 
     const locationText = orderType === 'dine-in' 
-      ? `Mesa: ${tableNumber}` 
+      ? t('checkout.waLocationTable', { n: tableNumber })
       : orderType === 'delivery' 
-        ? `Endereço: ${deliveryAddress}${selectedNeighborhood ? ` - Bairro: ${selectedNeighborhood === 'other' ? 'Outro' : selectedNeighborhood}` : ''}` 
-        : 'Retirada no balcão';
-    const couponText = appliedCoupon ? `\nCupom: ${appliedCoupon.code} (- R$ ${discountValue.toFixed(2)})` : '';
-    const changeText = paymentMethod === 'cash' && changeFor ? `\nTroco para: R$ ${changeFor}` : '';
-    const tipText = tipAmount > 0 ? `Gorjeta (${tipPercent}%): R$ ${tipAmount.toFixed(2)}` : '';
-    const caixinhaText = caixinhaAmount > 0 ? `🐣 Caixinha Meu OVO: R$ ${caixinhaAmount.toFixed(2)}` : '';
-    const donationText = donationAmount > 0 ? `❤️ Doação Social: R$ ${donationAmount.toFixed(2)}` : '';
+        ? t('checkout.waLocationAddress', { address: deliveryAddress }) + (selectedNeighborhood ? t('checkout.waLocationNeighborhood', { n: selectedNeighborhood === 'other' ? t('checkout.waNeighborhoodOther') : selectedNeighborhood }) : '')
+        : t('checkout.waLocationPickup');
+    const couponText = appliedCoupon ? `\n${t('checkout.waCoupon', { code: appliedCoupon.code, value: fmt(discountValue) })}` : '';
+    const changeText = paymentMethod === 'cash' && changeFor ? `\n${t('checkout.waChange', { value: fmt(Number(changeFor)) })}` : '';
+    const tipText = tipAmount > 0 ? t('checkout.waTip', { pct: tipPercent, value: fmt(tipAmount) }) : '';
+    const caixinhaText = caixinhaAmount > 0 ? `🐣 ${t('checkout.caixinhaLabel')}: ${fmt(caixinhaAmount)}` : '';
+    const donationText = donationAmount > 0 ? `❤️ ${t('checkout.socialLabel')}: ${fmt(donationAmount)}` : '';
     const extrasText = [tipText, caixinhaText, donationText].filter(Boolean).join('\n');
-    const scheduleText = scheduledAt ? `\nAgendado para: ${new Date(scheduledAt).toLocaleString('pt-BR')}` : '';
-    const obsText = observations ? `\nObservações gerais: ${observations}` : '';
+    const scheduleText = scheduledAt ? `\n${t('checkout.waScheduled', { date: new Date(scheduledAt).toLocaleString(currencyLocale(i18n.language)) })}` : '';
+    const obsText = observations ? `\n${t('checkout.waGeneralObs', { obs: observations })}` : '';
 
     const ratingText = customerStats && customerStats.totalRatings > 0
-      ? `★ ${customerStats.averageRating.toFixed(1)} (${customerStats.totalRatings} avaliações) • ${customerStats.statusText}`
-      : 'Cliente Novo (Sem avaliações)';
+      ? `★ ${customerStats.averageRating.toFixed(1)} (${customerStats.totalRatings} ${t('checkout.waRatings')}) • ${customerStats.statusText}`
+      : t('checkout.waNewCustomer');
 
-    const msg = `*MEU OVO 🥚 - NOVO PEDIDO*\n` +
-                `----------------------------------\n` +
-                `*ID:* #${id}\n` +
-                `*Cliente:* ${name}\n` +
-                `*Avaliação do Cliente:* ${ratingText}\n` +
-                `*Telefone:* ${phone}\n` +
-                `*Tipo:* ${typePt[orderType]}\n` +
+    const msg = `${t('checkout.waTitle')}\n` +
+                `${t('checkout.waDivider')}\n` +
+                `${t('checkout.waId', { id })}\n` +
+                `${t('checkout.waCustomer', { name })}\n` +
+                `${t('checkout.waRating', { rating: ratingText })}\n` +
+                `${t('checkout.waPhone', { phone })}\n` +
+                `${t('checkout.waType', { type: typePt[orderType] })}\n` +
                 `*${locationText}*\n` +
-                `*Pagamento:* ${payPt[paymentMethod]}${changeText}\n` +
-                `${paymentLink ? `*Link de Pagamento:* ${paymentLink}\n` : ''}` +
+                `${t('checkout.waPayment', { payment: payPt[paymentMethod] })}${changeText}\n` +
+                `${paymentLink ? `${t('checkout.waPaymentLink', { link: paymentLink })}\n` : ''}` +
                 `${scheduleText}` +
-                `----------------------------------\n\n` +
-                `*ITENS:*\n${itemsText}\n\n` +
-                `${observations ? `*OBSERVAÇÕES:*\n${observations}\n\n` : ''}` +
-                `*RESUMO FINANCEIRO:*\n` +
-                `Subtotal: R$ ${subtotal.toFixed(2)}\n` +
-                `Entrega: R$ ${deliveryFee.toFixed(2)}${couponText}` +
+                `${t('checkout.waDivider')}\n\n` +
+                `${t('checkout.waItems')}\n${itemsText}\n\n` +
+                `${observations ? `${t('checkout.waObservationsTitle')}\n${observations}\n\n` : ''}` +
+                `${t('checkout.waFinancial')}\n` +
+                `${t('checkout.waSubtotal', { value: fmt(subtotal) })}\n` +
+                `${t('checkout.waDelivery', { value: fmt(deliveryFee) })}${couponText}` +
                 `${extrasText ? `\n${extrasText}` : ''}\n` +
-                `*TOTAL: R$ ${total.toFixed(2)}*\n\n` +
-                `*Acompanhe seu pedido:* ${window.location.origin}/pedido/${id}\n\n` +
-                `✅ Enviado via *MEU OVO*`;
+                `${t('checkout.waTotal', { value: fmt(total) })}\n\n` +
+                `${t('checkout.waTrack', { url: `${window.location.origin}/pedido/${id}` })}\n\n` +
+                `${t('checkout.waSentVia')}`;
 
     const cleanRestaurantPhone = restaurant?.whatsapp || WA_NUMBER;
     // Skip WhatsApp redirect for dine-in tablets — order goes directly to KitchenMode
@@ -562,7 +563,7 @@ export default function CheckoutPage() {
         const whatsappUrl = `https://wa.me/${cleanRestaurantPhone}?text=${encodeURIComponent(msg)}`;
         window.open(whatsappUrl, '_blank');
       } else {
-        toast.error('Restaurante não possui WhatsApp configurado');
+        toast.error(t('checkout.noWhatsapp'));
       }
     }
 
@@ -571,12 +572,12 @@ export default function CheckoutPage() {
     if (user?.id) {
       updateStreak(user.id).then(result => {
         if (result.milestone) {
-          setTimeout(() => toast.success(`🎉 ${result.milestone.label} — ${result.milestone.reward}`), 2000);
+          setTimeout(() => toast.success(t('checkout.milestoneToast', { label: result.milestone.label, reward: result.milestone.reward })), 2000);
         }
       }).catch((err) => console.error('[Checkout] Streak update failed:', err));
       awardPlatformPoints(user.id, total).then(result => {
         if (result) {
-          setTimeout(() => toast.success(`🏆 +${result.earned} pontos MEU OVO! Total: ${result.total} pts`), 3000);
+          setTimeout(() => toast.success(t('checkout.pointsToast', { earned: result.earned, total: result.total })), 3000);
         }
       }).catch((err) => console.error('[Checkout] Platform points failed:', err));
       checkAndAwardAchievements(user.id, {
@@ -591,7 +592,7 @@ export default function CheckoutPage() {
           const all = getAllAchievements();
           newly.forEach(id => {
             const ach = all.find(a => a.id === id);
-            if (ach) setTimeout(() => toast.success(`🏅 ${ach.icon} ${ach.label}: ${ach.description}`), 4000);
+            if (ach) setTimeout(() => toast.success(t('checkout.achievementToast', { icon: ach.icon, label: ach.label, description: ach.description })), 4000);
           });
         }
       }).catch((err) => console.error('[Checkout] Achievement check failed:', err));
@@ -695,8 +696,8 @@ export default function CheckoutPage() {
                   ) : (
                     <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-center">
                       <AlertTriangle size={24} className="mx-auto mb-2 text-yellow-600" />
-                      <p className="text-sm font-bold text-yellow-800">Restaurante não configurou chave PIX</p>
-                      <p className="text-xs text-yellow-700 mt-1">Selecione outra forma de pagamento ou aguarde a configuração.</p>
+                      <p className="text-sm font-bold text-yellow-800">{t('checkout.pixNotConfigured')}</p>
+                      <p className="text-xs text-yellow-700 mt-1">{t('checkout.pixNotConfiguredSub')}</p>
                     </div>
                   )}
                 </div>
@@ -716,23 +717,23 @@ export default function CheckoutPage() {
                   </div>
                   <div className="space-y-2">
                     <p className="font-black text-sm text-[#111]">
-                      {paymentMethod === 'credit' && 'Pagar com Cartão de Crédito'}
-                      {paymentMethod === 'debit' && 'Pagar com Cartão de Débito'}
-                      {paymentMethod === 'voucher' && 'Pagar com Vale-Refeição'}
+                      {paymentMethod === 'credit' && t('checkout.payCredit')}
+                      {paymentMethod === 'debit' && t('checkout.payDebit')}
+                      {paymentMethod === 'voucher' && t('checkout.payVoucher')}
                     </p>
                     <p className="text-[10px] text-slate-500 font-bold px-4">
-                      Clique no botão abaixo para ser redirecionado ao link de pagamento do restaurante.
+                      {t('checkout.payRedirect')}
                     </p>
                     {(() => {
                       const link = paymentMethod === 'credit' ? restaurant?.paymentSettings?.creditCardLink : paymentMethod === 'debit' ? restaurant?.paymentSettings?.debitLink : restaurant?.paymentSettings?.voucherLink;
                       if (!link) return (
                         <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mt-3">
-                          Link de pagamento não configurado pelo restaurante
+                          {t('checkout.payLinkMissing')}
                         </p>
                       );
                       return (
                         <a href={link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 mt-3 px-8 py-4 bg-[#111] text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg">
-                          <CreditCard size={18} /> Ir para Pagamento
+                          <CreditCard size={18} /> {t('checkout.goToPayment')}
                         </a>
                       );
                     })()}
@@ -748,14 +749,14 @@ export default function CheckoutPage() {
                 onClick={() => navigate(`/pedido/${orderId}`)}
                 className="w-full bg-[#FFC928] text-[#111] font-black py-5 rounded-2xl hover:bg-[#e6b520] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-yellow-500/20"
               >
-                Acompanhar pedido em tempo real
+                {t('checkout.trackOrder')}
               </button>
             )}
             <button
               onClick={() => navigate(`/r/${restaurant?.slug || ''}`)}
               className="w-full bg-[#111111] text-white font-black py-5 rounded-2xl hover:bg-[#222] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-black/10"
             >
-              Voltar ao cardápio
+              {t('checkout.backToMenu')}
             </button>
           </div>
         </motion.div>
@@ -776,10 +777,10 @@ export default function CheckoutPage() {
 
   return (
     <div className={cn('min-h-screen checkout-dark', isDark ? 'bg-dark-bg' : 'bg-[#F5F5F5]')}>
-      <SEO title="Finalizar Pedido" description="Revise seu carrinho e finalize seu pedido no MEU OVO. Pagamento por PIX, cartão ou dinheiro." url="/checkout" />
+      <SEO title={t('checkout.seoTitle')} description={t('checkout.seoDescription')} url="/checkout" />
       <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <button onClick={() => navigate(-1)} aria-label="Voltar" className="p-3 rounded-full hover:bg-gray-100 transition-colors">
+          <button onClick={() => navigate(-1)} aria-label={t('checkout.ariaBack')} className="p-3 rounded-full hover:bg-gray-100 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <h1 className="font-black text-[#111] text-xl">{t('checkout.title')}</h1>
@@ -810,8 +811,8 @@ export default function CheckoutPage() {
               <Zap size={16} className="text-[#111]" />
             </div>
             <div>
-              <p className="text-sm font-black text-[#111] uppercase tracking-tight">Checkout Express</p>
-              <p className="text-[9px] text-gray-400 font-bold">Apenas o essencial para pedir mais rápido</p>
+              <p className="text-sm font-black text-[#111] uppercase tracking-tight">{t('checkout.expressTitle')}</p>
+              <p className="text-[9px] text-gray-400 font-bold">{t('checkout.expressSubtitle')}</p>
             </div>
           </div>
           <button
@@ -841,7 +842,7 @@ export default function CheckoutPage() {
                 type="text"
                 value={name}
                 onChange={handleNameChange}
-                placeholder="Ex: João Silva"
+                placeholder={t('checkout.namePlaceholder')}
                 className={cn(
                   "w-full border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none transition-all",
                   nameError ? "border-red-200 bg-red-50/30" : "border-gray-100 focus:border-[#FFC928] bg-slate-50/50"
@@ -855,7 +856,7 @@ export default function CheckoutPage() {
                 type="tel"
                 value={phone}
                 onChange={handlePhoneChange}
-                placeholder="(11) 99999-9999"
+                placeholder={t('checkout.phonePlaceholder')}
                 className={cn(
                   "w-full border rounded-xl px-4 py-3 text-sm font-bold focus:outline-none transition-all",
                   phoneError ? "border-red-200 bg-red-50/30" : "border-gray-100 focus:border-[#FFC928] bg-slate-50/50"
@@ -867,7 +868,7 @@ export default function CheckoutPage() {
 
           {isCheckingReputation && (
             <div className="text-[10px] font-black text-slate-400 tracking-widest mt-3 flex items-center gap-1.5 animate-pulse uppercase">
-              <div className="w-2.5 h-2.5 rounded-full border-2 border-t-transparent border-red-500 animate-spin" /> Buscando cadastro do cliente...
+              <div className="w-2.5 h-2.5 rounded-full border-2 border-t-transparent border-red-500 animate-spin" /> {t('checkout.checkingReputation')}
             </div>
           )}
 
@@ -882,12 +883,12 @@ export default function CheckoutPage() {
             )}>
               <div className="flex items-center gap-2 mb-1.5 font-sans font-black uppercase text-[10px] tracking-widest">
                 <span className="text-xs">★</span>
-                <span>REPUTAÇÃO DO CLIENTE: {customerStats.averageRating.toFixed(1)} / 5.0 ({customerStats.totalRatings} avaliações)</span>
+                <span>{t('checkout.customerReputation', { rating: customerStats.averageRating.toFixed(1), count: customerStats.totalRatings })}</span>
               </div>
               <p className="font-sans font-semibold text-xs leading-relaxed">
                 {customerStats.isProblematic 
-                  ? `Aviso importante: Este número está sinalizado com histórico de incidentes em entregas anteriores (Média: ${customerStats.averageRating.toFixed(1)}★). ${restaurant.orderSettings?.blockProblematicCustomers ? "O estabelecimento possui o bloqueio ativo e não poderá aceitar este pedido." : "Seu pedido ficará sujeito a análise de segurança extra antes do envio."}`
-                  : `Seu perfil está classificado como "${customerStats.statusText}". Obrigado por ser um excelente cliente parceiro!`}
+                  ? t('checkout.reputationProblematic', { rating: customerStats.averageRating.toFixed(1), block: restaurant.orderSettings?.blockProblematicCustomers ? t('checkout.reputationBlocked') : t('checkout.reputationAnalysis') })
+                  : t('checkout.reputationGood', { status: customerStats.statusText })}
               </p>
             </div>
           )}
@@ -958,7 +959,7 @@ export default function CheckoutPage() {
                   type="text"
                   value={tableNumber}
                   onChange={e => setTableNumber(e.target.value)}
-                  placeholder="Ex: 5"
+                  placeholder={t('checkout.tablePlaceholder')}
                   className="w-full border border-gray-100 bg-slate-50/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all"
                 />
               </motion.div>
@@ -973,24 +974,24 @@ export default function CheckoutPage() {
               >
                 {restaurant.deliverySettings?.feeByNeighborhood && restaurant.deliverySettings.feeByNeighborhood.length > 0 && (
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Bairro de entrega *</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">{t('checkout.neighborhoodLabel')}</label>
                     <select
                       value={selectedNeighborhood}
                       onChange={e => setSelectedNeighborhood(e.target.value)}
                       className="w-full border border-gray-100 bg-slate-50/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all appearance-none cursor-pointer"
                     >
-                      <option value="">Selecione seu bairro...</option>
+                      <option value="">{t('checkout.neighborhoodPlaceholder')}</option>
                       {restaurant.deliverySettings.feeByNeighborhood.map(n => (
                         <option key={n.neighborhood} value={n.neighborhood}>
-                          {n.neighborhood} (R$ {n.fee.toFixed(2)})
+                          {n.neighborhood} ({fmt(n.fee)})
                         </option>
                       ))}
-                      <option value="other">Outros bairros (R$ {restaurant.deliverySettings.fee.toFixed(2)})</option>
+                      <option value="other">{t('checkout.neighborhoodOther', { fee: fmt(restaurant.deliverySettings.fee) })}</option>
                     </select>
                   </div>
                 )}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">Endereço completo *</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">{t('checkout.addressLabel')}</label>
                   {(() => {
                     try { const saved: SavedAddress[] = JSON.parse(localStorage.getItem('meuovo_addresses') || '[]'); if (saved.length > 0) return saved; return []; } catch { return []; }
                   })().length > 0 && (
@@ -1009,7 +1010,7 @@ export default function CheckoutPage() {
                     type="text"
                     value={deliveryAddress}
                     onChange={e => setDeliveryAddress(e.target.value)}
-                    placeholder="Rua, número, complemento"
+                    placeholder={t('checkout.addressPlaceholder')}
                     className="w-full border border-gray-100 bg-slate-50/50 rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all"
                   />
                 </div>
@@ -1026,11 +1027,11 @@ export default function CheckoutPage() {
         >
           <h2 className="font-bold text-[#111] mb-4 flex items-center gap-2">
             <div className="w-1.5 h-4 bg-[#FFC928] rounded-full" />
-            Agendar Pedido
+            {t('checkout.scheduleTitle')}
           </h2>
           <div className="space-y-1.5">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 block">
-              Data e hora (opcional)
+              {t('checkout.scheduleLabel')}
             </label>
             <input
               type="datetime-local"
@@ -1041,7 +1042,7 @@ export default function CheckoutPage() {
             />
             {scheduledAt && (
               <p className="text-[10px] font-black text-brand-egg tracking-widest ml-1">
-                Pedido agendado para {new Date(scheduledAt).toLocaleString('pt-BR')}
+                {t('checkout.scheduledNote', { date: new Date(scheduledAt).toLocaleString(currencyLocale(i18n.language)) })}
               </p>
             )}
           </div>
@@ -1059,13 +1060,13 @@ export default function CheckoutPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {([
-              { value: 'pix', label: 'PIX', icon: <Smartphone size={20} />, disabled: false },
-              { value: 'cash', label: 'Dinheiro', icon: <Banknote size={20} />, disabled: false },
-              { value: 'card-on-delivery', label: 'Cartão na entrega', icon: <CreditCard size={20} />, disabled: orderType !== 'delivery' },
-              { value: 'on-site', label: 'No local', icon: <Store size={20} />, disabled: false },
-              ...(restaurant?.paymentSettings?.acceptCreditCard ? [{ value: 'credit' as const, label: 'Cartão Crédito Online', icon: <CreditCard size={20} />, disabled: false }] : []),
-              ...(restaurant?.paymentSettings?.acceptDebit ? [{ value: 'debit' as const, label: 'Cartão Débito Online', icon: <CreditCard size={20} />, disabled: false }] : []),
-              ...(restaurant?.paymentSettings?.acceptVoucher ? [{ value: 'voucher' as const, label: 'Vale-Refeição', icon: <CreditCard size={20} />, disabled: false }] : []),
+              { value: 'pix', label: t('checkout.pix'), icon: <Smartphone size={20} />, disabled: false },
+              { value: 'cash', label: t('checkout.payCash'), icon: <Banknote size={20} />, disabled: false },
+              { value: 'card-on-delivery', label: t('checkout.payCardOnDeliveryLabel'), icon: <CreditCard size={20} />, disabled: orderType !== 'delivery' },
+              { value: 'on-site', label: t('checkout.payOnSiteLabel'), icon: <Store size={20} />, disabled: false },
+              ...(restaurant?.paymentSettings?.acceptCreditCard ? [{ value: 'credit' as const, label: t('checkout.credit'), icon: <CreditCard size={20} />, disabled: false }] : []),
+              ...(restaurant?.paymentSettings?.acceptDebit ? [{ value: 'debit' as const, label: t('checkout.debit'), icon: <CreditCard size={20} />, disabled: false }] : []),
+              ...(restaurant?.paymentSettings?.acceptVoucher ? [{ value: 'voucher' as const, label: t('checkout.voucher'), icon: <CreditCard size={20} />, disabled: false }] : []),
             ]).map(opt => (
               <motion.button
                 key={opt.value}
@@ -1091,12 +1092,10 @@ export default function CheckoutPage() {
                 <div>
                   <p className="text-sm font-black text-[#111] uppercase tracking-tight">{opt.label}</p>
                   <p className="text-[9px] text-gray-400 uppercase font-black tracking-widest mt-0.5">
-                    {opt.value === 'pix' ? 'Rápido e seguro' : 
-                     opt.value === 'cash' ? 'Pague ao motoboy' : 
-                     opt.value === 'card-on-delivery' ? 'Maquininha' : 
-                     opt.value === 'credit' ? 'Link do restaurante' :
-                     opt.value === 'debit' ? 'Link do restaurante' :
-                     opt.value === 'voucher' ? 'Link do restaurante' : 'No balcão'}
+                    {opt.value === 'pix' ? t('checkout.pixDescription') : 
+                     opt.value === 'cash' ? t('checkout.cashDescription') : 
+                     opt.value === 'card-on-delivery' ? t('checkout.cardOnDeliveryDescription') : 
+                     (opt.value === 'credit' || opt.value === 'debit' || opt.value === 'voucher') ? t('checkout.linkDescription') : t('checkout.onSiteDescription')}
                   </p>
                 </div>
                 {paymentMethod === opt.value && (
@@ -1120,14 +1119,14 @@ export default function CheckoutPage() {
                 exit={{ height: 0, opacity: 0 }}
                 className="mt-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden"
               >
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">Precisa de troco?</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 block">{t('checkout.needChange')}</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">R$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">{t('checkout.currencySymbol')}</span>
                   <input
                     type="number"
                     value={changeFor}
                     onChange={e => setChangeFor(e.target.value)}
-                    placeholder="Troco para quanto?"
+                    placeholder={t('checkout.changePlaceholder')}
                     className="w-full border border-gray-200 rounded-xl pl-10 pr-4 py-3 text-sm font-black focus:outline-none focus:border-[#FFC928] focus:bg-white transition-all"
                   />
                 </div>
@@ -1146,13 +1145,13 @@ export default function CheckoutPage() {
           
           <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 mb-6 select-none">
             <p className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 text-emerald-700">
-              🌱 SEM INTERMEDIÁRIOS GULOSOS
+              🌱 {t('checkout.noIntermediariesTitle')}
             </p>
             <p className="text-xs font-bold text-slate-700 mt-1.5 leading-relaxed">
-              Você economizou <span className="bg-emerald-500/15 px-1 py-0.5 rounded text-emerald-800 font-black text-xs">R$ {(subtotal * 0.25).toFixed(2)}</span> em comissões que o restaurante teria pago em outros apps no modelo tradicional!
+              {t('checkout.savedCommissions', { amount: fmt(subtotal * 0.25) })}
             </p>
             <p className="text-[9px] font-semibold text-gray-500 mt-2 leading-relaxed">
-              Esta compra é 100% direta entre você e o restaurante, livre de intermediários corporativos.
+              {t('checkout.directPurchase')}
             </p>
           </div>
 
@@ -1162,7 +1161,7 @@ export default function CheckoutPage() {
             <div className="mb-4 p-4 bg-orange-50 rounded-2xl border border-orange-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-[10px] font-black text-orange-700 uppercase tracking-widest flex items-center gap-1.5">
-                  <Gift size={14} /> Fidelidade {restaurant.name}
+                  <Gift size={14} /> {t('checkout.loyaltyFor', { name: restaurant.name })}
                 </span>
                 <span className="text-xs font-black text-orange-600">{loyaltyProfile.pointsBalance} pts</span>
               </div>
@@ -1178,7 +1177,7 @@ export default function CheckoutPage() {
                       <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
                     </div>
                     <p className="text-[9px] font-bold text-orange-600 mt-1">
-                      Faltam {nextReward.pointsRequired - (loyaltyProfile?.pointsBalance || 0)} pts para: {nextReward.description}
+                      {t('checkout.loyaltyMissingTo', { points: nextReward.pointsRequired - (loyaltyProfile?.pointsBalance || 0), description: nextReward.description })}
                     </p>
                   </div>
                 );
@@ -1190,7 +1189,7 @@ export default function CheckoutPage() {
                 return (
                   <div>
                     <p className="text-[9px] font-bold text-orange-500 uppercase tracking-widest mb-2">
-                      Recompensas disponíveis:
+                      {t('checkout.rewardsAvailable')}
                     </p>
                     <div className="flex flex-col gap-1.5">
                       {available.map(rule => {
@@ -1205,7 +1204,7 @@ export default function CheckoutPage() {
                               } else {
                                 if (appliedCoupon) {
                                   setAppliedCoupon(null);
-                                  toast('Cupom removido para usar recompensa de fidelidade', { icon: '🔄' });
+                                  toast(t('checkout.couponRemovedToast'), { icon: '🔄' });
                                 }
                                 setSelectedReward({
                                   type: rule.type,
@@ -1239,7 +1238,7 @@ export default function CheckoutPage() {
           {/* Tip */}
           <div className="mb-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block">
-              Gorjeta do entregador
+              {t('checkout.tipLabel')}
             </label>
             <div className="flex gap-2">
               {tipOptions.map(pct => (
@@ -1254,13 +1253,13 @@ export default function CheckoutPage() {
                         : "border-gray-100 bg-white text-gray-400 hover:border-gray-200"
                     )}
                 >
-                  {pct === 0 ? 'Sem' : `${pct}%`}
+                  {pct === 0 ? t('checkout.tipNone') : `${pct}%`}
                 </button>
               ))}
             </div>
             {tipAmount > 0 && (
               <p className="text-[10px] font-black text-emerald-600 tracking-widest mt-2 ml-1">
-                Gorjeta: R$ {tipAmount.toFixed(2)}
+                {t('checkout.tipAmount', { amount: fmt(tipAmount) })}
               </p>
             )}
           </div>
@@ -1268,11 +1267,11 @@ export default function CheckoutPage() {
           {/* Caixinha Meu OVO */}
           <div className="group mb-4 p-4 bg-amber-50 rounded-2xl border border-amber-200">
             <label className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
-              🐣 Caixinha Meu OVO
+              🐣 {t('checkout.caixinhaLabel')}
               <span className="relative">
                 <span className="text-[9px] text-amber-500 cursor-help border border-amber-300 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center">?</span>
                 <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-amber-900 text-white text-[8px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Fortalece a plataforma e mantém o app gratuito pra todo mundo
+                  {t('checkout.caixinhaTooltip')}
                 </span>
               </span>
             </label>
@@ -1289,7 +1288,7 @@ export default function CheckoutPage() {
                       : "border-amber-100 bg-white text-amber-500 hover:border-amber-300"
                   )}
                 >
-                  {val === 0 ? 'Não' : `R$ ${val.toFixed(2)}`}
+                  {val === 0 ? t('checkout.tipNone') : fmt(val)}
                 </button>
               ))}
             </div>
@@ -1298,11 +1297,11 @@ export default function CheckoutPage() {
           {/* Social cause */}
           <div className="group mb-4 p-4 bg-rose-50 rounded-2xl border border-rose-200">
             <label className="text-[10px] font-black text-rose-700 uppercase tracking-widest mb-3 block flex items-center gap-2">
-              ❤️ Ajude uma Causa Social
+              ❤️ {t('checkout.socialLabel')}
               <span className="relative">
                 <span className="text-[9px] text-rose-500 cursor-help border border-rose-300 rounded-full w-3.5 h-3.5 inline-flex items-center justify-center">?</span>
                 <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-rose-900 text-white text-[8px] font-bold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  Doação para projetos sociais de comunidades parceiras
+                  {t('checkout.socialTooltip')}
                 </span>
               </span>
             </label>
@@ -1319,7 +1318,7 @@ export default function CheckoutPage() {
                       : "border-rose-100 bg-white text-rose-500 hover:border-rose-300"
                   )}
                 >
-                  {val === 0 ? 'Não' : `R$ ${val.toFixed(2)}`}
+                  {val === 0 ? t('checkout.tipNone') : fmt(val)}
                 </button>
               ))}
             </div>
@@ -1328,8 +1327,8 @@ export default function CheckoutPage() {
 
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
-              <span className="font-black text-[#111]">R$ {subtotal.toFixed(2)}</span>
+              <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{t('checkout.subtotal')}</span>
+              <span className="font-black text-[#111]">{fmt(subtotal)}</span>
             </div>
             
             <AnimatePresence>
@@ -1339,8 +1338,8 @@ export default function CheckoutPage() {
                   animate={{ x: 0, opacity: 1 }}
                   className="flex justify-between text-sm text-green-600 font-black"
                 >
-                  <span className="uppercase tracking-widest text-[10px]">Cupom ({appliedCoupon.code})</span>
-                  <span>- R$ {discountValue.toFixed(2)}</span>
+                  <span className="uppercase tracking-widest text-[10px]">{t('checkout.couponApplied', { code: appliedCoupon.code })}</span>
+                  <span>- {fmt(discountValue)}</span>
                 </motion.div>
               )}
               {selectedReward && (
@@ -1353,14 +1352,14 @@ export default function CheckoutPage() {
                     <Gift size={14} />
                     <span className="uppercase tracking-widest text-[10px]">{selectedReward.description}</span>
                   </div>
-                  <span>- R$ {discountValue.toFixed(2)}</span>
+                  <span>- {fmt(discountValue)}</span>
                 </motion.div>
               )}
             </AnimatePresence>
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">Taxa de entrega</span>
-              <span className="font-black text-[#111]">{deliveryFee === 0 ? 'Grátis' : `R$ ${deliveryFee.toFixed(2)}`}</span>
+              <span className="text-gray-400 font-bold uppercase tracking-widest text-[10px]">{t('checkout.deliveryFee')}</span>
+              <span className="font-black text-[#111]">{deliveryFee === 0 ? t('checkout.free') : fmt(deliveryFee)}</span>
             </div>
 
 
@@ -1368,11 +1367,11 @@ export default function CheckoutPage() {
 
           <div className="border-t border-gray-100 mt-6 pt-6 flex justify-between items-end">
             <div className="flex flex-col">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Valor Final</span>
-              <span className="font-display font-black text-[#111] text-4xl leading-none">R$ {total.toFixed(2)}</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">{t('checkout.finalTotal')}</span>
+              <span className="font-display font-black text-[#111] text-4xl leading-none">{fmt(total)}</span>
             </div>
             <div className="text-right">
-              <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">{items.length} itens no total</p>
+              <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest italic">{t('checkout.itemsCount', { count: items.length })}</p>
             </div>
           </div>
         </motion.div>
@@ -1383,10 +1382,10 @@ export default function CheckoutPage() {
           className="bg-red-50 border border-red-200 rounded-3xl p-5 text-center"
         >
           <p className="text-[10px] font-black text-red-700 uppercase tracking-wider flex items-center justify-center gap-2 mb-1">
-            <AlertTriangle size={14} /> Importante
+            <AlertTriangle size={14} /> {t('checkout.important')}
           </p>
           <p className="text-[11px] font-bold text-red-600 leading-relaxed">
-            O <strong>MEU OVO</strong> é apenas a vitrine e o sistema de pedidos. O pagamento é 100% direto entre você e o restaurante. Não processamos pagamentos, não garantimos reembolsos e não nos responsabilizamos por problemas entre as partes.
+            {t('checkout.disclaimerPre')} <strong>MEU OVO</strong> {t('checkout.disclaimerPost')}
           </p>
         </motion.div>
 
@@ -1396,9 +1395,9 @@ export default function CheckoutPage() {
           className="bg-amber-500/5 border border-amber-500/10 rounded-3xl p-5 text-center select-none"
         >
           <span className="text-4xl mb-2 block">🍳❤️</span>
-          <h4 className="font-display font-black text-slate-800 uppercase italic text-xs tracking-tight">Muito obrigado por fortalecer o comércio do nosso bairro!</h4>
+          <h4 className="font-display font-black text-slate-800 uppercase italic text-xs tracking-tight">{t('checkout.gratitudeTitle')}</h4>
           <p className="text-[10px] font-semibold text-slate-500 mt-1 lines-relaxed leading-relaxed max-w-sm mx-auto">
-            Ao escolher o pedido direto, seu ato ajuda a manter empregos locais e apoia as finanças saudáveis de famílias que amam a culinária da nossa comunidade.
+            {t('checkout.gratitudeBody')}
           </p>
         </motion.div>
 
@@ -1415,7 +1414,7 @@ export default function CheckoutPage() {
         </motion.button>
         <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-widest pb-8 flex items-center justify-center gap-2">
           <UtensilsCrossed size={12} />
-          Seu pedido será confirmado no chat
+          {t('checkout.confirmedInChat')}
         </p>
       </motion.div>
     </div>
