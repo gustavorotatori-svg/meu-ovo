@@ -241,3 +241,32 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 ### Pendente (débito consciente)
 - i18n parcial: textos de client flow ainda em português após trocar idioma.
 - Concluir verificação manual nos demais fluxos (admin, onboarding restaurante) pós-refactor do header; nenhum erro conhecido.
+
+---
+
+## Sessão (08/09/2026) — i18n completo do client flow (pt/en/es) + moeda locale-aware + fix de corrupção de encoding
+
+### Commits
+- `22730de` — Fases A+B do i18n: `RestaurantMenuPage` (menuPage), `CartPage` (cart), `CheckoutPage` (checkout, incluindo builder da mensagem WhatsApp com `checkout.wa*`, toasts de cupom/reputação/validação, fidelidade/caixinha/gorjeta, totais, placeholder/troco, PIX não configurado, pay*). Adicionadas ~120 chaves novas por idioma em `src/lib/i18n.ts`; `formatCurrency` com `currencyLocale(lang)` (pt→pt-BR, en→en-US, es→es-ES) e datas com `toLocaleString`.
+- `09a36ff` — **fix encoding + cookie consent + narrowSymbol**:
+  1. i18n.ts foi corrompido por `Set-Content -Encoding UTF8` (PowerShell) durante um fix do "Vale-Reembolso" → todo não-ASCII virou mojibake (cp1252) e o arquivo corrompido foi commitado/deployado em `22730de`. Restauração byte-a-byte via `git show HEAD:src/lib/i18n.ts` + reverse cp1252 (não latin1 — latin1 é lossy para emojis/bytes 0x80-0x9F). **Lição: nunca editar i18n.ts via PowerShell/Sed; usar sempre as tools de edição.**
+  2. `src/components/CookieConsent.tsx` traduzido para `t('cookie.*')` + chaves `cookie` adicionadas em pt/en/es (antes era 100% PT em qualquer idioma e bloqueava cliques/asserts nos probes — overlay).
+  3. `formatCurrency` agora usa `currencyDisplay: 'narrowSymbol'` — sem isso es mostrava "29,90 BRL"; com narrowSymbol es mostra "29,90 R$", pt "R$ 29,90", en "R$29.90".
+
+### Verificação ao vivo (Playwright, prod)
+- ES completo: cookie consent em es ✓; cardápio es (Añadir a la Cesta, PEDIDOS SIN INTERMEDIARIOS, 100% DIRECTO, ESTAMOS ABIERTOS) ✓; carrinho es ✓; checkout es (Finalizar pedido, CHECKOUT EXPRESS, Tus datos, NOMBRE COMPLETO, ENTREGA/RECOGIDA/LOCAL, DIRECCIÓN COMPLETA, Forma de pago PIX/EFECTIVO/TARJETA, RESUMEN DEL PEDIDO, ¡Ahorraste X R$!, PROPINA, HUCHA MEU OVO, CAUSA SOCIAL, SUBTOTAL, TARIFA DE ENTREGA, TOTAL FINAL, IMPORTANTE, Enviar por WhatsApp) ✓; placeholder "Ej:" ✓; moeda `29,90 R$` com vírgula ✓; sem mojibake (0 U+FFFD) ✓; sem resíduo PT ("Valor Final"/"Gorjeta do entregador"/"Precisa de troco?") ✓.
+- PT regressão: landing/cardápio/checkout pt intactos (100% DIRETO, SEM COMISSÃO PARA O APP, DÚVIDAS? CHAME NO ZAP, Valor Final, Gorjeta do entregador) ✓.
+- EN: no commission, DIRECT, ADD, Delivery Fee, moeda R$ ✓ (en usa "Total"/"Send to WhatsApp").
+- 0 erros de JS durante os fluxos.
+
+### Observações / armadilhas dos probes
+- Em es/espanhol o símbolo monetário es-ES sai DEPOIS no narrowSymbol: `29,90 R$` (não é bug).
+- Os asserts de checkout es precisam de case-insensitive (o texto é UPPERCASE: "CHECKOUT EXPRESS", "RESUMEN DEL PEDIDO", "TOTAL FINAL").
+- Placeholders (`placeholder` attr) não aparecem em `innerText` — checar via `document.querySelectorAll('input').placeholder`.
+- Quick-add do card (botão "+" / preço/"Añadir a la Cesta"/"ADD"/"ADICIONAR") adiciona direto ao carrinho sem abrir modal; o login de abrir modal depende de clicar no card, não no botão quick-add.
+- i18n.ts é CRLF — scans com `[\\uFFFD\\u0000-\\u001F]` marcam todas as linhas por causa do `\r` (ruído); validar com `node -e` por substrings.
+
+### Pendente (débito consciente)
+- Fase C i18n: `OrderStatusPage` + `InstallAppPage` (0 `t()` hoje).
+- Fase D i18n: `LoginPage` + `MarketplacePage`/`Home`.
+- Milestone/achievement toasts têm wrapper i18n, mas `label`/`description` vêm das libs de dados (ainda em pt nos dados do restaurante de teste).
