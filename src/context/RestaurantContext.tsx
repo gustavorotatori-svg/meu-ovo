@@ -27,6 +27,7 @@ interface RestaurantContextType {
   currentRestaurant: Restaurant | null;
   setCurrentRestaurant: (r: Restaurant | null) => void;
   restaurants: Restaurant[];
+  restaurantsLoaded: boolean;
   products: Product[];
   categories: Category[];
   orders: Order[];
@@ -84,6 +85,7 @@ function sanitizeForFirestore<T>(value: T): T {
 export function RestaurantProvider({ children }: { children: ReactNode }) {
   const { user, refreshUserProfile } = useAuth();
   const [restaurants, setRestaurants] = useState<Restaurant[]>(mockRestaurants);
+  const [restaurantsLoaded, setRestaurantsLoaded] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -175,7 +177,8 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'restaurants'), (snapshot) => {
       setRestaurants(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Restaurant)));
-    }, (error) => handleFirestoreError(error, OperationType.LIST, 'restaurants'));
+      setRestaurantsLoaded(true);
+    }, (error) => { handleFirestoreError(error, OperationType.LIST, 'restaurants'); setRestaurantsLoaded(true); });
     return unsub;
   }, []);
 
@@ -601,7 +604,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({
-    currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
+    currentRestaurant, setCurrentRestaurant, restaurants, restaurantsLoaded, products, categories,
     orders, tables, deliverySettings, cashierSessions, activeSession,
     ingredients, recipeSheets, ingredientMovements,
     favorites, toggleFavorite,
@@ -611,7 +614,7 @@ export function RestaurantProvider({ children }: { children: ReactNode }) {
     addTable, updateTable, deleteTable, openCashier, closeCashier, addCashierMovement,
     addIngredient, updateIngredient, deleteIngredient, saveRecipeSheet, deleteRecipeSheet, recordIngredientMovement
   }), [
-    currentRestaurant, setCurrentRestaurant, restaurants, products, categories,
+    currentRestaurant, setCurrentRestaurant, restaurants, restaurantsLoaded, products, categories,
     orders, tables, deliverySettings, cashierSessions, activeSession,
     ingredients, recipeSheets, ingredientMovements,
     favorites, toggleFavorite,

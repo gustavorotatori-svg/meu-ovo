@@ -29,7 +29,7 @@ export default function CheckoutPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, subtotal, clearCart, tableNumber: cartTableNumber } = useCart();
-  const { restaurants, deliverySettings, addOrder } = useRestaurant();
+  const { restaurants, restaurantsLoaded, deliverySettings, addOrder } = useRestaurant();
   const { user } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -193,11 +193,11 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (submitted) return;
-    if (restaurants.length === 0) return;
+    if (!restaurantsLoaded) return;
     if (!restaurant || items.length === 0) {
       navigate('/carrinho');
     }
-  }, [restaurant, items.length, restaurants.length, navigate, submitted]);
+  }, [restaurant, items.length, restaurantsLoaded, navigate, submitted]);
 
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
@@ -764,7 +764,7 @@ export default function CheckoutPage() {
   }
 
   if (!restaurant) {
-    if (restaurants.length === 0) {
+    if (!restaurantsLoaded) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
           <div className="w-10 h-10 rounded-full border-4 border-[#FFC928] border-t-transparent animate-spin" />
