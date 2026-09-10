@@ -266,7 +266,12 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 - Quick-add do card (botão "+" / preço/"Añadir a la Cesta"/"ADD"/"ADICIONAR") adiciona direto ao carrinho sem abrir modal; o login de abrir modal depende de clicar no card, não no botão quick-add.
 - i18n.ts é CRLF — scans com `[\\uFFFD\\u0000-\\u001F]` marcam todas as linhas por causa do `\r` (ruído); validar com `node -e` por substrings.
 
+### Sessão (09/09/2026) — Fase C i18n: OrderStatusPage + InstallAppPage (pt/en/es)
+- Commits: `0938d1a` (push OK, auto-deploy Vercel ~2,5 min).
+- `OrderStatusPage`: 91 usos `t('orderStatus.*')` — toasts (rating/confirmação/caixinha/social), steps, ETA ({{min}}/{{max}}, dateLocale), estados (cancelado/agendado/pagamento em confirmação), pagamento PIX/cartão/vale, caixinha + causa social, progresso, resumo da comanda, avaliação, repetir pedido, botões WhatsApp (waTrack/waHelp com {{id}}), datas via `date-fns` locale (pt-BR/en-US/es-ES). `fmt()` substitui `R$ X.toFixed(2)`.
+- `InstallAppPage`: `getInstructions(t, platform, browser)` com ~55 chaves `installApp.*` (branches iOS/Samsung/Android-Chrome/Chrome-desk/Edge/Firefox/Brave/Opera/generic) + telas (installNow/installing/manualConfirm/manualToast/skip/afterInstallHint/success).
+- i18n.ts: +688 linhas, 0 U+FFFD, encoding UTF-8 íntegro (validado com node não-PowerShell). `npx tsc --noEmit` 0 erros; `npm run build` OK (50s).
+
 ### Pendente (débito consciente)
-- Fase C i18n: `OrderStatusPage` + `InstallAppPage` (0 `t()` hoje).
 - Fase D i18n: `LoginPage` + `MarketplacePage`/`Home`.
 - Milestone/achievement toasts têm wrapper i18n, mas `label`/`description` vêm das libs de dados (ainda em pt nos dados do restaurante de teste).
