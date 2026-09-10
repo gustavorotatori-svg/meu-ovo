@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Smartphone, Monitor, Download, Share2, Check, ArrowRight, RefreshCw, X } from 'lucide-react';
+import { Smartphone, Monitor, Download, Check, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import BackButton from '../components/BackButton';
 import SEO from '../components/SEO';
 import { Logo } from '../components/Logo';
@@ -46,83 +47,84 @@ function isStandalone(): boolean {
     || (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
 }
 
-function getInstructions(platform: Platform, browser: Browser): Step[] {
+function getInstructions(t: (key: string) => string, platform: Platform, browser: Browser): Step[] {
   const isMobile = platform === 'ios' || platform === 'android';
 
   if (platform === 'ios') {
     return [
-      { icon: '📤', text: 'Toque no ícone Compartilhar', detail: 'No Safari, é o ícone de seta saindo de um quadrado na parte inferior da tela.' },
-      { icon: '📲', text: 'Role até "Adicionar à Tela de Início"', detail: 'Desça a lista de opções até encontrar este item.' },
-      { icon: '✅', text: 'Toque em "Adicionar"', detail: 'No canto superior direito. O ícone do MEU OVO aparecerá na sua tela inicial.' },
+      { icon: '📤', text: t('installApp.ios1Text'), detail: t('installApp.ios1Detail') },
+      { icon: '📲', text: t('installApp.ios2Text'), detail: t('installApp.ios2Detail') },
+      { icon: '✅', text: t('installApp.ios3Text'), detail: t('installApp.ios3Detail') },
     ];
   }
 
   if (browser === 'samsung') {
     return [
-      { icon: '☰', text: 'Toque no menu (três linhas)', detail: 'No canto inferior direito do navegador Samsung Internet.' },
-      { icon: '📲', text: 'Toque em "Adicionar página a"', detail: 'No menu que apareceu.' },
-      { icon: '🏠', text: 'Depois em "Tela inicial"', detail: 'Confirme em "Adicionar". O ícone aparecerá na sua tela de início.' },
+      { icon: '☰', text: t('installApp.samsung1Text'), detail: t('installApp.samsung1Detail') },
+      { icon: '📲', text: t('installApp.samsung2Text'), detail: t('installApp.samsung2Detail') },
+      { icon: '🏠', text: t('installApp.samsung3Text'), detail: t('installApp.samsung3Detail') },
     ];
   }
 
   if (platform === 'android' && browser === 'chrome') {
     return [
-      { icon: '⋮', text: 'Toque no menu (três pontos)', detail: 'No canto superior direito do Chrome.' },
-      { icon: '🏠', text: 'Toque em "Adicionar à tela inicial"', detail: 'Desça o menu até encontrar esta opção.' },
-      { icon: '✅', text: 'Toque em "Adicionar"', detail: 'Uma janela de confirmação aparecerá. Confirme.' },
+      { icon: '⋮', text: t('installApp.android1Text'), detail: t('installApp.android1Detail') },
+      { icon: '🏠', text: t('installApp.android2Text'), detail: t('installApp.android2Detail') },
+      { icon: '✅', text: t('installApp.android3Text'), detail: t('installApp.android3Detail') },
     ];
   }
 
   if (browser === 'chrome' && !isMobile) {
     return [
-      { icon: '⊞', text: 'Clique no ícone de instalar na barra de URL', detail: 'No canto direito da barra de endereços, ao lado da estrela de favoritos.' },
-      { icon: '💻', text: 'Clique em "Instalar"', detail: 'Na janela que apareceu.' },
-      { icon: '✅', text: 'Pronto!', detail: 'O ícone do MEU OVO aparecerá na sua área de trabalho e no menu Iniciar.' },
+      { icon: '⊞', text: t('installApp.chrome1Text'), detail: t('installApp.chrome1Detail') },
+      { icon: '💻', text: t('installApp.chrome2Text'), detail: t('installApp.chrome2Detail') },
+      { icon: '✅', text: t('installApp.chrome3Text'), detail: t('installApp.chrome3Detail') },
     ];
   }
 
   if (browser === 'edge') {
     return [
-      { icon: '⋯', text: 'Clique no menu (três pontos)', detail: 'No canto superior direito do Edge.' },
-      { icon: '📦', text: 'Vá em "Aplicativos" → "Instalar este site como um aplicativo"', detail: 'No menu que abriu.' },
-      { icon: '✅', text: 'Clique em "Instalar"', detail: 'Confirme a instalação. O ícone aparecerá na sua área de trabalho.' },
+      { icon: '⋯', text: t('installApp.edge1Text'), detail: t('installApp.edge1Detail') },
+      { icon: '📦', text: t('installApp.edge2Text'), detail: t('installApp.edge2Detail') },
+      { icon: '✅', text: t('installApp.edge3Text'), detail: t('installApp.edge3Detail') },
     ];
   }
 
   if (browser === 'firefox' && !isMobile) {
     return [
-      { icon: '☰', text: 'Clique no menu (três linhas)', detail: 'No canto superior direito do Firefox.' },
-      { icon: '📦', text: 'Clique em "Instalar como Aplicativo"', detail: 'Dentro do menu.' },
-      { icon: '✅', text: 'Clique em "Instalar"', detail: 'Confirme na janela que apareceu.' },
+      { icon: '☰', text: t('installApp.firefox1Text'), detail: t('installApp.firefox1Detail') },
+      { icon: '📦', text: t('installApp.firefox2Text'), detail: t('installApp.firefox2Detail') },
+      { icon: '✅', text: t('installApp.firefox3Text'), detail: t('installApp.firefox3Detail') },
     ];
   }
 
   if (browser === 'brave') {
     return [
-      { icon: '☰', text: 'Clique no menu (três linhas)', detail: 'No canto superior direito do Brave.' },
-      { icon: '📦', text: 'Vá em "Salvar e compartilhar" → "Instalar página como aplicativo"', detail: 'No menu que abriu.' },
-      { icon: '✅', text: 'Clique em "Instalar"', detail: 'Confirme a instalação.' },
+      { icon: '☰', text: t('installApp.brave1Text'), detail: t('installApp.brave1Detail') },
+      { icon: '📦', text: t('installApp.brave2Text'), detail: t('installApp.brave2Detail') },
+      { icon: '✅', text: t('installApp.brave3Text'), detail: t('installApp.brave3Detail') },
     ];
   }
 
   if (browser === 'opera') {
     return [
-      { icon: '☰', text: 'Clique no menu (três linhas)', detail: 'No canto superior esquerdo do Opera.' },
-      { icon: '📦', text: 'Desça até "Instalar aplicativo..."', detail: 'Role o menu até encontrar.' },
-      { icon: '✅', text: 'Clique em "Instalar"', detail: 'Confirme a instalação.' },
+      { icon: '☰', text: t('installApp.opera1Text'), detail: t('installApp.opera1Detail') },
+      { icon: '📦', text: t('installApp.opera2Text'), detail: t('installApp.opera2Detail') },
+      { icon: '✅', text: t('installApp.opera3Text'), detail: t('installApp.opera3Detail') },
     ];
   }
 
   // Fallback — genérico
   return [
-    { icon: '📲', text: isMobile ? 'Abra o menu do seu navegador' : 'Abra o menu do seu navegador', detail: 'Procure pelos três pontinhos ou três linhas.' },
-    { icon: '🏠', text: isMobile ? 'Toque em "Adicionar à tela inicial"' : 'Procure por "Instalar" ou "Adicionar à área de trabalho"', detail: 'A opção pode estar em "Compartilhar" ou "Ferramentas".' },
-    { icon: '✅', text: isMobile ? 'Confirme em "Adicionar"' : 'Clique em "Instalar"', detail: 'O ícone aparecerá na tela inicial ou área de trabalho.' },
+    { icon: '📲', text: t('installApp.generic1Text'), detail: t('installApp.generic1Detail') },
+    { icon: '🏠', text: isMobile ? t('installApp.generic2TextMobile') : t('installApp.generic2TextDesktop'), detail: t('installApp.generic2Detail') },
+    { icon: '✅', text: isMobile ? t('installApp.generic3TextMobile') : t('installApp.generic3TextDesktop'), detail: t('installApp.generic3Detail') },
   ];
 }
 
 export default function InstallAppPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [platform, setPlatform] = useState<Platform>('unknown');
   const [browser, setBrowser] = useState<Browser>('other');
@@ -156,7 +158,7 @@ export default function InstallAppPage() {
   useEffect(() => {
     mountedRef.current = true;
     const handleAppInstalled = () => {
-      toast.success('App instalado com sucesso!');
+      toast.success(t('installApp.installedToast'));
       doConfirm();
     };
     window.addEventListener('appinstalled', handleAppInstalled);
@@ -204,25 +206,25 @@ export default function InstallAppPage() {
     if (isStandalone()) {
       doConfirm();
     } else {
-      toast((t) => (
+      toast((tt) => (
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold">Abra pelo ícone na tela inicial</p>
-          <p className="text-xs text-gray-500">Depois de adicionar, feche o navegador e abra o app pelo novo ícone que apareceu na tela inicial / área de trabalho. Volte aqui e clique em "Já abri pelo ícone".</p>
+          <p className="text-sm font-bold">{t('installApp.manualToastTitle')}</p>
+          <p className="text-xs text-gray-500">{t('installApp.manualToastDesc')}</p>
           <button
             onClick={() => {
-              if (isStandalone()) { doConfirm(); toast.dismiss(t.id); }
-              else { toast.error('Ainda não detectamos o app instalado. Abra pelo ícone na tela inicial.'); }
+              if (isStandalone()) { doConfirm(); toast.dismiss(tt.id); }
+              else { toast.error(t('installApp.manualToastError')); }
             }}
             className="mt-2 bg-[#FFC928] text-black font-black py-2 px-4 rounded-xl text-xs uppercase tracking-wider"
           >
-            Já abri pelo ícone
+            {t('installApp.manualToastBtn')}
           </button>
         </div>
       ), { duration: 8000 });
     }
   };
 
-  const steps = getInstructions(platform, browser);
+  const steps = getInstructions(t, platform, browser);
   const isMobile = platform === 'ios' || platform === 'android';
   const canNativeInstall = !!deferredPrompt && !isMobile;
 
@@ -237,8 +239,8 @@ export default function InstallAppPage() {
           <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
             <Check size={40} className="text-emerald-500" />
           </div>
-          <h2 className="text-2xl font-black text-[#111] mb-2">Tudo pronto!</h2>
-          <p className="text-gray-500">Redirecionando...</p>
+          <h2 className="text-2xl font-black text-[#111] mb-2">{t('installApp.successTitle')}</h2>
+          <p className="text-gray-500">{t('installApp.redirecting')}</p>
         </motion.div>
       </div>
     );
@@ -246,7 +248,7 @@ export default function InstallAppPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#FFF8E1] to-white install-app-page">
-      <SEO title="Instalar App" description="Instale o MEU OVO na tela inicial do seu celular ou computador para pedir mais rápido." url="/install-app" />
+      <SEO title={t('installApp.seoTitle')} description={t('installApp.seoDesc')} url="/install-app" />
       <div className="max-w-lg mx-auto px-6 py-12">
         <div className="mb-6">
           <BackButton to="/" />
@@ -273,7 +275,7 @@ export default function InstallAppPage() {
             transition={{ delay: 0.2 }}
             className="text-2xl font-black text-[#111] mb-3"
           >
-            Adicione o MEU OVO à {isMobile ? 'tela inicial' : 'área de trabalho'}
+            {isMobile ? t('installApp.titleMobile') : t('installApp.titleDesktop')}
           </motion.h1>
           <motion.p
             initial={{ y: -10, opacity: 0 }}
@@ -281,7 +283,7 @@ export default function InstallAppPage() {
             transition={{ delay: 0.3 }}
             className="text-sm text-gray-500 leading-relaxed"
           >
-            Instale o app para acessar mais rápido, receber notificações e apoiar os restaurantes do bairro com 1 toque.
+            {t('installApp.subtitle')}
           </motion.p>
         </div>
 
@@ -334,7 +336,7 @@ export default function InstallAppPage() {
                   className="w-full bg-[#FFC928] text-black font-black py-4 rounded-xl text-sm uppercase tracking-widest hover:bg-[#e6b520] transition-all flex items-center justify-center gap-3 shadow-lg shadow-yellow-500/20"
                 >
                   {installing ? <RefreshCw size={18} className="animate-spin" /> : <Download size={18} />}
-                  {installing ? 'Instalando...' : 'Instalar Agora'}
+                  {installing ? t('installApp.installing') : t('installApp.installNow')}
                 </button>
               </motion.div>
             )}
@@ -345,11 +347,11 @@ export default function InstallAppPage() {
             className="w-full bg-[#111] text-white font-black py-4 rounded-xl hover:bg-black transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-3"
           >
             <Check size={18} />
-            Já adicionei! Liberar acesso
+            {t('installApp.manualConfirmBtn')}
           </button>
 
           <p className="text-center text-[10px] text-gray-400 mt-4 leading-relaxed">
-            Ao instalar, você terá acesso mais rápido e ajudará a fortalecer o comércio local.
+            {t('installApp.helpNote')}
           </p>
 
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
@@ -357,7 +359,7 @@ export default function InstallAppPage() {
               onClick={handleSkip}
               className="text-[10px] font-black text-gray-400 hover:text-[#111] uppercase tracking-widest transition-colors"
             >
-              Pular esta etapa
+              {t('installApp.skipStep')}
             </button>
           </div>
         </motion.div>
@@ -369,10 +371,10 @@ export default function InstallAppPage() {
           className="text-center mt-8"
         >
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">
-            Depois de adicionar, abra o app pelo novo ícone
+            {t('installApp.afterInstallHint')}
           </p>
           <p className="text-[9px] text-gray-300 mt-1">
-            {isMobile ? 'Sua tela inicial' : 'Sua área de trabalho'}
+            {isMobile ? t('installApp.homeScreen') : t('installApp.desktopScreen')}
           </p>
         </motion.div>
       </div>

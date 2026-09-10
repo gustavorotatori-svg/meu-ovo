@@ -5,9 +5,10 @@ import { db } from '../lib/firebase';
 import { Order, Restaurant, Category } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChefHat, CheckCircle2, Clock, MapPin, Smartphone, ArrowLeft, Utensils, Bike, CreditCard, Heart, Ticket, Check, XCircle, Star, RefreshCw, RotateCcw } from 'lucide-react';
-import { cn } from '../lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { cn, formatCurrency, currencyLocale } from '../lib/utils';
+import { format, type Locale } from 'date-fns';
+import { ptBR, enUS, es } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 import { useRestaurant } from '../context/RestaurantContext';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,7 +21,12 @@ import { QRCodeSVG } from 'qrcode.react';
 
 const MEU_OVO_PIX_KEY = import.meta.env.VITE_PLATFORM_PIX_KEY || 'meuovo@example.com';
 
+const dateFnsLocales: Record<string, Locale> = { 'pt-BR': ptBR, 'en-US': enUS, 'es-ES': es };
+
 export default function OrderStatusPage() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
+  const dateLocale = dateFnsLocales[currencyLocale(i18n.language)] || ptBR;
   const { id } = useParams<{ id: string }>();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -124,7 +130,7 @@ export default function OrderStatusPage() {
   const handleRateDish = async () => {
     if (!order || !restaurant || eligibleItems.length === 0) return;
     const ratedItems = Object.keys(ratings);
-    if (ratedItems.length === 0) { toast.error('Selecione ao menos uma nota'); return; }
+    if (ratedItems.length === 0) { toast.error(t('orderStatus.ratingSelectError')); return; }
 
     setSubmittingRating(true);
     try {
@@ -147,10 +153,10 @@ export default function OrderStatusPage() {
       const ratedKey = `rated_order_${order.id}`;
       localStorage.setItem(ratedKey, '1');
       setRatingSubmitted(true);
-      toast.success('Avaliação enviada! Obrigado por ajudar a premiar os melhores pratos!');
+      toast.success(t('orderStatus.ratingSentOk'));
     } catch (err) {
       console.error('Error submitting ratings:', err);
-      toast.error('Erro ao enviar avaliação');
+      toast.error(t('orderStatus.ratingSendError'));
     } finally {
       setSubmittingRating(false);
     }
@@ -159,7 +165,7 @@ export default function OrderStatusPage() {
   const handleConfirmPayment = async () => {
     if (!order) return;
     if (!user) {
-      toast.error('Envie o comprovante pelo WhatsApp do restaurante para confirmar o pagamento');
+      toast.error(t('orderStatus.confirmNeedsLogin'));
       return;
     }
     try {
@@ -173,17 +179,17 @@ export default function OrderStatusPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error(data?.error === 'Forbidden' ? 'Você não pode confirmar este pedido' : 'Erro ao confirmar pagamento');
+        toast.error(data?.error === 'Forbidden' ? t('orderStatus.confirmForbidden') : t('orderStatus.confirmPaymentError'));
         return;
       }
       if (data.paymentStatus === 'awaiting_confirmation') {
         setPaymentConfirmed(true);
-        toast.success('Pagamento em confirmação pelo restaurante!');
+        toast.success(t('orderStatus.confirmAwaiting'));
       } else {
-        toast.success('Pagamento já confirmado!');
+        toast.success(t('orderStatus.confirmAlready'));
       }
     } catch (err) {
-      toast.error('Erro ao confirmar pagamento');
+      toast.error(t('orderStatus.confirmPaymentError'));
     }
   };
 
@@ -194,9 +200,9 @@ export default function OrderStatusPage() {
         meuOvoCaixinha: caixinhaAmount
       });
       setCaixinhaConfirmed(true);
-      toast.success('Caixinha Meu OVO de R$ ' + caixinhaAmount.toFixed(2) + ' registrada!');
+      toast.success(t('orderStatus.caixinhaRegistered', { value: fmt(caixinhaAmount) }));
     } catch {
-      toast.error('Erro ao registrar caixinha');
+      toast.error(t('orderStatus.caixinhaError'));
     }
   };
 
@@ -207,28 +213,28 @@ export default function OrderStatusPage() {
         donationAmount: socialAmount
       });
       setSocialConfirmed(true);
-      toast.success('Doação social de R$ ' + socialAmount.toFixed(2) + ' registrada! Obrigado!');
+      toast.success(t('orderStatus.socialRegistered', { value: fmt(socialAmount) }));
     } catch {
-      toast.error('Erro ao registrar doação');
+      toast.error(t('orderStatus.socialError'));
     }
   };
 
   const steps = [
-    { status: 'received', label: 'Recebido', icon: <Clock size={20} />, description: 'O restaurante recebeu seu pedido', time: order?.createdAt },
-    { status: 'accepted', label: 'Aprovado', icon: <CreditCard size={20} />, description: 'Restaurante aprovou! Aguardando pagamento', time: order?.acceptedAt },
-    { status: 'preparing', label: 'Preparando', icon: <ChefHat size={20} />, description: 'Seu pedido está sendo preparado', time: undefined },
-    { status: 'ready', label: 'Pronto', icon: <Utensils size={20} />, description: 'Pedido finalizado e pronto!', time: undefined },
-    { status: 'out-for-delivery', label: 'A caminho', icon: <Bike size={20} />, description: 'O entregador já saiu com seu pedido', time: undefined },
-    { status: 'finished', label: 'Entregue', icon: <CheckCircle2 size={20} />, description: 'Bom apetite!', time: undefined },
+    { status: 'received', label: t('orderStatus.stepReceived'), icon: <Clock size={20} />, description: t('orderStatus.stepReceivedDesc'), time: order?.createdAt },
+    { status: 'accepted', label: t('orderStatus.stepAccepted'), icon: <CreditCard size={20} />, description: t('orderStatus.stepAcceptedDesc'), time: order?.acceptedAt },
+    { status: 'preparing', label: t('orderStatus.stepPreparing'), icon: <ChefHat size={20} />, description: t('orderStatus.stepPreparingDesc'), time: undefined },
+    { status: 'ready', label: t('orderStatus.stepReady'), icon: <Utensils size={20} />, description: t('orderStatus.stepReadyDesc'), time: undefined },
+    { status: 'out-for-delivery', label: t('orderStatus.stepOutForDelivery'), icon: <Bike size={20} />, description: t('orderStatus.stepOutForDeliveryDesc'), time: undefined },
+    { status: 'finished', label: t('orderStatus.stepFinished'), icon: <CheckCircle2 size={20} />, description: t('orderStatus.stepFinishedDesc'), time: undefined },
   ];
 
   const currentStep = steps.findIndex(s => s.status === order?.status);
 
   const etaRange = useMemo(() => {
-    if (!order) return '30-40 min';
+    if (!order) return t('orderStatus.etaDefault');
     const prepOffset = order.status === 'received' ? 40 : order.status === 'accepted' ? 35 : order.status === 'preparing' ? 25 : order.status === 'ready' ? 15 : 10;
-    return `${prepOffset - 5}-${prepOffset + 5} min`;
-  }, [order?.status]);
+    return t('orderStatus.etaRange', { min: prepOffset - 5, max: prepOffset + 5 });
+  }, [order?.status, t]);
 
   const dynamicPixCode = useMemo(() => {
     if (!restaurant?.pixKey || !order) return null;
@@ -247,13 +253,13 @@ export default function OrderStatusPage() {
   if (!order) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center order-status-page">
-        <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-4">Pedido não encontrado</h2>
+        <h2 className="text-2xl font-black uppercase italic tracking-tighter mb-4">{t('orderStatus.notFoundTitle')}</h2>
         <button 
           onClick={() => navigate('/')}
           className="flex items-center gap-2 bg-[#111] text-white px-6 py-3 rounded-2xl font-bold"
         >
           <ArrowLeft size={20} />
-          Voltar ao início
+          {t('orderStatus.backToHome')}
         </button>
       </div>
     );
@@ -265,7 +271,7 @@ export default function OrderStatusPage() {
       <div className="bg-[#111111] text-white p-8 rounded-b-[3rem] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] rounded-full blur-[100px] opacity-20 -mr-32 -mt-32" />
         
-        <button onClick={() => navigate(-1)} className="mb-4 opacity-60 hover:opacity-100 transition-opacity focus:outline-none" id="btn-status-back" aria-label="Voltar">
+        <button onClick={() => navigate(-1)} className="mb-4 opacity-60 hover:opacity-100 transition-opacity focus:outline-none" id="btn-status-back" aria-label={t('orderStatus.ariaBack')}>
           <ArrowLeft size={24} />
         </button>
 
@@ -279,9 +285,9 @@ export default function OrderStatusPage() {
             />
           )}
           <div>
-            <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter leading-none mb-1">Acompanhe seu Pedido</h1>
+            <h1 className="text-2xl md:text-3xl font-black italic uppercase tracking-tighter leading-none mb-1">{t('orderStatus.trackTitle')}</h1>
             <p className="text-xs font-bold text-gray-400">
-              Loja: <span className="text-[#FFC928] font-black">{restaurant?.name || 'Parceiro'}</span> • ID #{order.id.slice(-6).toUpperCase()}
+              {t('orderStatus.storeLabel')}: <span className="text-[#FFC928] font-black">{restaurant?.name || t('orderStatus.partner')}</span> • ID #{order.id.slice(-6).toUpperCase()}
             </p>
           </div>
         </div>
@@ -293,16 +299,16 @@ export default function OrderStatusPage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500 rounded-full blur-[60px] opacity-20 -mr-16 -mt-16 animate-pulse" />
           <div className="flex items-center justify-between relative z-10">
             <div>
-              <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest block mb-1">Previsão de Entrega</span>
+              <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest block mb-1">{t('orderStatus.etaLabel')}</span>
               <h2 className="text-3xl font-black italic tracking-tighter uppercase text-white flex items-center gap-2">
-                <Clock className="text-[#FFC928]" size={24} /> {order.status === 'finished' ? 'Entregue!' : order.status === 'cancelled' ? 'Cancelado' : etaRange}
+                <Clock className="text-[#FFC928]" size={24} /> {order.status === 'finished' ? t('orderStatus.finishedTitle') : order.status === 'cancelled' ? t('orderStatus.etaCancelled') : etaRange}
               </h2>
             </div>
             {order.status !== 'finished' && order.status !== 'cancelled' && (
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                  <span className="text-[8px] font-black text-[#FFC928] uppercase tracking-widest">Pedido em tempo real</span>
+                  <span className="text-[8px] font-black text-[#FFC928] uppercase tracking-widest">{t('orderStatus.liveLabel')}</span>
                 </div>
               </div>
             )}
@@ -311,9 +317,9 @@ export default function OrderStatusPage() {
           {order.status === 'out-for-delivery' && (
             <div className="mt-5 pt-4 border-t border-white/10 relative z-10 space-y-3 font-sans">
               <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
-                <span>Saiu da Loja</span>
-                <span className="text-[#FFC928] animate-pulse">Motoboy a caminho</span>
-                <span>Sua Residência</span>
+                <span>{t('orderStatus.deliveryLeftStore')}</span>
+                <span className="text-[#FFC928] animate-pulse">{t('orderStatus.deliveryRider')}</span>
+                <span>{t('orderStatus.deliveryYourPlace')}</span>
               </div>
               <div className="h-1.5 bg-white/10 rounded-full relative">
                 <motion.div 
@@ -331,13 +337,13 @@ export default function OrderStatusPage() {
         {order.status === 'cancelled' && (
           <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-6 text-center">
             <XCircle size={48} className="text-red-400 mx-auto mb-3" />
-            <h2 className="font-black text-xl text-red-700 uppercase tracking-tighter mb-2">Pedido Cancelado</h2>
-            <p className="text-sm text-red-600 font-medium">{order.rejectionReason || 'O restaurante não pôde aceitar seu pedido.'}</p>
+            <h2 className="font-black text-xl text-red-700 uppercase tracking-tighter mb-2">{t('orderStatus.cancelledTitle')}</h2>
+            <p className="text-sm text-red-600 font-medium">{order.rejectionReason || t('orderStatus.cancelledDefaultReason')}</p>
             <button
               onClick={() => navigate('/busca')}
               className="mt-4 bg-red-600 text-white px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-red-700 transition-all"
             >
-              Buscar outro restaurante
+              {t('orderStatus.cancelledSearchAgain')}
             </button>
           </div>
         )}
@@ -347,9 +353,9 @@ export default function OrderStatusPage() {
           <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 flex items-center gap-4">
             <Clock size={28} className="text-amber-500 shrink-0" />
             <div>
-              <p className="font-black text-amber-800 uppercase tracking-tighter text-sm">Pedido agendado</p>
+              <p className="font-black text-amber-800 uppercase tracking-tighter text-sm">{t('orderStatus.scheduledTitle')}</p>
               <p className="text-sm text-amber-700 font-bold">
-                Para {new Date(order.scheduledAt).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                {t('orderStatus.scheduledFor', { date: new Date(order.scheduledAt).toLocaleString(currencyLocale(i18n.language), { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' }) })}
               </p>
             </div>
           </div>
@@ -360,8 +366,8 @@ export default function OrderStatusPage() {
           <div className="bg-blue-50 border-2 border-blue-200 rounded-3xl p-5 flex items-center gap-4">
             <RefreshCw size={24} className="text-blue-500 shrink-0" />
             <div>
-              <p className="font-black text-blue-800 uppercase tracking-tighter text-sm">Pagamento em confirmação</p>
-              <p className="text-sm text-blue-700 font-bold">O restaurante confirmará assim que receber seu pagamento.</p>
+              <p className="font-black text-blue-800 uppercase tracking-tighter text-sm">{t('orderStatus.paymentConfirmingTitle')}</p>
+              <p className="text-sm text-blue-700 font-bold">{t('orderStatus.paymentConfirmingDesc')}</p>
             </div>
           </div>
         )}
@@ -379,15 +385,15 @@ export default function OrderStatusPage() {
                 <CreditCard size={24} />
               </div>
               <div>
-                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">Pagamento</h2>
-                <p className="text-xs text-slate-500 font-medium">Seu pedido foi aceito! Realize o pagamento para continuar.</p>
+                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">{t('orderStatus.paymentTitle')}</h2>
+                <p className="text-xs text-slate-500 font-medium">{t('orderStatus.paymentAcceptedDesc')}</p>
               </div>
             </div>
 
             {/* PIX Payment */}
             {restaurant?.pixKey && (
               <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">Pague via PIX</h3>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">{t('orderStatus.payViaPix')}</h3>
                 <div className="w-48 h-48 bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center relative mx-auto mb-4">
                   {dynamicPixCode ? (
                     <QRCodeSVG value={dynamicPixCode} size={170} />
@@ -408,14 +414,14 @@ export default function OrderStatusPage() {
                         whileTap={{ scale: 0.9 }}
                         onClick={() => {
                           navigator.clipboard.writeText(dynamicPixCode).catch(() => {});
-                          toast.success('Código PIX copiado!');
+                          toast.success(t('orderStatus.pixCopied'));
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-[#FFC928] text-black rounded-lg shadow-sm"
                       >
                         <Ticket size={14} />
                       </motion.button>
                     </div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Pague o valor de <strong className="text-emerald-600">R$ {order.total.toFixed(2)}</strong> via PIX</p>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('orderStatus.payPixValueBefore')} <strong className="text-emerald-600">{fmt(order.total)}</strong> {t('orderStatus.payPixValueAfter')}</p>
                   </div>
                 )}
               </div>
@@ -424,7 +430,7 @@ export default function OrderStatusPage() {
             {/* Payment Links */}
             {restaurant?.paymentSettings?.acceptCreditCard && restaurant.paymentSettings.creditCardLink && (
               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Cartão de Crédito</h3>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('orderStatus.payWithCreditCard')}</h3>
                 <a
                   href={restaurant.paymentSettings.creditCardLink}
                   target="_blank"
@@ -432,13 +438,13 @@ export default function OrderStatusPage() {
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg"
                 >
                   <CreditCard size={20} />
-                  Ir para Pagamento
+                  {t('orderStatus.goToPayment')}
                 </a>
               </div>
             )}
             {restaurant?.paymentSettings?.acceptDebit && restaurant.paymentSettings.debitLink && (
               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Cartão de Débito</h3>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('orderStatus.payWithDebitCard')}</h3>
                 <a
                   href={restaurant.paymentSettings.debitLink}
                   target="_blank"
@@ -446,13 +452,13 @@ export default function OrderStatusPage() {
                   className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg"
                 >
                   <CreditCard size={20} />
-                  Ir para Pagamento
+                  {t('orderStatus.goToPayment')}
                 </a>
               </div>
             )}
             {restaurant?.paymentSettings?.acceptVoucher && restaurant.paymentSettings.voucherLink && (
               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-6 mb-4 text-center">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Pague com Vale-Refeição</h3>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">{t('orderStatus.payWithVoucher')}</h3>
                 <a
                   href={restaurant.paymentSettings.voucherLink}
                   target="_blank"
@@ -460,7 +466,7 @@ export default function OrderStatusPage() {
                   className="inline-flex items-center gap-2 bg-purple-600 text-white px-6 py-4 rounded-2xl font-black text-sm hover:bg-purple-700 transition-all shadow-lg"
                 >
                   <CreditCard size={20} />
-                  Ir para Pagamento
+                  {t('orderStatus.goToPayment')}
                 </a>
               </div>
             )}
@@ -470,10 +476,10 @@ export default function OrderStatusPage() {
               className="w-full bg-emerald-600 text-white font-black py-5 rounded-2xl hover:bg-emerald-700 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
             >
               <Check size={20} />
-              Já paguei - Confirmar Pagamento
+              {t('orderStatus.confirmPaidBtn')}
             </button>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center mt-3">
-              Após o pagamento, clique no botão acima para confirmar
+              {t('orderStatus.confirmPaidHint')}
             </p>
           </motion.div>
         )}
@@ -493,8 +499,8 @@ export default function OrderStatusPage() {
                     <Heart size={24} />
                   </div>
                   <div>
-                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">🐣 Caixinha Meu OVO</h2>
-                    <p className="text-xs text-slate-500 font-medium">Ajude a manter a plataforma gratuita para os restaurantes!</p>
+                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">🐣 {t('orderStatus.caixinhaTitle')}</h2>
+                    <p className="text-xs text-slate-500 font-medium">{t('orderStatus.caixinhaDesc')}</p>
                   </div>
                 </div>
 
@@ -516,10 +522,10 @@ export default function OrderStatusPage() {
 
                   <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                      Pague via PIX para o MEU OVO
+                      {t('orderStatus.payViaPixMeuOvo')}
                     </h3>
                     <p className="text-xs font-bold text-amber-600 mb-4">
-                      Chave PIX: <strong className="text-amber-800">{MEU_OVO_PIX_KEY}</strong>
+                      {t('orderStatus.pixKeyLabel')}: <strong className="text-amber-800">{MEU_OVO_PIX_KEY}</strong>
                     </p>
                     <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-4">
                       {(() => {
@@ -531,11 +537,11 @@ export default function OrderStatusPage() {
                       onClick={() => {
                         const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: caixinhaAmount, txid: 'CAIXINHA' + order.id.slice(-20) });
                         navigator.clipboard.writeText(pixCode).catch(() => {});
-                        toast.success('Código PIX da caixinha copiado!');
+                        toast.success(t('orderStatus.caixinhaPixCopied'));
                       }}
                       className="text-[10px] font-black text-amber-600 uppercase tracking-widest hover:text-amber-800 transition-colors"
                     >
-                      Copiar código PIX
+                      {t('orderStatus.copyPixCode')}
                     </button>
                   </div>
 
@@ -545,13 +551,13 @@ export default function OrderStatusPage() {
                     className="w-full bg-amber-500 text-white font-black py-5 rounded-2xl hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
                   >
                     <Heart size={20} />
-                    Caixinha de R$ {caixinhaAmount.toFixed(2)}
+                    {t('orderStatus.caixinhaButton', { value: fmt(caixinhaAmount) })}
                   </button>
                   <button
                     onClick={() => setCaixinhaSkipped(true)}
                     className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm"
                   >
-                    Pular caixinha
+                    {t('orderStatus.caixinhaSkip')}
                   </button>
                 </div>
               </div>
@@ -565,9 +571,9 @@ export default function OrderStatusPage() {
                 className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center"
               >
                 <Heart size={48} className="text-amber-400 mx-auto mb-3 animate-pulse" />
-                <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">Obrigado pela Caixinha!</h2>
+                <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">{t('orderStatus.caixinhaThanks')}</h2>
                 <p className="text-sm text-amber-600 font-medium">
-                  Sua contribuição de <strong>R$ {caixinhaAmount.toFixed(2)}</strong> fortalece o MEU OVO!
+                  {t('orderStatus.caixinhaThanksDesc', { value: fmt(caixinhaAmount) })}
                 </p>
               </motion.div>
             )}
@@ -580,8 +586,8 @@ export default function OrderStatusPage() {
                     <Heart size={24} className="animate-pulse" />
                   </div>
                   <div>
-                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">❤️ Ajude uma Causa Social</h2>
-                    <p className="text-xs text-slate-500 font-medium">Sua doação vai para instituições que ajudam os menos afortunados do bairro.</p>
+                    <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">❤️ {t('orderStatus.socialTitle')}</h2>
+                    <p className="text-xs text-slate-500 font-medium">{t('orderStatus.socialDesc')}</p>
                   </div>
                 </div>
 
@@ -603,10 +609,10 @@ export default function OrderStatusPage() {
 
                   <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 mb-6 text-center">
                     <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
-                      Doe via PIX para o MEU OVO
+                      {t('orderStatus.socialPayViaPix')}
                     </h3>
                     <p className="text-xs font-bold text-rose-600 mb-4">
-                      Chave PIX: <strong className="text-rose-800">{MEU_OVO_PIX_KEY}</strong>
+                      {t('orderStatus.pixKeyLabel')}: <strong className="text-rose-800">{MEU_OVO_PIX_KEY}</strong>
                     </p>
                     <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-4">
                       {(() => {
@@ -618,11 +624,11 @@ export default function OrderStatusPage() {
                       onClick={() => {
                         const pixCode = generatePixPayload({ key: MEU_OVO_PIX_KEY, name: 'MEU OVO', amount: socialAmount, txid: 'DOACAO' + order.id.slice(-20) });
                         navigator.clipboard.writeText(pixCode).catch(() => {});
-                        toast.success('Código PIX de doação copiado!');
+                        toast.success(t('orderStatus.socialPixCopied'));
                       }}
                       className="text-[10px] font-black text-rose-600 uppercase tracking-widest hover:text-rose-800 transition-colors"
                     >
-                      Copiar código PIX
+                      {t('orderStatus.copyPixCode')}
                     </button>
                   </div>
 
@@ -632,13 +638,13 @@ export default function OrderStatusPage() {
                     className="w-full bg-rose-600 text-white font-black py-5 rounded-2xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2"
                   >
                     <Heart size={20} />
-                    Doar R$ {socialAmount.toFixed(2)}
+                    {t('orderStatus.socialDonateButton', { value: fmt(socialAmount) })}
                   </button>
                   <button
                     onClick={() => setShowPostPayment(false)}
                     className="w-full bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-sm"
                   >
-                    Não quero doar agora
+                    {t('orderStatus.socialNoDonate')}
                   </button>
                 </div>
               </div>
@@ -652,9 +658,9 @@ export default function OrderStatusPage() {
                 className="bg-rose-50 border-2 border-rose-200 rounded-3xl p-6 text-center"
               >
                 <Heart size={48} className="text-rose-400 mx-auto mb-3 animate-pulse" />
-                <h2 className="font-black text-xl text-rose-700 uppercase tracking-tighter mb-2">Obrigado por Doar!</h2>
+                <h2 className="font-black text-xl text-rose-700 uppercase tracking-tighter mb-2">{t('orderStatus.socialThanks')}</h2>
                 <p className="text-sm text-rose-600 font-medium">
-                  Sua doação de <strong>R$ {socialAmount.toFixed(2)}</strong> vai ajudar quem mais precisa!
+                  {t('orderStatus.socialThanksDesc', { value: fmt(socialAmount) })}
                 </p>
               </motion.div>
             )}
@@ -672,7 +678,7 @@ export default function OrderStatusPage() {
               return (
                 <>
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Progresso do Pedido</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">{t('orderStatus.progressTitle')}</span>
                     <span className="text-xs font-black text-green-600">{pct}%</span>
                   </div>
                   <div className="h-2 bg-slate-100 rounded-full overflow-hidden mb-6">
@@ -713,7 +719,7 @@ export default function OrderStatusPage() {
                           </span>
                           {step.time && isCompleted && (
                             <span className="text-[8px] font-mono text-slate-400 mt-0.5">
-                              {format(new Date(step.time), "HH:mm", { locale: ptBR })}
+                              {format(new Date(step.time), "HH:mm", { locale: dateLocale })}
                             </span>
                           )}
                         </div>
@@ -728,7 +734,7 @@ export default function OrderStatusPage() {
                     >
                       <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                       <span className="text-[10px] font-black uppercase text-green-700 tracking-widest">
-                        {steps[currentStep]?.description || 'Acompanhamento em tempo real'}
+                        {steps[currentStep]?.description || t('orderStatus.liveTracking')}
                       </span>
                     </motion.div>
                   )}
@@ -740,7 +746,7 @@ export default function OrderStatusPage() {
 
         {/* Order Details Card */}
         <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
-          <h2 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400 mb-6">Resumo da Comanda</h2>
+          <h2 className="font-black text-xs uppercase tracking-[0.2em] text-slate-400 mb-6">{t('orderStatus.orderSummaryTitle')}</h2>
           
           <div className="space-y-4">
             {order.items.map((item, i) => (
@@ -756,31 +762,31 @@ export default function OrderStatusPage() {
                     )}
                   </div>
                 </div>
-                <span className="font-bold text-sm">R$ {(item.unitPrice * item.quantity).toFixed(2)}</span>
+                <span className="font-bold text-sm">{fmt(item.unitPrice * item.quantity)}</span>
               </div>
             ))}
           </div>
 
           <div className="mt-8 pt-6 border-t border-dashed border-slate-200">
             <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-400 mb-2">
-              <span>Subtotal</span>
-              <span>R$ {order.total.toFixed(2)}</span>
+              <span>{t('orderStatus.subtotal')}</span>
+              <span>{fmt(order.total)}</span>
             </div>
             {order.meuOvoCaixinha ? (
               <div className="flex justify-between text-xs font-black uppercase tracking-widest text-amber-500 mb-2">
-                <span>🐣 Caixinha Meu OVO</span>
-                <span>R$ {order.meuOvoCaixinha.toFixed(2)}</span>
+                <span>🐣 {t('orderStatus.caixinhaLine')}</span>
+                <span>{fmt(order.meuOvoCaixinha)}</span>
               </div>
             ) : null}
             {order.donationAmount ? (
               <div className="flex justify-between text-xs font-black uppercase tracking-widest text-rose-500 mb-2">
-                <span>❤️ Doação Social</span>
-                <span>R$ {order.donationAmount.toFixed(2)}</span>
+                <span>❤️ {t('orderStatus.socialLine')}</span>
+                <span>{fmt(order.donationAmount)}</span>
               </div>
             ) : null}
             <div className="flex justify-between text-lg font-black uppercase italic tracking-tighter">
-              <span>Total</span>
-              <span>R$ {order.total.toFixed(2)}</span>
+              <span>{t('orderStatus.total')}</span>
+              <span>{fmt(order.total)}</span>
             </div>
           </div>
         </div>
@@ -797,8 +803,8 @@ export default function OrderStatusPage() {
                 <Star size={24} />
               </div>
               <div>
-                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">Avalie os Pratos</h2>
-                <p className="text-xs text-slate-500 font-medium">Sua nota ajuda a premiar os melhores pratos da temporada!</p>
+                <h2 className="font-black text-xl text-[#111] uppercase tracking-tighter">{t('orderStatus.ratingTitle')}</h2>
+                <p className="text-xs text-slate-500 font-medium">{t('orderStatus.ratingDesc')}</p>
               </div>
             </div>
 
@@ -835,7 +841,7 @@ export default function OrderStatusPage() {
               ) : (
                 <Star size={18} />
               )}
-              {submittingRating ? 'Enviando...' : 'Enviar Avaliação'}
+              {submittingRating ? t('orderStatus.sendingRating') : t('orderStatus.sendRating')}
             </button>
           </motion.div>
         )}
@@ -847,9 +853,9 @@ export default function OrderStatusPage() {
             className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-6 text-center"
           >
             <Star size={48} className="text-amber-400 mx-auto mb-3" />
-            <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">Obrigado pela Avaliação!</h2>
+            <h2 className="font-black text-xl text-amber-700 uppercase tracking-tighter mb-2">{t('orderStatus.ratingThanks')}</h2>
             <p className="text-sm text-amber-600 font-medium">
-              Sua nota ajuda a reconhecer e premiar os melhores pratos da temporada!
+              {t('orderStatus.ratingThanksDesc')}
             </p>
           </motion.div>
         )}
@@ -858,7 +864,7 @@ export default function OrderStatusPage() {
         {order.status === 'finished' && (
           <button
             onClick={() => {
-              if (!order.items?.length) return toast.error('Nenhum item para reordenar');
+              if (!order.items?.length) return toast.error(t('orderStatus.noItemsReorder'));
               order.items.forEach(item => {
                 addItem({
                   product: { id: item.productId, name: item.productName, price: item.price, image: item.image || '', restaurantId: order.restaurantId } as any,
@@ -867,12 +873,12 @@ export default function OrderStatusPage() {
                   observations: item.observations || '',
                 });
               });
-              toast.success('Itens copiados para o carrinho!');
+              toast.success(t('orderStatus.itemsCopied'));
               navigate('/carrinho');
             }}
             className="w-full mb-4 bg-[#FFC928] text-black font-black py-4 rounded-2xl text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20 active:scale-[0.98]"
           >
-            <RotateCcw size={16} /> Repetir Pedido
+            <RotateCcw size={16} /> {t('orderStatus.reorderButton')}
           </button>
         )}
 
@@ -880,30 +886,30 @@ export default function OrderStatusPage() {
         <div className="grid grid-cols-2 gap-4">
           <button 
             onClick={() => {
-              const textMsg = encodeURIComponent(`Olá! Estou acompanhando meu pedido #${order.id} no Meu Ovo e gostaria de falar com o restaurante.`);
+              const textMsg = encodeURIComponent(t('orderStatus.waTrack', { id: order.id }));
               window.open(`https://wa.me/${WA_NUMBER}?text=${textMsg}`, '_blank');
             }}
             className="flex flex-col items-center justify-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-lg hover:bg-slate-50 transition-all gap-2 focus:outline-none hover:scale-[1.02] active:scale-95"
             id="btn-status-whatsapp"
           >
             <Smartphone size={24} className="text-green-500" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Falar c/ Loja</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{t('orderStatus.talkToStore')}</span>
           </button>
           <button 
             onClick={() => {
-              const textMsg = encodeURIComponent(`Olá! Preciso de ajuda urgente com o status do meu pedido #${order.id} no Meu Ovo.`);
+              const textMsg = encodeURIComponent(t('orderStatus.waHelp', { id: order.id }));
               window.open(`https://wa.me/${WA_NUMBER}?text=${textMsg}`, '_blank');
             }}
             className="flex flex-col items-center justify-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-lg hover:bg-slate-50 transition-all gap-2 focus:outline-none hover:scale-[1.02] active:scale-95"
             id="btn-status-ajuda"
           >
             <MapPin size={24} className="text-[#FFC928]" />
-            <span className="text-[10px] font-black uppercase tracking-widest">Como Chegar / Ajuda</span>
+            <span className="text-[10px] font-black uppercase tracking-widest">{t('orderStatus.howToGetHelp')}</span>
           </button>
         </div>
 
         <p className="text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] py-8">
-          Feito com ❤️ por MEU OVO
+          {t('orderStatus.madeWithLove')}
         </p>
       </div>
     </div>
