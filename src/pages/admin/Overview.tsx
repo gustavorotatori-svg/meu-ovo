@@ -3,7 +3,7 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Order } from '../../types';
-import { TrendingUp, ShoppingBag, Users, Star, ArrowUpRight, ArrowDownRight, Sparkles } from 'lucide-react';
+import { TrendingUp, ShoppingBag, Users, Star, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { cn, formatCurrency } from '../../lib/utils';
 import { CardSkeleton, Skeleton } from '../../components/Skeleton';
 import { Link } from 'react-router-dom';
@@ -68,14 +68,8 @@ export default function Overview() {
           <CardSkeleton />
           <CardSkeleton />
         </div>
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-            <Skeleton className="w-full h-[400px] rounded-xl" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="w-full h-32 rounded-2xl" />
-            <Skeleton className="w-full h-48 rounded-2xl" />
-          </div>
+        <div>
+          <Skeleton className="w-full h-[400px] rounded-xl" />
         </div>
       </div>
     );
@@ -93,28 +87,21 @@ export default function Overview() {
         <div className="bg-gradient-to-r from-brand-black to-slate-800 p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
           <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-brand-egg/10 rounded-full blur-3xl group-hover:bg-brand-egg/20 transition-all duration-700" />
           <div className="relative z-10 space-y-4 flex-1">
-             <div className="inline-flex items-center gap-2 bg-brand-egg/20 text-brand-egg px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-egg/20">
-               <Sparkles size={12} /> Sugestão de Novo Usuário
-             </div>
              <h3 className="text-3xl font-black italic uppercase tracking-tighter leading-tight">Monte seu Cardápio <br /><span className="text-brand-egg">com Inteligência Artificial</span></h3>
              <p className="text-sm font-medium text-slate-400 max-w-md">
                Seu catálogo ainda está vazio. Deixe nossa IA criar sugestões de categorias e produtos para o seu restaurante em segundos.
              </p>
              <Link to="/admin/dashboard/menu?generate=true">
                <Button className="h-14 px-8 bg-brand-egg text-brand-black hover:bg-yellow-400 rounded-2xl font-black text-sm uppercase tracking-widest italic border-b-4 border-yellow-600 shadow-xl shadow-yellow-500/20 active:border-b-0 active:translate-y-1 transition-all mt-4">
-                  LANÇAR MÁGICA
+                  Gerar cardápio com IA
                </Button>
              </Link>
           </div>
-          <div className="relative z-10 w-48 h-48 bg-white/5 rounded-3xl border border-white/10 flex items-center justify-center backdrop-blur-md">
-             <Sparkles size={80} className="text-brand-egg animate-pulse" />
-          </div>
-        </div>
-      )}
+       </div>
+     )}
 
       <div>
         <h2 className="text-2xl font-black text-brand-black tracking-tight uppercase italic">Resumo de Hoje</h2>
-        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Sua conta Meu Ovo em tempo real</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -131,11 +118,11 @@ export default function Overview() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+      <div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
              <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-brand-black italic">Últimos Pedidos</h3>
-             <button className="text-[10px] font-black text-brand-orange hover:tracking-widest transition-all uppercase italic">Ver todos</button>
+             <Link to="/admin/pedidos" className="text-[10px] font-black text-brand-orange hover:tracking-widest transition-all uppercase italic">Ver todos</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -181,32 +168,6 @@ export default function Overview() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        <div className="space-y-6">
-            <div className="bg-brand-black p-6 rounded-2xl text-brand-white shadow-xl shadow-slate-200">
-              <h4 className="font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center gap-2 italic text-brand-egg">
-                Insight do Dia <TrendingUp size={16} />
-              </h4>
-              <p className="text-xs text-slate-300 leading-relaxed font-bold italic">
-                Crescimento de 12% em pedidos via WhatsApp. Considere oferecer um item grátis via Programa de Fidelidade para fidelizar esses novos clientes.
-              </p>
-           </div>
-           
-           <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 italic">Meta do Mês</h4>
-              <div className="space-y-4">
-                 <div>
-                    <div className="flex justify-between text-[10px] font-black text-slate-500 mb-2 uppercase tracking-widest">
-                       <span>Total Vendas</span>
-                       <span className="text-brand-black">R$ 12.450 / R$ 20.000</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                       <div className="h-full bg-brand-egg rounded-full w-[62%]" />
-                    </div>
-                 </div>
-              </div>
-           </div>
         </div>
       </div>
     </div>

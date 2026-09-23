@@ -17,7 +17,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 const faqData = [
   {
     q: 'O Meu Ovo realmente é gratuito?',
-    a: 'Sim. Sem mensalidade, sem taxa de setup e sem comissão por pedido. O restaurante paga zero para usar a plataforma. Nosso modelo de receita vem de parcerias e serviços premium opcionais.'
+    a: 'Sim. Sem mensalidade, sem setup e sem comissão. Nossa receita vem de parcerias e serviços premium opcionais.'
   },
   {
     q: 'Como os pedidos chegam no restaurante?',
@@ -33,7 +33,7 @@ const faqData = [
   },
   {
     q: 'Meus clientes precisam baixar algum app?',
-    a: 'Não. O cardápio é acessado pelo navegador do celular — basta escanear o QR Code ou clicar no link que você compartilhar no WhatsApp, Instagram ou wherever. Nenhum download necessário.'
+    a: 'Não. O cardápio abre no navegador do celular — basta escanear o QR Code ou clicar no link que você compartilhar no WhatsApp, Instagram ou onde quiser. Nenhum download necessário.'
   },
   {
     q: 'Funciona para delivery, retirada e salão?',
@@ -195,9 +195,6 @@ export default function LandingPage() {
               <p className={`text-sm font-bold ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                 <span className={isDark ? 'text-white' : 'text-black'}>+{liveRestaurantCount > 0 ? liveRestaurantCount.toLocaleString('pt-BR') : 'Vários'} restaurantes já usam o Meu Ovo</span>
               </p>
-              <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
-                Grátis
-              </span>
             </div>
           </ScrollReveal>
 
@@ -303,15 +300,14 @@ export default function LandingPage() {
       {/* ─── Stats Bar ─── */}
       <section className={`py-16 border-y transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-4">
             {[
               { value: liveRestaurantCount > 0 ? `+${liveRestaurantCount.toLocaleString('pt-BR')}` : 'Vários', label: 'restaurantes ativos' },
               { value: '0%', label: 'comissão por pedido' },
               { value: '<10', label: 'minutos para cadastrar' },
-              { value: '100%', label: 'dos pedidos direto no zap' },
             ].map((stat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 80}>
-                <div className={`text-center py-6 ${i < 3 ? `border-r ${isDark ? 'border-white/5' : 'border-gray-200'}` : ''}`}>
+                <div className="text-center py-6">
                   <div className={`text-4xl md:text-5xl font-display font-black leading-none mb-2 ${isDark ? 'text-white' : 'text-[#111]'}`}>{stat.value}</div>
                   <div className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{stat.label}</div>
                 </div>
@@ -342,11 +338,6 @@ export default function LandingPage() {
                 <p className={`text-sm font-medium leading-relaxed max-w-2xl ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   Sem mensalidade, sem taxa de setup e sem comissão por pedido. O dinheiro fica no seu bolso.
                 </p>
-                <div className={`mt-4 pt-4 border-t flex items-center gap-6 ${isDark ? 'border-white/5' : 'border-gray-100'}`}>
-                  <span className="text-xs font-bold text-[#FFC928]">R$ 0 por pedido</span>
-                  <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>vs</span>
-                  <span className={`text-xs font-bold line-through ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>12–27%+ grandes apps</span>
-                </div>
               </div>
             </ScrollReveal>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -384,36 +375,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Secondary Features (3 cards) ─── */}
-      <section className={`py-16 border-y transition-colors ${isDark ? 'bg-[#0a0a0a] border-white/5' : 'bg-[#F9F9F9] border-gray-200'}`}>
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 divide-y md:divide-y-0 md:divide-x divide-solid">
-            {[
-              { title: t('landing.deliveryTitle'), desc: t('landing.deliveryDesc') },
-              { title: t('landing.dashboardTitle'), desc: t('landing.dashboardDesc') },
-              { title: t('landing.socialTitle'), desc: t('landing.socialDesc') },
-            ].map((feat, i) => (
-              <ScrollReveal key={i} direction="up" delay={i * 100}>
-                <div className={`p-8 md:p-10 text-left cursor-default ${isDark ? 'divide-white/5' : 'divide-gray-200'}`}>
-                  <h3 className={`text-lg font-display font-black mb-2 transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>{feat.title}</h3>
-                  <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {feat.desc}
-                  </p>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Mais Funcionalidades (7 cards) ─── */}
+      {/* ─── Mais Funcionalidades (12 cards) ─── */}
       <section className={`py-24 transition-colors ${isDark ? 'bg-black' : 'bg-white'}`}>
         <div className="max-w-7xl mx-auto px-4">
           <ScrollReveal direction="up" delay={0}>
             <SectionHeader
               subtitle="E muito mais"
-              title="Tudo que seu restaurante precisa"
-              description="Funcionalidades que grandes apps não oferecem — ou cobram caro por elas."
+              title="Recursos avançados"
               subtitleClass="text-[#FFC928]"
               titleClass={isDark ? 'text-white' : 'text-[#111]'}
             />
@@ -421,18 +389,18 @@ export default function LandingPage() {
 
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: <Package size={28} />, title: 'Controle de Estoque', desc: 'Saiba exatamente o que tem, o que falta e o que vence. Estoque baixado automaticamente quando você aceita o pedido (via ficha técnica).', dark: false },
-              { icon: <ClipboardList size={28} />, title: 'Ficha Técnica', desc: 'Cadastre ingredientes, custos e margens. Saiba o lucro real de cada prato antes de colocar no cardápio.', dark: false },
-              { icon: <Gift size={28} />, title: 'Fidelidade & Cashback', desc: 'Seus clientes ganham crédito a cada pedido. Voltem sempre — sem cupom de terceiro, sem plataforma intermediária.', dark: true },
-              { icon: <Ticket size={28} />, title: 'Cupons de Desconto', desc: 'Crie cupons personalizados com limite de uso, validade e valor mínimo. Perfeito para promoções exclusivas.', dark: true },
-              { icon: <Flame size={28} />, title: 'Flash Deals', desc: 'Promoções relâmpago visíveis para todos. Crie ofertas por tempo limitado e aumente o volume de pedidos.', dark: false },
-              { icon: <BarChart2 size={28} />, title: 'Relatórios & Financeiro', desc: 'Dashboard com faturamento, pedidos por período, ticket médio e performance. Exporte relatórios em PDF a qualquer momento.', dark: false },
-              { icon: <Bell size={28} />, title: 'Modo Garçom', desc: 'Atenda mesas sem app extra. O garçom vê o cardápio do cliente e registra o pedido direto no sistema.', dark: true },
-              { icon: <ChefHat size={28} />, title: 'Modo Cozinha', desc: 'Tela dedicada para a cozinha: pedidos em tempo real, tempos de preparo e alertas de atraso.', dark: false },
-              { icon: <Wallet size={28} />, title: 'Fluxo de Caixa', desc: 'Abertura, sangria e fechamento de caixa integrados ao sistema. Controle financeiro do dia a dia sem planilha.', dark: true },
-              { icon: <FileText size={28} />, title: 'Auditoria Fiscal (SEFAZ)', desc: 'Valida notas fiscais eletrônicas Layout 4.00, integridade XML e consistência dos totais antes do envio à SEFAZ.', dark: false },
-              { icon: <MessageSquare size={28} />, title: 'WhatsApp AI', desc: 'Assistente inteligente no WhatsApp: responda pedidos, dúvidas e atendimento automaticamente com IA.', dark: true },
-              { icon: <Smartphone size={28} />, title: 'PWA Instalável', desc: 'O cliente instala o app direto do navegador — sem loja de aplicativos. Notificações push e tela cheia nativa.', dark: false },
+              { icon: <Package size={28} />, title: 'Controle de Estoque', desc: 'Baixa automática a cada pedido aceito, com alerta de vencimento.', dark: false },
+              { icon: <ClipboardList size={28} />, title: 'Ficha Técnica', desc: 'Custo e margem de cada prato antes de publicar.', dark: false },
+              { icon: <Gift size={28} />, title: 'Fidelidade & Cashback', desc: 'Crédito a cada pedido. Cliente que volta, sem intermediário.', dark: true },
+              { icon: <Ticket size={28} />, title: 'Cupons de Desconto', desc: 'Cupons com limite de uso, validade e valor mínimo.', dark: true },
+              { icon: <Flame size={28} />, title: 'Flash Deals', desc: 'Ofertas por tempo limitado para girar o movimento.', dark: false },
+              { icon: <BarChart2 size={28} />, title: 'Relatórios & Financeiro', desc: 'Faturamento, ticket médio e performance. Exporte em PDF.', dark: false },
+              { icon: <Bell size={28} />, title: 'Modo Garçom', desc: 'Garçom registra o pedido da mesa sem app extra.', dark: true },
+              { icon: <ChefHat size={28} />, title: 'Modo Cozinha', desc: 'Pedidos em tempo real com alerta de atraso.', dark: false },
+              { icon: <Wallet size={28} />, title: 'Fluxo de Caixa', desc: 'Abertura, sangria e fechamento sem planilha.', dark: true },
+              { icon: <FileText size={28} />, title: 'Auditoria Fiscal (SEFAZ)', desc: 'Valida a NF-e antes do envio à SEFAZ.', dark: false },
+              { icon: <MessageSquare size={28} />, title: 'WhatsApp AI', desc: 'Atendimento automático no WhatsApp com IA.', dark: true },
+              { icon: <Smartphone size={28} />, title: 'PWA Instalável', desc: 'App instalável sem loja. Push e tela cheia.', dark: false },
             ].map((feat, i) => (
               <ScrollReveal key={i} direction="up" delay={i * 50}>
                 <div className={`${feat.dark ? (isDark ? 'bg-[#111] border-white/5' : 'bg-[#111] border-white/10') : (isDark ? 'bg-[#111] border-white/5' : 'bg-white border-gray-100')} rounded-3xl p-8 border shadow-lg shadow-black/5 hover:border-[#FFC928]/30 transition-all group h-full`}>
@@ -472,7 +440,7 @@ export default function LandingPage() {
                       <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Nos grandes apps</span>
                     </div>
                     <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                      Qualquer cliente dá nota. Um pedido atrasado, uma reclamação injusta, e o restaurante cai no algoritmo. <span className="line-through">Refém de avaliação pública.</span>
+                      Qualquer cliente dá nota. Um atraso ou reclamação injusta e o restaurante cai no algoritmo.
                     </p>
                   </div>
                   <div className={`p-6 md:p-8 rounded-[1.5rem] border-l-4 border-[#FFC928] transition-colors ${isDark ? 'bg-[#FFC928]/[0.04] border border-[#FFC928]/10' : 'bg-[#FFF8E1] border border-[#FFC928]/10'}`}>
@@ -481,7 +449,7 @@ export default function LandingPage() {
                       <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FFC928]">No Meu Ovo</span>
                     </div>
                     <p className={`text-sm font-medium leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      Você vê a reputação do cliente antes de aceitar. Cliente bom, bem-vindo. Cliente difícil, suas regras. <span className="font-bold">Sua cozinha, seu julgamento.</span>
+                      Você vê a reputação do cliente antes de aceitar e decide pelas suas regras.
                     </p>
                   </div>
                 </div>
@@ -527,9 +495,7 @@ export default function LandingPage() {
                 { feature: 'Cliente é do restaurante', meuOvo: true, competitor: false, highlight: true },
                 { feature: 'Restaurante avalia o cliente', meuOvo: true, competitor: false, highlight: true },
                 { feature: 'QR Code para mesa', meuOvo: true, competitor: false, highlight: false },
-                { feature: 'Cardápio digital próprio', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Doação no checkout', meuOvo: true, competitor: false, highlight: false },
-                { feature: 'Tempo de setup', meuOvo: '<10 min', competitor: 'Dias/semanas', highlight: false },
               ].map((row, i) => (
                 <div key={i} className={`grid grid-cols-3 gap-0 border-t transition-colors ${isDark ? 'border-white/5' : 'border-gray-100'} ${row.highlight ? (isDark ? 'bg-[#FFC928]/[0.03]' : 'bg-[#FFF8E1]/50') : ''}`}>
                   <div className={`p-4 md:p-5 flex items-center text-xs md:text-sm font-bold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.feature}</div>
@@ -610,11 +576,6 @@ export default function LandingPage() {
                   <p className="text-gray-400 font-medium text-sm max-w-xl leading-relaxed">
                     Buscamos os melhores sabores do Brasil com integridade total. As avaliações acumuladas do campeonato são sigilosas e privadas. Apenas os 3 melhores de cada ano são revelados.
                   </p>
-                  <div className="flex flex-wrap gap-4 pt-2">
-                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Sigilo absoluto</span>
-                    <span className={`text-xs font-bold ${isDark ? 'text-gray-600' : 'text-gray-500'}`}>•</span>
-                    <span className="text-xs text-gray-300 font-bold uppercase tracking-tight">Top 3 divulgado</span>
-                  </div>
                 </div>
                 <div className="flex flex-col sm:flex-row lg:flex-col gap-3 justify-end">
                   <Link to="/ovos-de-ouro" className="bg-[#FFC928] text-[#111] hover:bg-[#e6b520] font-black text-xs uppercase tracking-widest px-6 py-4 rounded-2xl transition-all text-center flex items-center justify-center gap-2">
@@ -789,25 +750,6 @@ export default function LandingPage() {
                     )}
                   </AnimatePresence>
                 </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Trust Badges ─── */}
-      <section className={`py-16 border-y transition-colors ${isDark ? 'bg-black border-white/5' : 'bg-white border-gray-200'}`}>
-        <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-center gap-6 md:gap-10">
-            {[
-              'Dados protegidos com criptografia',
-              'Sem cartão de crédito necessário',
-              'Cancelamento a qualquer momento',
-            ].map((label, i) => (
-              <ScrollReveal key={i} direction="up" delay={i * 60}>
-                <span className={`text-[10px] md:text-xs font-bold uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {label}
-                </span>
               </ScrollReveal>
             ))}
           </div>

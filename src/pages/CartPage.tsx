@@ -208,10 +208,6 @@ export default function CartPage() {
           <h2 className={cn("font-black text-sm uppercase tracking-widest mb-4", isDark ? 'text-white' : 'text-slate-400')}>{t('cart.summary')}</h2>
           <div className="space-y-3">
             <div className={cn("flex justify-between text-xs font-bold uppercase tracking-widest", isDark ? 'text-gray-500' : 'text-gray-400')}>
-              <span>{t('cart.subtotal')}</span>
-              <span className="text-slate-800 dark:text-slate-200">{fmt(subtotal)}</span>
-            </div>
-            <div className={cn("flex justify-between text-xs font-bold uppercase tracking-widest", isDark ? 'text-gray-500' : 'text-gray-400')}>
               <span>{t('cart.serviceFee')}</span>
               <span className="text-green-600 font-black">{t('cart.free')}</span>
             </div>

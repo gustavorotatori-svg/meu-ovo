@@ -127,7 +127,7 @@ export default function SelfSignupPage() {
                   Criar <span className="text-[#FFC928]">conta</span>
                 </h1>
                 <p className="text-gray-400 font-medium text-sm">
-                  Grátis. Sem cartão. Sem taxas. Seu restaurante no ar em segundos.
+                  Grátis. Sem cartão. Sem taxas. No ar em minutos.
                 </p>
               </div>
 

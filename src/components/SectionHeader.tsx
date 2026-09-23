@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { staggerContainer, staggerItem } from '../lib/motion';
 
 interface SectionHeaderProps {
-  subtitle: string;
+  subtitle?: string;
   title: string;
   description?: string;
   align?: 'left' | 'center';
@@ -25,12 +25,14 @@ export default function SectionHeader({ subtitle, title, description, align = 'c
         className
       )}
     >
-      <motion.span
-        variants={staggerItem}
-        className={cn('text-xs font-black uppercase tracking-widest', subtitleClass || 'text-brand-orange')}
-      >
-        {subtitle}
-      </motion.span>
+      {subtitle && (
+        <motion.span
+          variants={staggerItem}
+          className={cn('text-xs font-black uppercase tracking-widest', subtitleClass || 'text-brand-orange')}
+        >
+          {subtitle}
+        </motion.span>
+      )}
       <motion.h2
         variants={staggerItem}
         className={cn('font-display font-black text-2xl md:text-3xl tracking-tight leading-none uppercase italic', titleClass || '')}

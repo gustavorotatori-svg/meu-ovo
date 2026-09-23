@@ -686,7 +686,6 @@ export default function MarketplacePage() {
             className="mb-8"
           >
             <SectionHeader
-              subtitle="Pedir de novo 🔄"
               title="Seu último pedido"
               description={`${lastOrder.items.length} ${lastOrder.items.length === 1 ? 'item' : 'itens'} • R$ ${lastOrder.total.toFixed(2)}`}
               align="left"
@@ -734,9 +733,7 @@ export default function MarketplacePage() {
         {!initialLoading && hasMinHistory() && (
           <div className="mb-10">
             <SectionHeader
-              subtitle="Pra Você 🎯"
               title="Descobertas para Você"
-              description="Baseado nas suas preferências e histórico"
               align="left"
               subtitleClass="text-purple-600"
               className="mb-6"
@@ -797,9 +794,7 @@ export default function MarketplacePage() {
           {/* Section 1: Restaurantes Familiares do Bairro */}
           <div>
             <SectionHeader
-              subtitle="Liderados por Famílias ❤️"
               title="Restaurantes Familiares do Bairro"
-              description="A comida com tempero, afeto e receitas de gerações"
               align="left"
               subtitleClass="text-[#FF7A00]"
               className="mb-8"
@@ -818,9 +813,7 @@ export default function MarketplacePage() {
           {/* Section 2: Proprietários Independentes */}
           <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 border-l-4 border-[#FFC928]">
             <SectionHeader
-              subtitle="Soberania Local 👤"
               title="Apoie Empreendedores Independentes"
-              description="Onde o valor do seu pedido apoia pessoas e não conglomerados corporativos"
               align="left"
               subtitleClass="text-[#FFC928]"
               titleClass="text-[#FFC928]"
@@ -840,9 +833,7 @@ export default function MarketplacePage() {
           {/* Section 3: Mais Pedidos Próximos de Você */}
           <div>
             <SectionHeader
-              subtitle="Os favoritos do Bairro 🔥"
               title="Mais Pedidos Perto de Você"
-              description="Os estabelecimentos mais requisitados da nossa comunidade local"
               align="left"
               subtitleClass="text-amber-600"
               className="mb-8"

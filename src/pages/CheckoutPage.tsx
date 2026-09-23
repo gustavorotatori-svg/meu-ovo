@@ -1144,14 +1144,8 @@ export default function CheckoutPage() {
           <h2 className="font-black text-[#111] text-lg uppercase tracking-tight mb-6">{t('checkout.summary')}</h2>
           
           <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-2xl p-4 mb-6 select-none">
-            <p className="text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 text-emerald-700">
-              🌱 {t('checkout.noIntermediariesTitle')}
-            </p>
-            <p className="text-xs font-bold text-slate-700 mt-1.5 leading-relaxed">
-              {t('checkout.savedCommissions', { amount: fmt(subtotal * 0.25) })}
-            </p>
-            <p className="text-[9px] font-semibold text-gray-500 mt-2 leading-relaxed">
-              {t('checkout.directPurchase')}
+            <p className="text-xs font-bold text-emerald-800 leading-relaxed">
+              🌱 {t('checkout.savedCommissions', { amount: fmt(subtotal * 0.25) })}
             </p>
           </div>
 

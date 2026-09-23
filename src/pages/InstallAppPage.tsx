@@ -350,10 +350,6 @@ export default function InstallAppPage() {
             {t('installApp.manualConfirmBtn')}
           </button>
 
-          <p className="text-center text-[10px] text-gray-400 mt-4 leading-relaxed">
-            {t('installApp.helpNote')}
-          </p>
-
           <div className="mt-6 pt-6 border-t border-gray-100 text-center">
             <button
               onClick={handleSkip}

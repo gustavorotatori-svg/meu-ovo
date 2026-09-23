@@ -201,7 +201,7 @@ export default function LoginPage() {
             <div className="bg-[#111] border border-[#FFC928]/30 rounded-xl p-5 text-left mb-6">
               <p className="text-sm font-black text-[#FFC928] mb-1">🍳 Para Restaurantes</p>
               <p className="text-[11px] text-gray-300 leading-relaxed">
-                Cardápio digital grátis, pedidos direto no WhatsApp, zero taxas. Cadastre em <strong className="text-white">menos de 2 minutos</strong>.
+                Cardápio digital grátis, pedidos direto no WhatsApp, zero taxas.
               </p>
             </div>
           ) : (
