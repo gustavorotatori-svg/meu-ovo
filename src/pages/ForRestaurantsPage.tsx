@@ -216,6 +216,16 @@ export default function ForRestaurantsPage() {
                   <p className="text-yellow-500 font-bold pt-4">Total: R$67,90</p>
                 </div>
               </div>
+
+              {/* Delivery handoff */}
+              <div className="mt-6 overflow-hidden rounded-2xl border border-white/10">
+                <img
+                  src="/images/entrega-motoboy.jpg"
+                  alt="Chef entregando pedido MEU OVO ao entregador"
+                  loading="lazy"
+                  className="w-full h-56 lg:h-64 object-cover hover:scale-[1.02] transition-transform duration-700"
+                />
+              </div>
             </div>
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
           </div>
