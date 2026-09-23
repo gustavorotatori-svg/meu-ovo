@@ -430,6 +430,14 @@ export default function LandingPage() {
                   <p className={`text-base md:text-lg font-medium leading-relaxed max-w-xl transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     Aqui o restaurante avalia o cliente, não o contrário. Você vê a reputação de quem pede e decide se aceita. Sem comissão, sem refém de avaliação pública, sem algoritmo que te suga.
                   </p>
+                  <div className="mt-8 overflow-hidden rounded-[2rem] shadow-xl shadow-black/10">
+                    <img
+                      src="/images/chef-cozinha.jpg"
+                      alt="Chef finalizando um prato na cozinha com o cardápio MEU OVO aberto no tablet"
+                      loading="lazy"
+                      className="w-full h-64 md:h-80 object-cover hover:scale-[1.02] transition-transform duration-700"
+                    />
+                  </div>
                 </div>
               </ScrollReveal>
               <ScrollReveal direction="right" delay={120}>
