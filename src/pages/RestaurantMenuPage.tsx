@@ -758,9 +758,6 @@ export default function RestaurantMenuPage() {
                 <MessageCircle size={15} strokeWidth={2.5} />
                 <span>{t('menuPage.zapDoubts')}</span>
               </a>
-              <p className="text-[9px] text-center text-gray-500 font-bold uppercase tracking-wider">
-                {t('menuPage.noIntermediariesTag')}
-              </p>
             </div>
           </div>
 
@@ -820,7 +817,7 @@ export default function RestaurantMenuPage() {
               <div className="flex items-center gap-2">
                 <span className="text-xl">👩‍🍳</span>
                 <h4 className="font-display font-black text-lg uppercase italic tracking-tight text-[#FF7A00] dark:text-[#FFC928]">
-                  Nossa História Local
+                  {t('menuPage.localHistory')}
                 </h4>
               </div>
               <p className={cn(
@@ -830,7 +827,6 @@ export default function RestaurantMenuPage() {
                 {restaurant.historyText || t('menuPage.historyFallback')}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
-                <Badge variant="warning">{t('menuPage.noCommissionBadge')}</Badge>
                 <Badge variant="success">{t('menuPage.directBadge')}</Badge>
               </div>
             </div>
@@ -965,13 +961,8 @@ export default function RestaurantMenuPage() {
                     <div className="space-y-6 bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-[#FFC928]/10 dark:to-[#FF7A00]/5 p-6 rounded-[2.5rem] border border-amber-500/20 dark:border-[#FFC928]/20 mb-8 select-none">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                          <span className="text-[10px] font-black uppercase text-[#FF7A00] dark:text-[#FFC928] tracking-widest leading-none">{t('menuPage.clientRecommendation')}</span>
-                          <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 dark:text-white mt-1">{t('menuPage.neighborhoodFavorites')}</h3>
+                          <h3 className="font-display font-black text-xl uppercase italic tracking-tight text-slate-800 dark:text-white">{t('menuPage.neighborhoodFavorites')}</h3>
                         </div>
-                        <Badge size="md" className="self-start sm:self-center">
-                          <Star size={10} className="fill-black" />
-                          {t('menuPage.localFavorites')}
-                        </Badge>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1193,11 +1184,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isDark, onSelect, fl
               <span className="bg-slate-100 dark:bg-white/10 text-gray-500 dark:text-gray-400 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1">
                 <Clock size={8} />
                 {t('menuPage.prepTimeMin', { n: product.estimatedPrepTime })}
-              </span>
-            )}
-            {flashDeal && (
-              <span className="bg-black text-[#FFC928] text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm">
-                -{flashDeal.discountPercentage}%
               </span>
             )}
           </div>
@@ -1439,11 +1425,6 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
               </p>
               
               <div className="flex flex-wrap items-center gap-2 pt-2">
-                {product.onPromotion && (
-                  <Badge variant="danger" size="md">
-                    {t('menuPage.priceReduction')}
-                  </Badge>
-                )}
                 {product.estimatedPrepTime && (
                   <Badge variant="outline" size="md">
                     <Clock size={10} />

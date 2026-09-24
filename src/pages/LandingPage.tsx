@@ -21,15 +21,15 @@ const faqData = [
   },
   {
     q: 'Como os pedidos chegam no restaurante?',
-    a: 'Os pedidos são enviados direto para o WhatsApp do restaurante. Também existe um painel administrativo completo para acompanhar pedidos, relatórios e gerenciar o cardápio em tempo real.'
+    a: 'Direto para o WhatsApp do restaurante — e tudo fica registrado no painel administrativo.'
   },
   {
     q: 'Preciso saber programar para usar?',
-    a: 'Não. O cadastro leva menos de 10 minutos. Você adiciona seus produtos, fotos e preços pelo painel administrativo, que é simples e intuitivo. Se precisar de ajuda, nossa equipe acompanha por WhatsApp.'
+    a: 'Não. O cadastro leva menos de 10 minutos e o painel é simples — qualquer ajuda, falamos no WhatsApp.'
   },
   {
-    q: 'E se eu já uso aplicativos de delivery?',
-    a: 'Pode usar ao mesmo tempo. O Meu Ovo não substitui — complementa. Enquanto os grandes aplicativos cobram até 27% de comissão por pedido, seus pedidos diretos pelo Meu Ovo saem com taxa zero. É dinheiro que fica no seu bolso.'
+    q: 'E se eu já uso grandes apps de delivery?',
+    a: 'Pode usar junto. Enquanto os grandes apps cobram até 27% por pedido, aqui a taxa é zero.'
   },
   {
     q: 'Meus clientes precisam baixar algum app?',
@@ -37,15 +37,15 @@ const faqData = [
   },
   {
     q: 'Funciona para delivery, retirada e salão?',
-    a: 'Sim. O restaurante escolhe quais modos de pedido aceitar: delivery, retirada, salão (mesa) ou todos. O cliente escolhe no checkout e o pedido chega no WhatsApp com essa informação.'
+    a: 'Sim: delivery, retirada e salão. O cliente escolhe no checkout.'
   },
   {
     q: 'Preciso ter CNPJ?',
-    a: 'Não. O cadastro é aberto para qualquer restaurante ou empreendedor de alimentação. Você precisa apenas de um WhatsApp válido para receber os pedidos.'
+    a: 'Não. Basta um WhatsApp válido para receber os pedidos.'
   },
   {
     q: 'Como funciona a doação no checkout?',
-    a: 'O cliente pode adicionar uma doação voluntária ao pedido. 100% do valor arrecadado é repassado a instituições que combatem a fome. O restaurante não paga nada por isso — é um diferencial social da plataforma.'
+    a: 'O cliente pode doar no pedido. 100% vai para instituições que combatem a fome — sem custo para o restaurante.'
   }
 ];
 

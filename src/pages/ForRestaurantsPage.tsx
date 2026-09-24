@@ -34,10 +34,6 @@ export default function ForRestaurantsPage() {
             <ScrollReveal direction="up" delay={0} className="lg:col-span-7 space-y-6 text-left">
               {/* Colored tag row */}
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-[#FFC928] via-yellow-200 to-[#FFC928] bg-clip-text text-transparent animate-gradient-shift inline-flex items-center gap-1">
-                  <span className="text-[#FFC928]">✦</span> VOCÊ AVALIA O CLIENTE
-                  <span className="hidden sm:inline text-[#FFC928]/30">•</span>
-                </span>
                 <span className="text-[10px] font-black uppercase tracking-widest bg-gradient-to-r from-emerald-400 via-emerald-300 to-emerald-400 bg-clip-text text-transparent animate-gradient-shift inline-flex items-center gap-1">
                   <span className="text-emerald-400">✦</span> TAXA ZERO
                   <span className="hidden sm:inline text-emerald-400/30">•</span>
@@ -145,17 +141,6 @@ export default function ForRestaurantsPage() {
           </div>
         </div>
 
-        {/* Diagonal Slanted Black & Yellow Warning/Banner Tape style ribbon at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 h-10 bg-[#FFC928] overflow-hidden -skew-y-1 flex items-center shadow-lg pointer-events-none select-none">
-          <div className="flex whitespace-nowrap gap-12 font-black uppercase text-[10px] tracking-widest text-[#111] animate-marquee py-2 justify-center w-full">
-            <span>🔥 VOCÊ AVALIA O CLIENTE, NÃO O CONTRÁRIO &bull;</span>
-            <span>📍 PIX DIRETO DO CLIENTE &bull;</span>
-            <span>📱 PEDIDOS FORMATADOS NO WHATSAPP &bull;</span>
-            <span>🏆 PRÊMIO OVOS DE OURO — NOTA PRIVADA &bull;</span>
-            <span className="hidden sm:inline">⭐ RESTAURANTE É O ASTRO, NÃO ESCRAVO DE APP &bull;</span>
-            <span className="hidden md:inline">🚀 TAXA ZERO ONTEM, HOJE E SEMPRE &bull;</span>
-          </div>
-        </div>
       </div>
 
       <section className="py-24 max-w-7xl mx-auto px-4">
@@ -486,7 +471,6 @@ export default function ForRestaurantsPage() {
               {[
                 { feature: 'Comissão por pedido', meuOvo: '0%', competitor: '12–27%+' , highlight: true },
                 { feature: 'Mensalidade', meuOvo: 'Grátis', competitor: 'Variável', highlight: false },
-                { feature: 'Pedido chega no WhatsApp', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Cliente é do restaurante', meuOvo: true, competitor: false, highlight: true },
                 { feature: 'Restaurante avalia o cliente', meuOvo: true, competitor: false, highlight: true },
                 { feature: 'KDS (Painel de Cozinha)', meuOvo: true, competitor: false, highlight: false },
@@ -495,7 +479,6 @@ export default function ForRestaurantsPage() {
                 { feature: 'Cupons próprios', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Flash Deals', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'QR Code para mesa', meuOvo: true, competitor: false, highlight: false },
-                { feature: 'Etiquetas automáticas', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Doação no checkout', meuOvo: true, competitor: false, highlight: false },
                 { feature: 'Tempo de setup', meuOvo: '<10 min', competitor: 'Dias/semanas', highlight: false },
                 { feature: 'Dono dos dados do cliente', meuOvo: true, competitor: false, highlight: true },
