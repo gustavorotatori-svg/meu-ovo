@@ -477,7 +477,7 @@ export default function ForRestaurantsPage() {
                   <div className="text-[10px] font-bold uppercase text-gray-500">Cardápio Digital Próprio</div>
                 </div>
                 <div className="p-6 md:p-8 text-center bg-gray-100">
-                  <div className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">iFood / Rappi / 99</div>
+                  <div className="text-xs font-black uppercase tracking-widest text-gray-500 mb-1">Grandes Apps</div>
                   <div className="text-[10px] font-bold uppercase text-gray-400">Marketplace</div>
                 </div>
               </div>
@@ -529,7 +529,7 @@ export default function ForRestaurantsPage() {
                 <p className="text-gray-400 text-sm font-bold uppercase tracking-widest mb-3">Economia real em 1 mês</p>
                 <p className="text-4xl md:text-6xl font-black text-[#FFC928] mb-4">R$ 3.500+</p>
                 <p className="text-gray-400 text-sm font-medium max-w-lg mx-auto">
-                  Se um restaurante fatura R$ 15.000/mês e paga 23% de comissão no iFood, são <span className="text-white font-bold">R$ 3.450/mês</span> que vão para o bolso do app. No Meu Ovo, essa grana é sua.
+                  Se um restaurante fatura R$ 15.000/mês e paga 23% de comissão nos grandes apps de delivery, são <span className="text-white font-bold">R$ 3.450/mês</span> que vão para o bolso do app. No Meu Ovo, essa grana é sua.
                 </p>
               </div>
             </div>
