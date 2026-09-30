@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Smartphone, X, Download, Share2 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 function isStandalone(): boolean {
   return window.matchMedia('(display-mode: standalone)').matches
@@ -18,6 +19,7 @@ function isIOS(): boolean {
 }
 
 export default function PwaInstallPrompt() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -78,7 +80,7 @@ export default function PwaInstallPrompt() {
             isDark ? 'bg-zinc-900 border-zinc-800' : 'bg-white border-gray-100'
           }`}
         >
-          <button onClick={handleDismiss} aria-label="Fechar" className={`absolute top-3 right-3 p-2.5 rounded-full ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
+          <button onClick={handleDismiss} aria-label={t('ui.close')} className={`absolute top-3 right-3 p-2.5 rounded-full ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-100'}`}>
             <X size={16} className={isDark ? 'text-gray-400' : 'text-gray-500'} />
           </button>
 
@@ -88,10 +90,10 @@ export default function PwaInstallPrompt() {
             </div>
             <div className="flex-1 min-w-0">
               <h3 className={`font-black text-sm uppercase tracking-tight ${isDark ? 'text-white' : 'text-[#111]'}`}>
-                Instalar Meu Ovo
+                {t('ui.pwaTitle')}
               </h3>
               <p className={`text-xs mt-1 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                Adicione à tela inicial e acesse com 1 toque.
+                {t('ui.pwaDesc')}
               </p>
 
               {canNativeInstall ? (
@@ -100,7 +102,7 @@ export default function PwaInstallPrompt() {
                   className="mt-3 w-full bg-[#FFC928] text-black font-black py-3 px-4 rounded-xl text-xs uppercase tracking-wider hover:bg-[#e6b520] transition-all flex items-center justify-center gap-2"
                 >
                   <Download size={16} />
-                  Instalar Agora
+                  {t('ui.pwaInstall')}
                 </button>
               ) : (
                 <div className={`mt-3 p-3 rounded-xl space-y-2 ${isDark ? 'bg-zinc-950' : 'bg-gray-50'}`}>
@@ -108,30 +110,30 @@ export default function PwaInstallPrompt() {
                     <>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">1</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Toque em <Share2 size={14} className="inline -mb-0.5" /> Compartilhar</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.ios1Text')} <Share2 size={14} className="inline -mb-0.5" /></span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">2</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Role até "Adicionar à Tela de Início"</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.ios2Text')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">3</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Toque em "Adicionar" no canto superior</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.ios3Text')}</span>
                       </div>
                     </>
                   ) : (
                     <>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">1</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Toque no menu ⋮ do seu navegador</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.android1Text')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">2</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Selecione "Adicionar à Tela Inicial"</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.android2Text')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-xs">
                         <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFC928] text-black font-black text-[10px]">3</span>
-                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Toque em "Adicionar"</span>
+                        <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{t('installApp.android3Text')}</span>
                       </div>
                     </>
                   )}

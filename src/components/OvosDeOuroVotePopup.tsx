@@ -6,6 +6,7 @@ import { Order, OrderItem } from '../types';
 import { db } from '../lib/firebase';
 import { collection, query, where, getDocs, doc, setDoc, limit, getDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 // Helper to identify drinks or desserts based on product name or category
 const isDrinkOrDessert = (name: string, categoryName?: string): boolean => {
@@ -22,6 +23,7 @@ const isDrinkOrDessert = (name: string, categoryName?: string): boolean => {
 
 export default function OvosDeOuroVotePopup() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [lastOrder, setLastOrder] = useState<Order | null>(null);
   const [restaurantName, setRestaurantName] = useState('');
@@ -89,7 +91,7 @@ export default function OvosDeOuroVotePopup() {
           if (rDoc.exists()) {
             setRestaurantName(rDoc.data().name);
           } else {
-            setRestaurantName('Restaurante');
+            setRestaurantName(t('vote.restFallback'));
           }
 
           setLastOrder(latestFinished);
@@ -124,7 +126,7 @@ export default function OvosDeOuroVotePopup() {
         restaurantId: lastOrder.restaurantId,
         restaurantName: restaurantName,
         userId: user?.id || 'anonymous',
-        customerName: lastOrder.customerName || user?.full_name || 'Cliente',
+        customerName: lastOrder.customerName || user?.full_name || t('vote.customerFallback'),
         restaurantRating,
         items: Object.entries(itemRatings).map(([productId, rating]) => {
           const originalItem = lastOrder.items.find((i: OrderItem) => (i.productId || i.productName) === productId);
@@ -141,14 +143,14 @@ export default function OvosDeOuroVotePopup() {
       // Store in firestore under orderId to guarantee unique one-time voting per order
       await setDoc(doc(db, 'ovos_de_ouro_votes', lastOrder.id), votePayload);
       
-      toast.custom((t) => (
+      toast.custom((tt) => (
         <div className="bg-[#111111] text-white p-4 rounded-2xl shadow-2xl border border-[#FFC928]/30 flex items-center gap-3">
           <div className="p-2 bg-[#FFC928] rounded-xl text-[#111]">
             <Trophy size={18} className="animate-bounce" />
           </div>
           <div>
-            <p className="font-black text-xs uppercase tracking-wider text-[#FFC928]">Voto Computado!</p>
-            <p className="text-[10px] text-gray-300 font-bold">Obrigado por ajudar a decidir o Ovos de Ouro {year}!</p>
+            <p className="font-black text-xs uppercase tracking-wider text-[#FFC928]">{t('vote.countedTitle')}</p>
+            <p className="text-[10px] text-gray-300 font-bold">{t('vote.countedDesc', { year })}</p>
           </div>
         </div>
       ), { duration: 4000 });
@@ -156,7 +158,7 @@ export default function OvosDeOuroVotePopup() {
       setIsOpen(false);
     } catch (error) {
       console.error('Error submitting vote:', error);
-      toast.error('Ocorreu um erro ao enviar seu voto. Tente novamente.');
+      toast.error(t('vote.submitError'));
     } finally {
       setSubmitting(false);
     }
@@ -176,7 +178,7 @@ export default function OvosDeOuroVotePopup() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={() => setIsOpen(false)}
-          role="dialog" aria-modal="true" aria-label="Votar Ovos de Ouro"
+          role="dialog" aria-modal="true" aria-label={t('vote.ariaVote')}
           className="fixed inset-0 bg-black/85 backdrop-blur-md"
         />
 
@@ -194,8 +196,8 @@ export default function OvosDeOuroVotePopup() {
               <button 
                 onClick={() => setIsOpen(false)}
                 className="p-1 text-white/80 hover:text-white rounded-full hover:bg-white/10 transition-colors"
-                title="Fechar"
-                aria-label="Fechar"
+                title={t('ui.close')}
+                aria-label={t('ui.close')}
               >
                 <X size={18} />
               </button>
@@ -210,8 +212,8 @@ export default function OvosDeOuroVotePopup() {
               </div>
             </div>
 
-            <h3 className="text-xl font-black italic uppercase tracking-tighter leading-none bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent animate-gradient-shift">Ovos de Ouro {new Date().getFullYear()}</h3>
-            <p className="text-[9px] font-black uppercase text-amber-100 tracking-widest mt-1.5 leading-none">Prêmio de voto popular do Meu Ovo</p>
+            <h3 className="text-xl font-black italic uppercase tracking-tighter leading-none bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent animate-gradient-shift">{t('vote.headerTitle', { year: new Date().getFullYear() })}</h3>
+            <p className="text-[9px] font-black uppercase text-amber-100 tracking-widest mt-1.5 leading-none">{t('vote.headerSub')}</p>
           </div>
 
           {/* Body Content - Scrollable */}
@@ -219,22 +221,21 @@ export default function OvosDeOuroVotePopup() {
             <div className="bg-amber-50/50 border border-amber-200/50 p-4 rounded-2xl flex gap-3 text-amber-900">
               <Sparkles className="text-amber-500 shrink-0 mt-0.5" size={16} />
               <div className="text-left">
-                <p className="font-extrabold text-[10px] uppercase tracking-wider">Como funciona?</p>
+                <p className="font-extrabold text-[10px] uppercase tracking-wider">{t('vote.howTitle')}</p>
                 <p className="text-[11px] leading-relaxed text-amber-800 font-medium mt-1">
-                  Seu último pedido no <strong className="font-black text-[#111]">{restaurantName}</strong> está qualificado para votação!
-                  Avalie o estabelecimento e seus pratos abaixo.
+                  {t('vote.howDescBefore')} <strong className="font-black text-[#111]">{restaurantName}</strong> {t('vote.howDescAfter')}
                 </p>
                 <p className="text-[9px] text-amber-700/80 uppercase font-black tracking-widest mt-2">
-                  🔒 Notas anônimas e visíveis apenas ao restaurante.
+                  {t('vote.anonNote')}
                 </p>
               </div>
             </div>
 
             {/* Restaurant Evaluation */}
             <div className="space-y-3">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Este estabelecimento merece o Ouro?</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">{t('vote.deservesGold')}</p>
               <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl text-center shadow-inner">
-                <h4 className="font-black text-sm text-slate-800 uppercase italic tracking-tight mb-2.5">Avaliar de 0 a 5 a {restaurantName}</h4>
+                <h4 className="font-black text-sm text-slate-800 uppercase italic tracking-tight mb-2.5">{t('vote.ratePlace', { name: restaurantName })}</h4>
                 <div className="flex justify-center gap-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <motion.button
@@ -244,7 +245,7 @@ export default function OvosDeOuroVotePopup() {
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setRestaurantRating(star)}
                       className="p-1 focus:outline-none"
-                      aria-label={`Avaliar com ${star} ${star === 1 ? 'estrela' : 'estrelas'}`}
+                               aria-label={t('vote.rateAria', { n: star, unit: star === 1 ? t('vote.starOne') : t('vote.starMany') })}
                     >
                       <Star
                         size={32}
@@ -254,12 +255,12 @@ export default function OvosDeOuroVotePopup() {
                   ))}
                 </div>
                 <div className="mt-2 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest">
-                  {restaurantRating === 5 && '🌟 Excelente / Sensacional!'}
-                  {restaurantRating === 4 && '👍 Muito Bom!'}
-                  {restaurantRating === 3 && '👌 Aceitável'}
-                  {restaurantRating === 2 && '👎 Deixou a desejar'}
-                  {restaurantRating === 1 && '💔 Ruim / Fraco'}
-                  {restaurantRating === 0 && '❌ Pessimo!'}
+                  {restaurantRating === 5 && t('vote.r5')}
+                  {restaurantRating === 4 && t('vote.r4')}
+                  {restaurantRating === 3 && t('vote.r3')}
+                  {restaurantRating === 2 && t('vote.r2')}
+                  {restaurantRating === 1 && t('vote.r1')}
+                  {restaurantRating === 0 && t('vote.r0')}
                 </div>
               </div>
             </div>
@@ -267,7 +268,7 @@ export default function OvosDeOuroVotePopup() {
             {/* Items Evaluation (Excluding drinks & desserts) */}
             {evaluableItems.length > 0 && (
               <div className="space-y-3">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">Como estavam os pratos principais do pedido?</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-left">{t('vote.rateDishes')}</p>
                 <div className="space-y-3">
                   {evaluableItems.map((item: OrderItem) => {
                     const itemId = item.productId || item.productName;
@@ -286,7 +287,7 @@ export default function OvosDeOuroVotePopup() {
                               type="button"
                               onClick={() => setItemRatings(prev => ({ ...prev, [itemId]: star }))}
                               className="focus:outline-none p-0.5"
-                              aria-label={`Avaliar com ${star} ${star === 1 ? 'estrela' : 'estrelas'}`}
+                              aria-label={t('vote.rateAria', { n: star, unit: star === 1 ? t('vote.starOne') : t('vote.starMany') })}
                             >
                               <Star
                                 size={18}
@@ -305,7 +306,7 @@ export default function OvosDeOuroVotePopup() {
             {evaluableItems.length === 0 && (
               <div className="text-center p-4 py-6 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-slate-400">
                 <HelpCircle size={22} className="mx-auto text-slate-350 mb-1.5" />
-                <p className="text-[11px] font-bold">Esse pedido incluía apenas bebidas e/ou sobremesas, que estão isentas de avaliação individual nesta categoria de pratos!</p>
+                <p className="text-[11px] font-bold">{t('vote.onlyDrinks')}</p>
               </div>
             )}
           </div>
@@ -320,17 +321,17 @@ export default function OvosDeOuroVotePopup() {
               {submitting ? (
                 <>
                   <div className="w-4 h-4 rounded-full border-2 border-amber-300 border-t-transparent animate-spin" />
-                  <span>PROCESSANDO VOTO...</span>
+                  <span>{t('vote.processing')}</span>
                 </>
               ) : (
                 <>
-                  <span>CONFIRMAR MEU VOTO</span>
+                  <span>{t('vote.confirmVote')}</span>
                   <ArrowRight size={14} />
                 </>
               )}
             </button>
             <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest text-center mt-3">
-              Seu voto contribui diretamente para os prêmios anuais divulgados no dia 15 de Dezembro!
+              {t('vote.voteFootnote', { date: t('vote.voteDate') })}
             </p>
           </div>
         </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mic, Loader2, X } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface VoiceSearchProps {
   onTranscript: (text: string) => void;
@@ -9,6 +10,7 @@ interface VoiceSearchProps {
 }
 
 export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSearchProps) {
+  const { t } = useTranslation();
   const [isListening, setIsListening] = useState(false);
   const [browserSupportsSpeech, setBrowserSupportsSpeech] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +53,9 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
     recognition.onerror = (event: { error: string; message: string }) => {
       console.error('Speech recognition error:', event.error);
       if (event.error === 'not-allowed') {
-        setError('Permissão negada');
+        setError('denied');
       } else {
-        setError('Erro ao ouvir');
+        setError('listen');
       }
       setIsListening(false);
     };
@@ -78,7 +80,7 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
         type="button"
         onClick={startListening}
         disabled={isListening}
-        aria-label="Pesquisar por voz"
+        aria-label={t('ui.voiceAria')}
         className={cn(
           "p-3 rounded-xl transition-all flex items-center justify-center relative",
           isListening 
@@ -88,21 +90,21 @@ export default function VoiceSearch({ onTranscript, className, isDark }: VoiceSe
               : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-black",
           className
         )}
-        title="Buscar por voz"
+        title={t('ui.voiceTitle')}
       >
         {isListening ? <Loader2 className="animate-spin" size={20} /> : <Mic size={20} />}
       </button>
 
       {error && (
         <div className="absolute top-full mt-2 left-0 right-0 bg-red-100 text-red-600 text-[10px] font-bold uppercase py-1 px-2 rounded flex items-center justify-between z-50">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} aria-label="Fechar"><X size={10} /></button>
+          <span>{error === 'denied' ? t('ui.voiceDenied') : t('ui.voiceError')}</span>
+          <button onClick={() => setError(null)} aria-label={t('ui.close')}><X size={10} /></button>
         </div>
       )}
 
       {isListening && (
         <div className="absolute top-1/2 -translate-y-1/2 -right-24 bg-red-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full z-50 shadow-lg pointer-events-none">
-          Ouvindo...
+          {t('ui.listening')}
         </div>
       )}
     </div>

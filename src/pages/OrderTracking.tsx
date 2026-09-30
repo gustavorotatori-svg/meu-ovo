@@ -21,11 +21,14 @@ import {
   Send,
   AlertTriangle
 } from 'lucide-react';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'react-hot-toast';
 
 export default function OrderTracking() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { slug, orderId } = useParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +98,7 @@ export default function OrderTracking() {
 
   const handleReportProblem = async () => {
     if (!orderId || !problemType || !problemDesc) {
-      toast.error('Preencha os campos obrigatórios');
+      toast.error(t('track.fillRequired'));
       return;
     }
 
@@ -109,10 +112,10 @@ export default function OrderTracking() {
           createdAt: new Date().toISOString()
         }
       });
-      toast.success('Relato enviado para o restaurante');
+      toast.success(t('track.reportSent'));
       setIsProblemModalOpen(false);
     } catch (e) {
-      toast.error('Erro ao enviar relato');
+      toast.error(t('track.reportError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -120,17 +123,17 @@ export default function OrderTracking() {
 
   const handleWhatsAppUpdate = () => {
     if (!order || !restaurant) return;
-    
-    const STATUS_PT: Record<string, string> = {
-      received: 'Recebido',
-      preparing: 'Em preparo',
-      ready: 'Pronto para retirada/entrega',
-      'out-for-delivery': 'Saiu para entrega',
-      finished: 'Entregue/Finalizado',
-      cancelled: 'Cancelado'
+
+    const STATUS_LABEL: Record<string, string> = {
+      received: t('orderStatus.stepReceived'),
+      preparing: t('orderStatus.stepPreparing'),
+      ready: t('orderStatus.stepReady'),
+      'out-for-delivery': t('orderStatus.stepOutForDelivery'),
+      finished: t('orderStatus.stepFinished'),
+      cancelled: t('orderStatus.etaCancelled')
     };
 
-    const msg = `Olá! Gostaria de uma atualização sobre o meu pedido *#${order.id.slice(-6).toUpperCase()}*. No site ele consta como: *${STATUS_PT[order.status]}*.`;
+    const msg = t('track.waUpdate', { id: order.id.slice(-6).toUpperCase(), status: STATUS_LABEL[order.status] });
     const url = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
   };
@@ -150,20 +153,20 @@ export default function OrderTracking() {
   if (!order) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-        <h1 className="text-2xl font-bold text-zinc-900 mb-2">Pedido não encontrado</h1>
+        <h1 className="text-2xl font-bold text-zinc-900 mb-2">{t('track.notFoundTitle')}</h1>
         <Link to={`/m/${slug}`}>
-          <Button className="mt-4">Voltar ao Cardápio</Button>
+          <Button className="mt-4">{t('track.backToMenu')}</Button>
         </Link>
       </div>
     );
   }
 
   const steps = [
-    { id: 'received', label: 'Recebido', icon: <Clock />, desc: 'Estamos confirmando seu pedido' },
-    { id: 'preparing', label: 'Em Preparo', icon: <ChefHat />, desc: 'Estamos preparando o melhor da vida' },
-    { id: 'ready', label: 'Pronto', icon: <Package />, desc: 'Seu pedido está no ponto!' },
-    { id: 'out-for-delivery', label: 'Em Entrega', icon: <Bike />, desc: 'O motoboy já está voando!' },
-    { id: 'finished', label: 'Finalizado', icon: <CheckCircle2 />, desc: 'Obrigado pela preferência!' },
+    { id: 'received', label: t('track.stepReceived'), icon: <Clock />, desc: t('track.stepReceivedDesc') },
+    { id: 'preparing', label: t('track.stepPreparing'), icon: <ChefHat />, desc: t('track.stepPreparingDesc') },
+    { id: 'ready', label: t('track.stepReady'), icon: <Package />, desc: t('track.stepReadyDesc') },
+    { id: 'out-for-delivery', label: t('track.stepDelivering'), icon: <Bike />, desc: t('track.stepDeliveringDesc') },
+    { id: 'finished', label: t('track.stepFinished'), icon: <CheckCircle2 />, desc: t('track.stepFinishedDesc') },
   ];
 
   const currentStepIndex = steps.findIndex(s => s.id === order.status);
@@ -176,7 +179,7 @@ export default function OrderTracking() {
           <MoveLeft size={20} />
         </Link>
         <div className="flex-1">
-          <h1 className="font-black text-sm text-brand-white uppercase tracking-tight italic">Status do Pedido</h1>
+          <h1 className="font-black text-sm text-brand-white uppercase tracking-tight italic">{t('track.headerTitle')}</h1>
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none">MEU OVO #{order.id.slice(-6).toUpperCase()}</p>
         </div>
       </div>
@@ -185,10 +188,10 @@ export default function OrderTracking() {
         {order.problemReport && (
           <div className="bg-red-50 border-2 border-red-100 p-4 rounded-2xl flex items-start gap-3">
              <AlertTriangle className="text-red-500 shrink-0" size={18} />
-             <div>
-               <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">Problema Sinalizado</p>
-               <p className="text-xs text-red-800 font-bold mt-1">O restaurante já foi notificado sobre o seu relato de {order.problemReport.type === 'missing_item' ? 'item faltando' : 'problema no pedido'}.</p>
-             </div>
+               <div>
+                 <p className="text-[10px] font-black text-red-600 uppercase tracking-widest">{t('track.problemFlagged')}</p>
+                 <p className="text-xs text-red-800 font-bold mt-1">{t('track.problemNotified', { type: order.problemReport.type === 'missing_item' ? t('track.problemMissing') : t('track.problemOther') })}</p>
+               </div>
           </div>
         )}
 
@@ -214,12 +217,12 @@ export default function OrderTracking() {
                  </div>
               </motion.div>
               <div>
-                <h2 className="text-2xl font-black text-brand-black uppercase tracking-tighter italic leading-none">
-                  {order.status === 'cancelled' ? 'Cancelado' : steps[Math.max(0, currentStepIndex)]?.label}
-                </h2>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3 px-8 leading-relaxed">
-                   {order.status === 'cancelled' ? 'Lamento, seu pedido foi cancelado.' : steps[Math.max(0, currentStepIndex)]?.desc}
-                </p>
+                 <h2 className="text-2xl font-black text-brand-black uppercase tracking-tighter italic leading-none">
+                   {order.status === 'cancelled' ? t('track.cancelledTitle') : steps[Math.max(0, currentStepIndex)]?.label}
+                 </h2>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-3 px-8 leading-relaxed">
+                    {order.status === 'cancelled' ? t('track.cancelledDesc') : steps[Math.max(0, currentStepIndex)]?.desc}
+                 </p>
               </div>
            </div>
         </div>
@@ -231,12 +234,12 @@ export default function OrderTracking() {
                 <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center border border-white/10">
                    <Bike size={20} className="text-[#FFC928]" />
                 </div>
-                <div>
-                   <p className="text-[10px] font-black uppercase text-slate-400">Entrega via</p>
-                   <p className="text-sm font-black uppercase italic tracking-tight">LOGGI / MOTO PRÓPRIO</p>
-                </div>
+                 <div>
+                    <p className="text-[10px] font-black uppercase text-slate-400">{t('track.deliveryVia')}</p>
+                    <p className="text-sm font-black uppercase italic tracking-tight">{t('track.deliveryPartner')}</p>
+                 </div>
              </div>
-             <button className="p-3 bg-brand-egg text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all" aria-label="Ligar para o restaurante">
+              <button className="p-3 bg-brand-egg text-brand-black rounded-xl hover:scale-105 active:scale-95 transition-all" aria-label={t('track.callRestaurant')}>
                 <Phone size={16} />
              </button>
           </div>
@@ -263,7 +266,7 @@ export default function OrderTracking() {
                   <div className="pb-8">
                      <p className={cn("text-[10px] font-black uppercase tracking-widest flex items-center gap-2", isCurrent ? "text-brand-black" : "text-slate-400")}>
                        {step.label}
-                       {isCurrent && <span className="bg-[#FFC928]/20 text-[#FFC928] px-2 py-0.5 rounded text-[8px] animate-pulse">ATUAL</span>}
+                        {isCurrent && <span className="bg-[#FFC928]/20 text-[#FFC928] px-2 py-0.5 rounded text-[8px] animate-pulse">{t('track.currentBadge')}</span>}
                      </p>
                      {isCurrent && <p className="text-xs text-slate-500 font-bold mt-1 leading-normal italic tracking-tight">{step.desc}</p>}
                   </div>
@@ -275,8 +278,8 @@ export default function OrderTracking() {
         {/* Order Details Accordion-like summary */}
         <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
            <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Ticket Detalhado</span>
-              <span className="text-[9px] font-black text-slate-900 bg-brand-egg px-2 py-1 rounded-lg uppercase tracking-tight shadow-sm">Pago via {order.paymentMethod.toUpperCase()}</span>
+               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">{t('track.ticketTitle')}</span>
+               <span className="text-[9px] font-black text-slate-900 bg-brand-egg px-2 py-1 rounded-lg uppercase tracking-tight shadow-sm">{t('track.paidVia', { method: order.paymentMethod.toUpperCase() })}</span>
            </div>
            <div className="p-6 space-y-3">
               {order.items.map((item, i) => (
@@ -290,13 +293,13 @@ export default function OrderTracking() {
                         )}
                       </div>
                    </div>
-                   <p className="text-xs font-black text-slate-500 italic">R$ {(item.unitPrice * item.quantity).toFixed(2)}</p>
+                    <p className="text-xs font-black text-slate-500 italic">{fmt(item.unitPrice * item.quantity)}</p>
                 </div>
               ))}
               <div className="mt-6 pt-5 border-t border-dashed border-slate-200 flex justify-between items-end">
                  <div>
-                    <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic mb-1">TOTAL DO INVESTIMENTO</p>
-                    <p className="text-3xl font-black text-brand-black leading-none tracking-tighter italic uppercase">{formatCurrency(order.total)}</p>
+                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic mb-1">{t('track.totalLabel')}</p>
+                     <p className="text-3xl font-black text-brand-black leading-none tracking-tighter italic uppercase">{fmt(order.total)}</p>
                  </div>
               </div>
            </div>
@@ -306,9 +309,9 @@ export default function OrderTracking() {
         {!order.problemReport && order.status !== 'received' && (
           <button 
             onClick={() => setIsProblemModalOpen(true)}
-            className="w-full h-11 bg-red-50 text-red-500 border-2 border-red-100 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-red-100 transition-all shadow-lg shadow-red-50"
-          >
-             <AlertCircle size={16} /> MEU OVO DEU RUIM
+             className="w-full h-11 bg-red-50 text-red-500 border-2 border-red-100 rounded-2xl flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] hover:bg-red-100 transition-all shadow-lg shadow-red-50"
+           >
+              <AlertCircle size={16} /> {t('track.reportBtn')}
           </button>
         )}
 
@@ -318,27 +321,27 @@ export default function OrderTracking() {
             href={`tel:${WA_NUMBER}`}
             className="h-12 bg-white border-2 border-slate-200 rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:border-slate-400 transition-all shadow-sm"
            >
-              <Phone size={16} className="text-slate-400" /> SUPORTE
+               <Phone size={16} className="text-slate-400" /> {t('track.supportBtn')}
            </a>
            <button 
             onClick={handleWhatsAppUpdate}
             className="h-12 bg-[#25D366] text-white rounded-2xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:opacity-90 transition-all shadow-xl shadow-green-100"
            >
-              <MessageCircle size={18} /> WHATSAPP
+               <MessageCircle size={18} /> {t('track.whatsappBtn')}
            </button>
         </div>
 
         <div className="text-center pt-8">
-           <Link to="/" className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-[#FFC928] transition-colors italic">
-              MEU OVO • A REVOLUÇÃO DO CARDÁPIO
-           </Link>
+            <Link to="/" className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] hover:text-[#FFC928] transition-colors italic">
+               {t('track.brandFooter')}
+            </Link>
         </div>
       </div>
 
       {/* Problem Report Modal */}
       <AnimatePresence>
         {isProblemModalOpen && (
-          <div role="dialog" aria-modal="true" aria-label="Reportar problema" className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div role="dialog" aria-modal="true" aria-label={t('track.ariaReport')} className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
              <motion.div 
                initial={{ opacity: 0 }}
                animate={{ opacity: 1 }}
@@ -354,25 +357,25 @@ export default function OrderTracking() {
              >
                 <div className="absolute top-0 left-0 right-0 h-2 bg-red-500" />
                 <div className="flex justify-between items-start mb-6">
-                   <div>
-                      <h3 className="text-2xl font-black text-brand-black tracking-tighter uppercase italic leading-none">DEU RUIM?</h3>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 italic">A gente resolve, não estressa.</p>
-                   </div>
-                    <button onClick={() => setIsProblemModalOpen(false)} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-black" aria-label="Fechar">
+                    <div>
+                       <h3 className="text-2xl font-black text-brand-black tracking-tighter uppercase italic leading-none">{t('track.modalTitle')}</h3>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2 italic">{t('track.modalSub')}</p>
+                    </div>
+                     <button onClick={() => setIsProblemModalOpen(false)} className="p-2 bg-slate-100 rounded-xl text-slate-400 hover:text-black" aria-label={t('track.closeBtn')}>
                        <X size={20} />
                    </button>
                 </div>
 
                 <div className="space-y-6">
                    <div className="space-y-3">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">O que houve com o MEU OVO?</label>
-                      <div className="grid grid-cols-1 gap-2">
-                         {[
-                           { id: 'missing_item', label: 'Item Faltando', icon: <Package size={14} /> },
-                           { id: 'wrong_item', label: 'Item Errado', icon: <AlertCircle size={14} /> },
-                           { id: 'bad_condition', label: 'Cozinha Errou', icon: <ChefHat size={14} /> },
-                           { id: 'other', label: 'Outro Problema', icon: <AlertTriangle size={14} /> }
-                         ].map(type => (
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('track.whatHappened')}</label>
+                       <div className="grid grid-cols-1 gap-2">
+                          {[
+                            { id: 'missing_item', label: t('track.typeMissing'), icon: <Package size={14} /> },
+                            { id: 'wrong_item', label: t('track.typeWrong'), icon: <AlertCircle size={14} /> },
+                            { id: 'bad_condition', label: t('track.typeKitchen'), icon: <ChefHat size={14} /> },
+                            { id: 'other', label: t('track.typeOther'), icon: <AlertTriangle size={14} /> }
+                          ].map(type => (
                            <button 
                              key={type.id}
                               onClick={() => setProblemType(type.id as Order['problemReport']['type'])}
@@ -390,19 +393,19 @@ export default function OrderTracking() {
                       </div>
                    </div>
 
-                   <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Detalhe o ocorrido</label>
-                      <textarea 
-                        value={problemDesc}
-                        onChange={e => setProblemDesc(e.target.value)}
-                        placeholder="Ex: Faltou a batata frita e o refrigerante veio sem gás..."
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('track.detailLabel')}</label>
+                       <textarea 
+                         value={problemDesc}
+                         onChange={e => setProblemDesc(e.target.value)}
+                         placeholder={t('track.detailPlaceholder')}
                         className="w-full h-24 bg-slate-50 border-2 border-slate-100 rounded-2xl p-4 text-sm font-medium outline-none focus:border-red-200 transition-all resize-none"
                       />
                    </div>
 
                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center group cursor-pointer hover:bg-white hover:border-red-200 transition-all">
                       <Camera size={24} className="mx-auto text-slate-300 group-hover:text-red-400 transition-colors mb-2" />
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">Anexar Provas (Foto)</span>
+                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-mono">{t('track.attachPhoto')}</span>
                    </div>
 
                    <button 
@@ -410,9 +413,9 @@ export default function OrderTracking() {
                     disabled={isSubmitting || !problemType || !problemDesc}
                     className="w-full h-14 bg-red-600 text-white rounded-3xl font-black uppercase tracking-[0.2em] shadow-xl shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-2 hover:bg-red-700 transition-all hover:scale-[1.02]"
                    >
-                      {isSubmitting ? 'ENVIANDO...' : (
-                        <><Send size={18} /> ENVIAR RELATO AGORA</>
-                      )}
+                       {isSubmitting ? t('track.sending') : (
+                         <><Send size={18} /> {t('track.sendReport')}</>
+                       )}
                    </button>
                 </div>
              </motion.div>

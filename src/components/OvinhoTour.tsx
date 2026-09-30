@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronRight, ChevronLeft, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface TourStep {
   target?: string;
@@ -65,21 +66,22 @@ function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
 }
 
-const OVINHO_MESSAGES = [
-  'Opa, bora nessa! 🍳',
-  'Deixa comigo!',
-  'Show de bola!',
-  'Tá no caminho certo!',
-  'Fechou! 🎉',
+const OVINHO_MESSAGE_KEYS = [
+  'tour.msg1',
+  'tour.msg2',
+  'tour.msg3',
+  'tour.msg4',
+  'tour.msg5',
 ];
 
 export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: OvinhoTourProps) {
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [closing, setClosing] = useState(false);
   const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
   const [highlight, setHighlight] = useState<{ top: number; left: number; width: number; height: number } | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [ovinhoMessage] = useState(() => OVINHO_MESSAGES[Math.floor(Math.random() * OVINHO_MESSAGES.length)]);
+  const [ovinhoMessage] = useState(() => t(OVINHO_MESSAGE_KEYS[Math.floor(Math.random() * OVINHO_MESSAGE_KEYS.length)]));
 
   const current = steps[step];
 
@@ -226,7 +228,7 @@ export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: Ovinho
               <button
                 onClick={() => { setClosing(true); setTimeout(() => onSkip(), 300); }}
                 className="p-1.5 rounded-lg bg-black/10 hover:bg-black/20 transition-colors shrink-0"
-                aria-label="Fechar"
+                aria-label={t('tour.close')}
               >
                 <X size={14} className="text-black/60" />
               </button>
@@ -260,7 +262,7 @@ export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: Ovinho
                     className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-black text-gray-500 hover:bg-gray-100 transition-all"
                   >
                     <ChevronLeft size={14} />
-                    Voltar
+                    {t('tour.back')}
                   </button>
                 )}
                 <div className="flex-1" />
@@ -269,7 +271,7 @@ export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: Ovinho
                     onClick={next}
                     className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#111] text-white text-xs font-black hover:bg-black transition-all shadow-lg"
                   >
-                    Próximo
+                    {t('tour.next')}
                     <ChevronRight size={14} />
                   </button>
                 ) : (
@@ -277,7 +279,7 @@ export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: Ovinho
                     onClick={completeTour}
                     className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-[#FFC928] text-black text-xs font-black hover:bg-[#e6b520] transition-all shadow-lg shadow-yellow-500/20"
                   >
-                    Começar!
+                    {t('tour.start')}
                     <Sparkles size={14} />
                   </button>
                 )}
@@ -290,7 +292,7 @@ export default function OvinhoTour({ steps, isOpen, onComplete, onSkip }: Ovinho
                     onClick={() => { setClosing(true); setTimeout(() => onSkip(), 300); }}
                     className="text-[9px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest transition-colors"
                   >
-                    Pular tutorial
+                    {t('tour.skipTutorial')}
                   </button>
                 </div>
               )}

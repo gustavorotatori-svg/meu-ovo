@@ -12,18 +12,19 @@ import Footer from '../components/Footer';
 import ScrollReveal from '../components/ScrollReveal';
 import { Trophy, Share2, ArrowLeft, Award, ShoppingBag } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const categoryMap: Record<string, { label: string; icon: string; color: string }> = {
-  first_order: { label: 'Pedidos', icon: '🛵', color: '#FFC928' },
-  five_orders: { label: 'Pedidos', icon: '🛵', color: '#FFC928' },
-  ten_orders: { label: 'Pedidos', icon: '🛵', color: '#FFC928' },
-  streak_3: { label: 'Streak', icon: '🔥', color: '#FF6B35' },
-  streak_7: { label: 'Streak', icon: '🔥', color: '#FF6B35' },
-  donation: { label: 'Doações', icon: '❤️', color: '#E11D48' },
-  big_donor: { label: 'Doações', icon: '❤️', color: '#E11D48' },
-  pix_payment: { label: 'Pagamentos', icon: '💸', color: '#10B981' },
-  favorites_5: { label: 'Coleção', icon: '💝', color: '#EC4899' },
-  big_spender: { label: 'Gastos', icon: '💰', color: '#8B5CF6' },
+  first_order: { label: 'orders', icon: '🛵', color: '#FFC928' },
+  five_orders: { label: 'orders', icon: '🛵', color: '#FFC928' },
+  ten_orders: { label: 'orders', icon: '🛵', color: '#FFC928' },
+  streak_3: { label: 'streak', icon: '🔥', color: '#FF6B35' },
+  streak_7: { label: 'streak', icon: '🔥', color: '#FF6B35' },
+  donation: { label: 'donations', icon: '❤️', color: '#E11D48' },
+  big_donor: { label: 'donations', icon: '❤️', color: '#E11D48' },
+  pix_payment: { label: 'payments', icon: '💸', color: '#10B981' },
+  favorites_5: { label: 'collection', icon: '💝', color: '#EC4899' },
+  big_spender: { label: 'spending', icon: '💰', color: '#8B5CF6' },
 };
 
 function ProgressRing({ percent, size = 72, strokeWidth = 5, color = '#FFC928' }: { percent: number; size?: number; strokeWidth?: number; color?: string }) {
@@ -50,6 +51,7 @@ function ProgressRing({ percent, size = 72, strokeWidth = 5, color = '#FFC928' }
 
 export default function AchievementsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -83,10 +85,10 @@ export default function AchievementsPage() {
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center max-w-md">
             <Trophy size={48} className="mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-            <h2 className="text-xl font-black uppercase tracking-tight text-slate-800 dark:text-slate-200 mb-2">Faça login</h2>
-            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">Entre para ver suas conquistas</p>
+            <h2 className="text-xl font-black uppercase tracking-tight text-slate-800 dark:text-slate-200 mb-2">{t('achieve.loginTitle')}</h2>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-6">{t('achieve.loginDesc')}</p>
             <button onClick={() => navigate('/perfil')} className="bg-[#FFC928] text-black px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest">
-              Entrar
+              {t('achieve.loginBtn')}
             </button>
           </div>
         </div>
@@ -101,23 +103,23 @@ export default function AchievementsPage() {
   const totalCount = allAchievements.length;
   const progressPercent = totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0;
 
-  const categories = ['Pedidos', 'Streak', 'Doações', 'Pagamentos', 'Coleção', 'Gastos'];
+  const categories = ['orders', 'streak', 'donations', 'payments', 'collection', 'spending'];
   const grouped = categories.map(cat => ({
     category: cat,
     items: allAchievements.filter(a => categoryMap[a.id]?.label === cat),
   }));
 
   const handleShare = async () => {
-    const text = `🍳 MEU OVO — Minhas Conquistas\n\n${unlockedCount}/${totalCount} badges desbloqueadas!\n\n`;
+    const text = t('achieve.shareHeader') + '\n\n' + t('achieve.shareUnlocked', { u: unlockedCount, t: totalCount }) + '\n\n';
     const details = allAchievements.map(a => unlockedIds.includes(a.id) ? `✅ ${a.icon} ${a.label}` : `🔒 ${a.label}`).join('\n');
-    const full = text + details + '\n\nVem comigo: https://meu-ovo.app';
+    const full = text + details + '\n\n' + t('achieve.shareCta');
 
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Minhas Conquistas - MEU OVO', text: full });
+        await navigator.share({ title: t('achieve.shareTitle'), text: full });
       } else {
         await navigator.clipboard.writeText(full);
-        toast.success('Compartilhado!');
+        toast.success(t('achieve.sharedToast'));
       }
     } catch { }
   };
@@ -127,9 +129,9 @@ export default function AchievementsPage() {
       <Navbar />
       <div className="flex-1 max-w-4xl w-full mx-auto px-4 py-10 space-y-8">
         <ScrollReveal direction="up">
-          <button onClick={() => navigate('/perfil')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-[#FFC928] transition-colors mb-4">
-            <ArrowLeft size={14} /> Voltar ao perfil
-          </button>
+            <button onClick={() => navigate('/perfil')} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 hover:text-[#FFC928] transition-colors mb-4">
+              <ArrowLeft size={14} /> {t('achieve.backToProfile')}
+            </button>
 
           <div className={`relative overflow-hidden rounded-3xl p-8 ${isDark ? 'bg-[#1e293b]' : 'bg-white'} shadow-xl`}>
             <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#FFC928] via-purple-500 to-pink-500" />
@@ -141,16 +143,16 @@ export default function AchievementsPage() {
                 </div>
               </div>
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-2xl font-black uppercase tracking-tight italic">Suas Conquistas</h1>
+                <h1 className="text-2xl font-black uppercase tracking-tight italic">{t('achieve.headerTitle')}</h1>
                 <p className={`text-[11px] font-bold uppercase tracking-widest mt-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  {unlockedCount} de {totalCount} badges desbloqueadas
+                  {t('achieve.headerProgress', { u: unlockedCount, t: totalCount })}
                 </p>
                 <div className="flex flex-wrap gap-2 mt-3 justify-center md:justify-start">
                   <span className="px-3 py-1 bg-[#FFC928]/10 text-[#FFC928] text-[9px] font-black uppercase tracking-wider rounded-lg border border-[#FFC928]/20 flex items-center gap-1">
-                    <ShoppingBag size={10} /> {orders.length} pedidos
+                    <ShoppingBag size={10} /> {t('achieve.ordersChip', { n: orders.length })}
                   </span>
                   <span className="px-3 py-1 bg-purple-500/10 text-purple-500 text-[9px] font-black uppercase tracking-wider rounded-lg border border-purple-500/20 flex items-center gap-1">
-                    <Award size={10} /> {unlockedCount} badges
+                    <Award size={10} /> {t('achieve.badgesChip', { n: unlockedCount })}
                   </span>
                 </div>
               </div>
@@ -158,7 +160,7 @@ export default function AchievementsPage() {
                 onClick={handleShare}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[#FFC928] text-black text-[10px] font-black uppercase tracking-widest hover:bg-[#f5c010] transition-all"
               >
-                <Share2 size={14} /> Compartilhar
+                <Share2 size={14} /> {t('achieve.shareBtn')}
               </button>
             </div>
           </div>
@@ -175,7 +177,7 @@ export default function AchievementsPage() {
                 <div>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-lg">{items[0] && categoryMap[items[0].id]?.icon}</span>
-                    <h2 className="text-sm font-black uppercase tracking-widest">{category}</h2>
+                    <h2 className="text-sm font-black uppercase tracking-widest">{t(`achieve.cat${category[0].toUpperCase()}${category.slice(1)}`)}</h2>
                     <div className="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
                     <span className={`text-[9px] font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                       {items.filter(i => unlockedIds.includes(i.id)).length}/{items.length}
@@ -222,7 +224,7 @@ export default function AchievementsPage() {
                                   animate={{ scale: 1 }}
                                   className={`inline-block mt-1.5 text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'}`}
                                 >
-                                  Desbloqueada
+                                   {t('achieve.unlockedBadge')}
                                 </motion.span>
                               )}
                             </div>

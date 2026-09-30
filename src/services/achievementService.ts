@@ -1,5 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import i18n from '../lib/i18n';
+import { formatCurrency, currencyLocale } from '../lib/utils';
 
 export interface Achievement {
   id: string;
@@ -37,7 +39,15 @@ const ALL_ACHIEVEMENTS: Achievement[] = [
 ];
 
 export function getAllAchievements(): Achievement[] {
-  return ALL_ACHIEVEMENTS;
+  const lang = currencyLocale(i18n.language);
+  return ALL_ACHIEVEMENTS.map(a => ({
+    ...a,
+    label: i18n.t(`achieve.${a.id}Label`, { defaultValue: a.label }),
+    description: i18n.t(`achieve.${a.id}Desc`, {
+      defaultValue: a.description,
+      value: formatCurrency(a.id === 'big_spender' ? 500 : 50, lang),
+    }),
+  }));
 }
 
 export async function getAchievements(userId: string): Promise<AchievementState> {

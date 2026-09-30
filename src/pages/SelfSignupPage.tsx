@@ -12,9 +12,12 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import SEO from '../components/SEO';
 import { trackEvent } from '../lib/analytics';
+import { useTranslation } from 'react-i18next';
+import { getFirebaseErrorMessage } from '../lib/utils';
 
 export default function SelfSignupPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({ name: '', whatsapp: '', email: '', password: '' });
@@ -55,7 +58,7 @@ export default function SelfSignupPage() {
   const handleSubmit = async () => {
     if (!canSubmit || loading || submittingRef.current) return;
     if (auth.currentUser) {
-      toast.error('Você já está logado');
+      toast.error(t('signup.alreadyLogged'));
       navigate('/busca', { replace: true });
       return;
     }
@@ -87,7 +90,7 @@ export default function SelfSignupPage() {
       setCreated(true);
       setStep(2);
       trackEvent('sign_up', { method: 'email', role: 'customer' });
-      toast.success('Conta criada com sucesso!');
+      toast.success(t('signup.createdOk'));
 
       setTimeout(() => {
         if (mountedRef.current) {
@@ -96,13 +99,7 @@ export default function SelfSignupPage() {
       }, 1500);
     } catch (err: any) {
       if (!mountedRef.current) return;
-      if (err.code === 'auth/email-already-in-use') {
-        toast.error('Este email já está cadastrado. Faça login.');
-      } else if (err.code === 'auth/weak-password') {
-        toast.error('Senha muito fraca. Mínimo 6 caracteres.');
-      } else {
-        toast.error(err?.message || 'Erro ao criar conta');
-      }
+      toast.error(getFirebaseErrorMessage(err) || t('signup.createError'));
     } finally {
       submittingRef.current = false;
       if (mountedRef.current) setLoading(false);
@@ -111,7 +108,7 @@ export default function SelfSignupPage() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] font-sans">
-      <SEO title="Criar Conta Grátis - Meu OVO" description="Crie seu restaurante no Meu OVO grátis. Cardápio digital, pedidos no WhatsApp, zero taxas." />
+      <SEO title={t('signup.seoTitle')} description={t('signup.seoDesc')} />
       <Navbar />
 
       <div className="px-6 pt-6">
@@ -124,33 +121,33 @@ export default function SelfSignupPage() {
             <div className="space-y-8">
               <div className="text-center space-y-3">
                 <h1 className="text-4xl font-black text-white uppercase italic tracking-tighter">
-                  Criar <span className="text-[#FFC928]">conta</span>
+                  {t('signup.titleA')} <span className="text-[#FFC928]">{t('signup.titleB')}</span>
                 </h1>
                 <p className="text-gray-400 font-medium text-sm">
-                  Grátis. Sem cartão. Sem taxas. No ar em minutos.
+                  {t('signup.tagline')}
                 </p>
               </div>
 
               <form onSubmit={e => { e.preventDefault(); handleSubmit(); }} className="bg-[#111] border border-white/5 rounded-3xl p-6 space-y-5">
                 <div>
-                  <label htmlFor="signup-name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Nome do restaurante</label>
+                  <label htmlFor="signup-name" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('signup.nameLabel')}</label>
                   <input
                     id="signup-name"
                     autoFocus
                     autoComplete="organization"
                     value={form.name}
                     onChange={e => update('name', e.target.value)}
-                    placeholder="Ex: Restaurante Sabor"
+                     placeholder={t('signup.namePlaceholder')}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
                     aria-required="true"
                     aria-invalid={form.name.length > 0 && !valid.name}
                   />
                   {form.name.length > 0 && !valid.name && (
-                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Nome deve ter pelo menos 2 caracteres</p>
+                     <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">{t('signup.nameError')}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="signup-whatsapp" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">WhatsApp</label>
+                  <label htmlFor="signup-whatsapp" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('signup.waLabel')}</label>
                   <input
                     id="signup-whatsapp"
                     inputMode="tel"
@@ -163,28 +160,28 @@ export default function SelfSignupPage() {
                     aria-invalid={form.whatsapp.length > 0 && !valid.whatsapp}
                   />
                   {form.whatsapp.length > 0 && !valid.whatsapp && (
-                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Informe um número de WhatsApp válido (mínimo 10 dígitos)</p>
+                     <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">{t('signup.waError')}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="signup-email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email</label>
+                  <label htmlFor="signup-email" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('signup.emailLabel')}</label>
                   <input
                     id="signup-email"
                     type="email"
                     autoComplete="email"
                     value={form.email}
                     onChange={e => update('email', e.target.value)}
-                    placeholder="seu@email.com"
+                     placeholder={t('signup.emailPlaceholder')}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
                     aria-required="true"
                     aria-invalid={form.email.length > 0 && !valid.email}
                   />
                   {form.email.length > 0 && !valid.email && (
-                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Informe um email válido</p>
+                     <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">{t('signup.emailError')}</p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="signup-password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Senha</label>
+                  <label htmlFor="signup-password" className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">{t('signup.passLabel')}</label>
                   <input
                     id="signup-password"
                     type="password"
@@ -192,13 +189,13 @@ export default function SelfSignupPage() {
                     minLength={6}
                     value={form.password}
                     onChange={e => update('password', e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                     placeholder={t('signup.passPlaceholder')}
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-bold placeholder:text-gray-600 focus:outline-none focus:border-[#FFC928] transition-colors"
                     aria-required="true"
                     aria-invalid={form.password.length > 0 && !valid.password}
                   />
                   {form.password.length > 0 && !valid.password && (
-                    <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">Senha deve ter pelo menos 6 caracteres</p>
+                     <p className="text-red-400 text-[10px] font-bold mt-1" role="alert">{t('signup.passError')}</p>
                   )}
                 </div>
 
@@ -213,11 +210,11 @@ export default function SelfSignupPage() {
                     aria-required="true"
                   />
                   <span className="text-[10px] font-bold text-gray-400 leading-relaxed">
-                    Aceito os{' '}
-                    <Link to="/termos" className="text-[#FFC928] hover:underline">Termos de Uso</Link>
-                    {' '}e a{' '}
-                    <Link to="/privacidade" className="text-[#FFC928] hover:underline">Política de Privacidade</Link>
-                    , e autorizo o tratamento dos meus dados conforme a LGPD.
+                    {t('login.lgpdAccept')}{' '}
+                    <Link to="/termos" className="text-[#FFC928] hover:underline">{t('login.terms')}</Link>
+                    {' '}{t('login.lgpdAnd')}{' '}
+                    <Link to="/privacidade" className="text-[#FFC928] hover:underline">{t('login.privacy')}</Link>
+                    {t('login.lgpdTail')}
                   </span>
                 </label>
 
@@ -228,17 +225,17 @@ export default function SelfSignupPage() {
                   isLoading={loading}
                   className="w-full"
                 >
-                  <Check size={16} /> Criar conta grátis
+                  <Check size={16} /> {t('signup.submitBtn')}
                 </Button>
 
                 <p className="text-center text-[10px] text-gray-500 font-bold">
-                  Já tem conta?{' '}
-                  <Link to="/login" className="text-[#FFC928] hover:underline">Entrar</Link>
+                  {t('signup.hasAccount')}{' '}
+                  <Link to="/login" className="text-[#FFC928] hover:underline">{t('signup.loginLink')}</Link>
                 </p>
               </form>
 
               <div className="grid grid-cols-3 gap-3 text-center">
-                {['Zero taxa', 'Cardápio digital', 'Pedidos WhatsApp'].map((item, i) => (
+                {[t('signup.perk1'), t('signup.perk2'), t('signup.perk3')].map((item, i) => (
                   <div key={i} className="bg-white/5 border border-white/5 rounded-2xl p-3">
                     <Check size={14} className="text-emerald-400 mx-auto mb-1" />
                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-wider">{item}</span>
@@ -251,8 +248,8 @@ export default function SelfSignupPage() {
           {step === 1 && (
             <div className="text-center space-y-6 py-12" role="status" aria-live="polite">
               <Loader2 size={40} className="animate-spin text-[#FFC928] mx-auto" aria-hidden="true" />
-              <p className="text-white font-bold text-lg">Criando seu restaurante...</p>
-              <p className="text-gray-400 text-sm">Só um instante</p>
+              <p className="text-white font-bold text-lg">{t('signup.creating')}</p>
+              <p className="text-gray-400 text-sm">{t('signup.moment')}</p>
             </div>
           )}
 
@@ -261,8 +258,8 @@ export default function SelfSignupPage() {
               <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto">
                 <Check size={32} className="text-emerald-400" />
               </div>
-              <h2 className="text-2xl font-black text-white">Conta criada!</h2>
-              <p className="text-gray-400 text-sm">Redirecionando para configuração do restaurante...</p>
+              <h2 className="text-2xl font-black text-white">{t('signup.createdTitle')}</h2>
+              <p className="text-gray-400 text-sm">{t('signup.createdDesc')}</p>
             </div>
           )}
         </div>

@@ -2,44 +2,46 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ChevronRight, ChevronLeft, Search, ShoppingCart, MapPin, Heart, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { db } from '../lib/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
 const steps = [
   {
     icon: <Sparkles size={36} className="text-black" />,
-    title: 'Bem-vindo ao MEU OVO!',
-    description: 'O marketplace que conecta você aos melhores restaurantes do seu bairro. Aqui, cada pedido fortalece o comércio local.',
+    titleKey: 'tut1Title',
+    descKey: 'tut1Desc',
     bgColor: 'bg-[#FFC928]',
   },
   {
     icon: <Search size={36} className="text-white" />,
-    title: 'Descubra Restaurantes',
-    description: 'Busque por tipo de culinária, filtre por preço ou veja os mais perto de você. Cada restaurante tem sua própria avaliação e estilo.',
+    titleKey: 'tut2Title',
+    descKey: 'tut2Desc',
     bgColor: 'bg-[#111]',
   },
   {
     icon: <ShoppingCart size={36} className="text-black" />,
-    title: 'Faça seu Pedido',
-    description: 'Monte seu carrinho, escolha formas de pagamento (o restaurante define) e finalize em poucos cliques. Tudo transparente, sem taxas escondidas.',
+    titleKey: 'tut3Title',
+    descKey: 'tut3Desc',
     bgColor: 'bg-emerald-500',
   },
   {
     icon: <MapPin size={36} className="text-white" />,
-    title: 'Acompanhe e Impacte',
-    description: 'Veja o status do seu pedido em tempo real. Parte de cada pedido apoia projetos sociais — você come bem e faz o bem.',
+    titleKey: 'tut4Title',
+    descKey: 'tut4Desc',
     bgColor: 'bg-sky-500',
   },
   {
     icon: <Heart size={36} className="text-black" />,
-    title: 'Pronto pra pedir?',
-    description: 'Explore os restaurantes, peça sua comida favorita e ajude a fortalecer a economia local. Bom apetite! 🍳',
+    titleKey: 'tut5Title',
+    descKey: 'tut5Desc',
     bgColor: 'bg-[#FFC928]',
   },
 ];
 
 export default function OnboardingTutorial() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [step, setStep] = useState(0);
   const [closing, setClosing] = useState(false);
   const totalSteps = steps.length;
@@ -109,13 +111,13 @@ export default function OnboardingTutorial() {
           className="relative w-full sm:max-w-md bg-white rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden"
           role="dialog"
           aria-modal="true"
-          aria-label={`Tutorial passo ${step + 1}: ${current.title}`}
+           aria-label={t('tour.stepAria', { n: step + 1, title: t('tour.' + current.titleKey) })}
         >
           {/* Close button */}
           <button
             onClick={skipTutorial}
             className="absolute top-4 right-4 z-10 p-2.5 rounded-xl bg-black/5 hover:bg-black/10 transition-colors"
-            aria-label="Pular tutorial"
+            aria-label={t('tour.skipTutorial')}
           >
             <X size={18} className="text-gray-500" />
           </button>
@@ -153,7 +155,7 @@ export default function OnboardingTutorial() {
               animate={{ y: 0, opacity: 1 }}
               className="text-xl font-black text-[#111] mb-3"
             >
-              {current.title}
+               {t('tour.' + current.titleKey)}
             </motion.h2>
 
             <motion.p
@@ -163,7 +165,7 @@ export default function OnboardingTutorial() {
               transition={{ delay: 0.1 }}
               className="text-sm text-gray-500 leading-relaxed mb-8"
             >
-              {current.description}
+               {t('tour.' + current.descKey)}
             </motion.p>
 
             {/* Actions */}
@@ -173,8 +175,8 @@ export default function OnboardingTutorial() {
                   onClick={prev}
                   className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-black text-gray-500 hover:bg-gray-100 transition-all"
                 >
-                  <ChevronLeft size={16} />
-                  Voltar
+                   <ChevronLeft size={16} />
+                   {t('tour.back')}
                 </button>
               )}
 
@@ -185,16 +187,16 @@ export default function OnboardingTutorial() {
                   onClick={next}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#111] text-white text-sm font-black hover:bg-black transition-all shadow-lg"
                 >
-                  Próximo
-                  <ChevronRight size={16} />
+                   {t('tour.next')}
+                   <ChevronRight size={16} />
                 </button>
               ) : (
                 <button
                   onClick={completeTutorial}
                   className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#FFC928] text-black text-sm font-black hover:bg-[#e6b520] transition-all shadow-lg shadow-yellow-500/20"
                 >
-                  Começar!
-                  <Sparkles size={16} />
+                   {t('tour.start')}
+                   <Sparkles size={16} />
                 </button>
               )}
             </div>
@@ -206,7 +208,7 @@ export default function OnboardingTutorial() {
                   onClick={skipTutorial}
                   className="text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest transition-colors"
                 >
-                  Pular tutorial
+                   {t('tour.skipTutorial')}
                 </button>
               </div>
             )}

@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Bell, X } from 'lucide-react';
 import { requestPushPermission, getFCMToken, isPushSupported } from '../services/notificationService';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 const DISMISS_KEY = 'meuovo_push_banner_dismissed';
 
 export default function PushPermissionBanner({ userId, onTokenReady }: { userId: string; onTokenReady?: (token: string) => void }) {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -25,9 +27,9 @@ export default function PushPermissionBanner({ userId, onTokenReady }: { userId:
     if (perm === 'granted') {
       const token = await getFCMToken();
       if (token) onTokenReady?.(token);
-      toast.success('Notificações ativadas!');
+      toast.success(t('ui.pushEnabled'));
     } else {
-      toast.error('Notificações bloqueadas. Ative nas configurações do navegador.');
+      toast.error(t('ui.pushBlocked'));
     }
     setVisible(false);
   };
@@ -51,20 +53,20 @@ export default function PushPermissionBanner({ userId, onTokenReady }: { userId:
               <Bell size={20} className="text-[#FFC928]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black text-[#111] dark:text-white uppercase tracking-tight">Não perca novidades!</p>
-              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">Ative as notificações para saber quando seu pedido atualizar</p>
+              <p className="text-xs font-black text-[#111] dark:text-white uppercase tracking-tight">{t('ui.pushTitle')}</p>
+              <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold mt-0.5">{t('ui.pushDesc')}</p>
               <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleAllow}
                   className="px-4 py-2 bg-[#FFC928] text-black rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-[#f5c010] transition-all"
                 >
-                  Ativar
+                  {t('ui.pushAllow')}
                 </button>
                 <button
                   onClick={handleDismiss}
                   className="px-4 py-2 text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-all"
                 >
-                  Agora não
+                  {t('ui.pushLater')}
                 </button>
               </div>
             </div>

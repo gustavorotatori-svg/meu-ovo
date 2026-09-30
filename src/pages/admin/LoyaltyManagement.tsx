@@ -474,8 +474,8 @@ export default function LoyaltyManagement() {
                    <table className="w-full text-left">
                       <thead>
                          <tr className={`border-b ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('checkout.name')}</th>
-                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('order.phone')}</th>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.name')}</th>
+                            <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.phone')}</th>
                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('loyalty.balance')}</th>
                             <th className={`px-6 py-4 text-[10px] font-black uppercase tracking-widest text-right ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>{t('common.actions')}</th>
                          </tr>
@@ -484,7 +484,7 @@ export default function LoyaltyManagement() {
                          {filteredProfiles.map(profile => (
                            <tr key={profile.id} className={`transition-colors ${isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'}`}>
                               <td className="px-6 py-4">
-                                 <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.customerName || t('checkout.name')}</p>
+                                  <p className={`text-sm font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{profile.customerName || t('common.name')}</p>
                               </td>
                               <td className={`px-6 py-4 text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                  {profile.customerPhone}

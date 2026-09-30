@@ -4,6 +4,7 @@ import { db } from '../lib/firebase';
 import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut as firebaseSignOut, updateProfile, sendEmailVerification, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { getFCMToken } from '../lib/fcm';
+import i18n from '../lib/i18n';
 
 type UserRole = 'customer' | 'restaurant' | 'admin';
 
@@ -149,7 +150,7 @@ displayName: data?.displayName || data?.full_name || auth.currentUser?.displayNa
       // If Firestore write fails, rollback the auth user to prevent orphaned accounts
       await res.user.delete().catch(() => {});
       console.error('[Auth] signUp failed, auth user rolled back:', firestoreError);
-      throw new Error('Falha ao criar perfil. Tente novamente.');
+      throw new Error(i18n.t('err.profileCreate', { defaultValue: 'Falha ao criar perfil. Tente novamente.' }));
     }
 
     try {

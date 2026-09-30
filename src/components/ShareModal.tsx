@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './Button';
 import { useState } from 'react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface ShareModalProps {
 }
 
 export default function ShareModal({ isOpen, onClose, url, title }: ShareModalProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -51,7 +53,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            role="dialog" aria-modal="true" aria-label="Compartilhar"
+            role="dialog" aria-modal="true" aria-label={t('ui.shareTitle')}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100]"
           />
           <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[101] p-4">
@@ -63,8 +65,8 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
             >
               <div className="p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-brand-black">Compartilhar</h3>
-                  <button onClick={onClose} aria-label="Fechar" className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter text-brand-black">{t('ui.shareTitle')}</h3>
+                  <button onClick={onClose} aria-label={t('ui.close')} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
                     <X size={20} className="text-slate-400" />
                   </button>
                 </div>
@@ -90,7 +92,7 @@ export default function ShareModal({ isOpen, onClose, url, title }: ShareModalPr
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Link do restaurante</label>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('ui.shareLinkLabel')}</label>
                     <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-2 pl-4">
                       <input 
                         type="text" 

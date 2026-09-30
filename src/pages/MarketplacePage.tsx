@@ -18,6 +18,8 @@ import { useRestaurant } from '../context/RestaurantContext';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { encodeGeohash, getGeohashRange } from '../lib/geohash';
+import { formatCurrency, currencyLocale } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 import { db } from '../lib/firebase';
 import { toast } from 'react-hot-toast';
 import { trackCuisineClick, trackSearch, trackRestaurantView, getUserProfile, hasMinHistory } from '../lib/userPreferences';
@@ -38,6 +40,8 @@ const PAGE_SIZE = 9;
 const priceLabels = { low: 'R$', medium: 'R$ R$', high: 'R$ R$ R$' };
 
 export default function MarketplacePage() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { restaurants: contextRestaurants, products } = useRestaurant();
   const { user } = useAuth();
   const { items: cartItems } = useCart();
@@ -132,7 +136,7 @@ export default function MarketplacePage() {
       setHasMore(snapshot.docs.length === PAGE_SIZE);
     } catch (error) {
       if ((error as any).code === 'FAILED_PRECONDITION' || (error as any).message?.includes('index')) {
-        setPageError('Índice do Firestore não encontrado. Usando fallback client-side.');
+        setPageError(t('market.pageErrorIndex'));
         // Fallback: fetch all restaurants matching geo or city, apply filters client-side
         const field = nearbyEnabled && userLocation ? 'geohash' : 'city';
         const fallbackQ = query(collection(db, 'restaurants'), limit(100));
@@ -161,13 +165,13 @@ export default function MarketplacePage() {
         setHasMore(false);
         setTotalEstimate(results.length);
       } else {
-        setPageError('Erro ao carregar restaurantes. Tente novamente.');
+        setPageError(t('market.pageErrorLoad'));
       }
     } finally {
       setPageLoading(false);
       setInitialLoading(false);
     }
-  }, [selectedCity, selectedCuisine, filterPriceRange, nearbyEnabled, userLocation]);
+  }, [selectedCity, selectedCuisine, filterPriceRange, nearbyEnabled, userLocation, t]);
 
   // Reset and fetch when primary filters change
   useEffect(() => {
@@ -263,7 +267,7 @@ export default function MarketplacePage() {
     setShareData({
       isOpen: true,
       url,
-      title: `Confira o cardápio de ${restaurant.name} no MEU OVO!`
+      title: t('market.shareTitle', { name: restaurant.name })
     });
   };
 
@@ -344,8 +348,8 @@ export default function MarketplacePage() {
       {user && user.role === 'customer' && !user.onboardingComplete && <OnboardingTutorial />}
       <div className="min-h-screen bg-[#F5F5F5] marketplace-page">
       <SEO 
-        title="Busca de Restaurantes"
-        description="Encontre os melhores restaurantes perto de você. Peça direto, sem intermediários e com impacto social real."
+        title={t('market.seoTitle')}
+        description={t('market.seoDesc')}
       />
       <Navbar />
 
@@ -357,9 +361,9 @@ export default function MarketplacePage() {
       <div className="bg-[#111111] pt-20 md:pt-32 pb-12">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl md:text-5xl font-display font-black text-white text-center mb-8 leading-tight">
-            O que você quer comer hoje?
+            {t('market.heroTitle')}
           </h1>
-          <p className="text-gray-400 text-center mb-8 font-medium">Pedido direto. Sem comissão. Apoie o restaurante local.</p>
+          <p className="text-gray-400 text-center mb-8 font-medium">{t('market.heroSubtitle')}</p>
           <div className="bg-white rounded-3xl shadow-2xl border-4 border-white/10 p-2 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
             <div className="flex items-center gap-2 sm:border-r sm:border-gray-100 sm:pr-5 pl-2 sm:pl-4 py-1 sm:py-2">
               <MapPin size={18} className="text-[#FFC928] shrink-0" />
@@ -377,7 +381,7 @@ export default function MarketplacePage() {
               <Search size={18} className="text-gray-400 shrink-0" />
               <input
                 type="text"
-                placeholder="Busque por restaurante ou tipo de comida..."
+                placeholder={t('market.searchPlaceholder')}
                 value={search}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -416,9 +420,9 @@ export default function MarketplacePage() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs sm:text-sm font-black text-gray-800 uppercase tracking-tight group-hover:text-[#FFC928] transition-colors truncate">{s.value}</p>
                           <p className="text-[8px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                            {s.type === 'cuisine' ? 'Tipo de Culinária' : 
-                             s.type === 'restaurant' ? `Restaurante • ${s.extra}` : 
-                             'Localidade'}
+                            {s.type === 'cuisine' ? t('market.suggestionCuisine') : 
+                             s.type === 'restaurant' ? `${t('market.suggestionRestaurant')} • ${s.extra}` : 
+                             t('market.suggestionLocality')}
                           </p>
                         </div>
                       </button>
@@ -428,12 +432,12 @@ export default function MarketplacePage() {
               </AnimatePresence>
             </div>
             {search && (
-              <button onClick={() => setSearch('')} className="hidden sm:block p-2 hover:bg-gray-100 rounded-full transition-colors shrink-0" aria-label="Limpar busca">
+              <button onClick={() => setSearch('')} className="hidden sm:block p-2 hover:bg-gray-100 rounded-full transition-colors shrink-0" aria-label={t('market.clearSearch')}>
                 <X size={18} className="text-gray-400" />
               </button>
             )}
             <button onClick={() => trackSearch(search)} className="w-full sm:w-auto bg-[#FFC928] text-[#111] font-display font-black px-6 sm:px-8 py-3 sm:py-4 rounded-2xl text-xs sm:text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-[#FFC928]/20 shrink-0">
-              Buscar
+              {t('market.searchBtn')}
             </button>
           </div>
         </div>
@@ -448,7 +452,7 @@ export default function MarketplacePage() {
               className={`flex flex-col items-center gap-1 px-4 py-3 rounded-xl flex-shrink-0 transition-all ${!selectedCuisine ? 'bg-[#111111] text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
               <span className="text-2xl">🍽️</span>
-              <span className="text-xs font-bold">Todos</span>
+              <span className="text-xs font-bold">{t('market.cuisineAll')}</span>
             </button>
             {cuisineTypes.map(c => (
               <button
@@ -474,7 +478,7 @@ export default function MarketplacePage() {
             className="flex items-center gap-2 bg-white text-gray-700 border border-gray-200 px-4 py-3 rounded-full text-sm font-medium hover:border-[#FFC928] transition-colors"
           >
             <Filter size={16} />
-            Filtros
+            {t('market.filtersBtn')}
             {hasFilters && <span className="bg-[#FFC928] text-[#111] text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">!</span>}
           </button>
 
@@ -494,8 +498,8 @@ export default function MarketplacePage() {
                   },
                   (err) => {
                     setGeoLoading(false);
-                    if (err.code === 1) toast.error('Permissão de localização negada');
-                    else toast.error('Erro ao obter localização');
+                    if (err.code === 1) toast.error(t('market.geoDenied'));
+                    else toast.error(t('market.geoError'));
                   }
                 );
               }
@@ -505,26 +509,26 @@ export default function MarketplacePage() {
             }`}
           >
             <MapPin size={14} className={geoLoading ? 'animate-pulse' : ''} />
-            {nearbyEnabled ? 'Perto de mim' : geoLoading ? 'Obtendo local...' : 'Perto de mim'}
+            {nearbyEnabled ? t('market.nearbyOn') : geoLoading ? t('market.nearbyLoading') : t('market.nearbyOn')}
           </button>
 
           <button
             onClick={() => setFilterOpenNow(!filterOpenNow)}
             className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterOpenNow ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
-            Aberto agora
+            {t('market.openNow')}
           </button>
           <button
             onClick={() => setFilterDelivery(!filterDelivery)}
             className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterDelivery ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
-            Com delivery
+            {t('market.withDelivery')}
           </button>
           <button
             onClick={() => setFilterPickup(!filterPickup)}
             className={`px-4 py-3 rounded-full text-sm font-medium transition-colors border ${filterPickup ? 'bg-[#111] text-white border-[#111]' : 'bg-white text-gray-700 border-gray-200 hover:border-[#FFC928]'}`}
           >
-            Com retirada
+            {t('market.withPickup')}
           </button>
           {['low', 'medium', 'high'].map(p => (
             <button
@@ -537,7 +541,7 @@ export default function MarketplacePage() {
           ))}
           {hasFilters && (
             <button onClick={clearFilters} className="flex items-center gap-1 text-sm text-red-500 font-medium hover:text-red-700">
-              <X size={14} /> Limpar
+              <X size={14} /> {t('market.clearFiltersBtn')}
             </button>
           )}
         </div>
@@ -553,7 +557,7 @@ export default function MarketplacePage() {
             >
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Filtrar por Bairro</h4>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">{t('market.filterHood')}</h4>
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto pr-1">
                     <button
                       onClick={() => setFilterNeighbourhood(null)}
@@ -563,7 +567,7 @@ export default function MarketplacePage() {
                           : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
                       }`}
                     >
-                      Todos os Bairros
+                      {t('market.allHoods')}
                     </button>
                     {neighborhoods.map(n => (
                       <button
@@ -582,7 +586,7 @@ export default function MarketplacePage() {
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Estrutura e Gestão</h4>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">{t('market.filterStructure')}</h4>
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={() => setFilterIndependent(!filterIndependent)}
@@ -592,7 +596,7 @@ export default function MarketplacePage() {
                           : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
                       }`}
                     >
-                      <span>👤 Restaurante Independente</span>
+                      <span>{t('market.filterIndependent')}</span>
                       <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${filterIndependent ? 'bg-black text-[#FFC928] border-black' : 'border-gray-300'}`}>
                         {filterIndependent && '✓'}
                       </span>
@@ -606,7 +610,7 @@ export default function MarketplacePage() {
                           : 'bg-gray-50 text-gray-600 border-gray-100 hover:border-[#FFC928]'
                       }`}
                     >
-                      <span>❤️ Familiar / Comercial Local</span>
+                      <span>{t('market.filterFamily')}</span>
                       <span className={`w-4 h-4 rounded-full border flex items-center justify-center text-[10px] ${filterFamilyRun ? 'bg-black text-[#FFC928] border-black' : 'border-gray-300'}`}>
                         {filterFamilyRun && '✓'}
                       </span>
@@ -615,11 +619,11 @@ export default function MarketplacePage() {
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">Filosofia Meu Ovo</h4>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-2.5">{t('market.philoTitle')}</h4>
                   <div className="bg-[#FF7A00]/5 border border-[#FF7A00]/10 p-4 rounded-2xl">
-                    <p className="text-[10px] font-bold text-[#FF7A00] leading-normal mb-1">🍳 100% Pedidos Diretos</p>
+                    <p className="text-[10px] font-bold text-[#FF7A00] leading-normal mb-1">{t('market.philoLine1')}</p>
                     <p className="text-[9px] font-semibold text-slate-500 leading-normal">
-                      Ao pedir pelo Meu Ovo, você compra diretamente do restaurante independente, sem intermediários corporativos e taxas abusivas de 30% dos marketplaces convencionais.
+                      {t('market.philoDesc')}
                     </p>
                   </div>
                 </div>
@@ -631,18 +635,18 @@ export default function MarketplacePage() {
         {/* Results header */}
         <div className="flex items-center justify-between mb-8 flex-wrap gap-3">
           <h2 className="font-display font-black text-[#111] text-2xl tracking-tight">
-            {initialLoading ? '—' : filtered.length} {filtered.length === 1 ? 'restaurante' : 'restaurantes'} {selectedCity && `em ${selectedCity}`}
+            {initialLoading ? '—' : filtered.length} {filtered.length === 1 ? t('market.restaurantOne') : t('market.restaurantMany')} {selectedCity && t('market.inCity', { city: selectedCity })}
           </h2>
           <div className="flex items-center gap-2">
-            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Ordenar</label>
+            <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">{t('market.sortLabel')}</label>
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value)}
               className="text-sm font-bold bg-white border border-gray-200 rounded-xl px-3 py-2 outline-none cursor-pointer"
             >
-              <option value="relevance">Relevância</option>
-              <option value="delivery">Entrega mais rápida</option>
-              <option value="name">A-Z</option>
+              <option value="relevance">{t('market.sortRelevance')}</option>
+              <option value="delivery">{t('market.sortDelivery')}</option>
+              <option value="name">{t('market.sortName')}</option>
             </select>
           </div>
         </div>
@@ -664,15 +668,15 @@ export default function MarketplacePage() {
                 <span className="text-2xl">🛒</span>
                 <div>
                   <p className="font-black text-sm text-[#111] uppercase tracking-tight">
-                    Você tem {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'} no carrinho
+                    {t('market.cartBannerTitle', { count: cartItems.length, unit: cartItems.length === 1 ? t('market.itemOne') : t('market.itemsMany') })}
                   </p>
                   <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">
-                    Finalize seu pedido agora
+                    {t('market.cartBannerDesc')}
                   </p>
                 </div>
               </div>
               <span className="text-xs font-black text-brand-egg group-hover:translate-x-1 transition-transform">
-                Ir para o carrinho →
+                {t('market.cartBannerCta')}
               </span>
             </div>
           </Link>
@@ -686,8 +690,8 @@ export default function MarketplacePage() {
             className="mb-8"
           >
             <SectionHeader
-              title="Seu último pedido"
-              description={`${lastOrder.items.length} ${lastOrder.items.length === 1 ? 'item' : 'itens'} • R$ ${lastOrder.total.toFixed(2)}`}
+              title={t('market.reorderTitle')}
+              description={t('market.reorderDesc', { count: lastOrder.items.length, unit: lastOrder.items.length === 1 ? t('market.itemOne') : t('market.itemsMany'), value: fmt(lastOrder.total) })}
               align="left"
               subtitleClass="text-emerald-600"
               className="mb-4"
@@ -697,13 +701,13 @@ export default function MarketplacePage() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-black text-sm text-[#111] uppercase tracking-tight truncate">
-                      {contextRestaurants.find(r => r.id === lastOrder.restaurantId)?.name || 'Restaurante'}
+                      {contextRestaurants.find(r => r.id === lastOrder.restaurantId)?.name || t('market.reorderFallback')}
                     </p>
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">
-                      {new Date(lastOrder.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} • {lastOrder.items.length} {lastOrder.items.length === 1 ? 'item' : 'itens'}
+                      {new Date(lastOrder.createdAt).toLocaleDateString(currencyLocale(i18n.language), { day: '2-digit', month: 'short' })} • {lastOrder.items.length} {lastOrder.items.length === 1 ? t('market.itemOne') : t('market.itemsMany')}
                     </p>
                   </div>
-                  <span className="text-xs font-black text-emerald-600">R$ {lastOrder.total.toFixed(2)}</span>
+                  <span className="text-xs font-black text-emerald-600">{fmt(lastOrder.total)}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {lastOrder.items.slice(0, 4).map((item, i) => (
@@ -713,7 +717,7 @@ export default function MarketplacePage() {
                   ))}
                   {lastOrder.items.length > 4 && (
                     <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2.5 py-1 rounded-lg">
-                      +{lastOrder.items.length - 4} mais
+                      {t('market.reorderMore', { count: lastOrder.items.length - 4 })}
                     </span>
                   )}
                 </div>
@@ -722,7 +726,7 @@ export default function MarketplacePage() {
                   className="w-full bg-emerald-50 text-emerald-700 font-black py-3 rounded-2xl hover:bg-emerald-100 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-2 border border-emerald-200"
                 >
                   <RotateCcw size={14} />
-                  Pedir de novo
+                  {t('market.reorderBtn')}
                 </Link>
               </div>
             </div>
@@ -733,7 +737,7 @@ export default function MarketplacePage() {
         {!initialLoading && hasMinHistory() && (
           <div className="mb-10">
             <SectionHeader
-              title="Descobertas para Você"
+              title={t('market.personalizedTitle')}
               align="left"
               subtitleClass="text-purple-600"
               className="mb-6"
@@ -754,12 +758,12 @@ export default function MarketplacePage() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20">
+            <div className="text-center py-20">
             <div className="text-6xl mb-4">🍳</div>
-            <h3 className="font-black text-[#111] text-xl mb-2">Nenhum restaurante encontrado</h3>
-            <p className="text-gray-500">Tente outros filtros ou busque por outro tipo de comida.</p>
+            <h3 className="font-black text-[#111] text-xl mb-2">{t('market.emptyTitle')}</h3>
+            <p className="text-gray-500">{t('market.emptyDesc')}</p>
             <button onClick={clearFilters} className="mt-4 bg-[#FFC928] text-[#111] font-bold px-6 py-3 rounded-full">
-              Limpar filtros
+              {t('market.clearFiltersEmpty')}
             </button>
           </div>
         ) : (
@@ -779,9 +783,9 @@ export default function MarketplacePage() {
                   className="bg-white border-2 border-[#111] text-[#111] font-black px-10 py-4 rounded-2xl text-sm hover:bg-[#111] hover:text-white transition-all disabled:opacity-50 flex items-center gap-2"
                 >
                   {pageLoading ? (
-                    <><Loader2 size={18} className="animate-spin" /> Carregando...</>
+                    <><Loader2 size={18} className="animate-spin" /> {t('market.loading')}</>
                   ) : (
-                    <>Carregar mais restaurantes <ChevronDown size={18} /></>
+                    <>{t('market.loadMore')} <ChevronDown size={18} /></>
                   )}
                 </button>
               </div>
@@ -794,7 +798,7 @@ export default function MarketplacePage() {
           {/* Section 1: Restaurantes Familiares do Bairro */}
           <div>
             <SectionHeader
-              title="Restaurantes Familiares do Bairro"
+              title={t('market.familyTitle')}
               align="left"
               subtitleClass="text-[#FF7A00]"
               className="mb-8"
@@ -813,7 +817,7 @@ export default function MarketplacePage() {
           {/* Section 2: Proprietários Independentes */}
           <div className="bg-[#111111] text-white -mx-4 md:-mx-8 px-6 md:px-12 py-12 rounded-[2.5rem] my-12 border-l-4 border-[#FFC928]">
             <SectionHeader
-              title="Apoie Empreendedores Independentes"
+              title={t('market.independentTitle')}
               align="left"
               subtitleClass="text-[#FFC928]"
               titleClass="text-[#FFC928]"
@@ -833,7 +837,7 @@ export default function MarketplacePage() {
           {/* Section 3: Mais Pedidos Próximos de Você */}
           <div>
             <SectionHeader
-              title="Mais Pedidos Perto de Você"
+              title={t('market.popularTitle')}
               align="left"
               subtitleClass="text-amber-600"
               className="mb-8"
@@ -869,6 +873,8 @@ const RestaurantCard: React.FC<{
   featured?: boolean;
   onShare: (e: React.MouseEvent) => void;
 }> = ({ restaurant: r, featured, onShare }) => {
+  const { t, i18n } = useTranslation();
+  const fmtCard = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { favorites, toggleFavorite, products } = useRestaurant();
   const isFav = favorites.includes(r.id);
   const hasPromo = products.some(p => p.restaurantId === r.id && p.onPromotion && p.promotionPrice && p.price > p.promotionPrice);
@@ -887,17 +893,17 @@ const RestaurantCard: React.FC<{
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
 
           <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-            <Badge>🍳 Direto</Badge>
+            <Badge>{t('market.cardDirect')}</Badge>
             {r.isOpen ? (
               <Badge variant="success">
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                Aberto
+                {t('market.cardOpen')}
               </Badge>
             ) : (
-              <Badge variant="outline">Fechado</Badge>
+              <Badge variant="outline">{t('market.cardClosed')}</Badge>
             )}
             {hasPromo && (
-              <Badge variant="danger" className="animate-pulse">🔥 Promo</Badge>
+              <Badge variant="danger" className="animate-pulse">{t('market.cardPromo')}</Badge>
             )}
           </div>
 
@@ -905,7 +911,7 @@ const RestaurantCard: React.FC<{
             <button 
               onClick={onShare}
               className="p-3 bg-black/50 rounded-full text-white hover:bg-[#FFC928] hover:text-[#111] transition-all shadow-lg"
-              aria-label="Compartilhar restaurante"
+              aria-label={t('market.cardShare')}
             >
               <Share2 size={14} />
             </button>
@@ -920,8 +926,8 @@ const RestaurantCard: React.FC<{
                   ? 'bg-red-500 text-white hover:bg-red-600' 
                   : 'bg-black/50 text-white hover:bg-red-500 hover:text-white'
               }`}
-              title={isFav ? "Remover dos favoritos" : "Favoritar"}
-              aria-label="Favoritar restaurante"
+              title={isFav ? t('market.cardUnfav') : t('market.cardFav')}
+              aria-label={t('market.cardFavAria')}
             >
               <Heart size={14} className={isFav ? "fill-white" : ""} />
             </button>
@@ -948,7 +954,7 @@ const RestaurantCard: React.FC<{
           {featured && (
             <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
               <span className="bg-gradient-to-r from-[#FF7A00] to-[#FFC928] text-white text-[9px] font-black px-3 py-1 rounded-full uppercase shadow-lg tracking-wider animate-pulse">
-                🔥 Em alta esta semana
+                {t('market.cardTrending')}
               </span>
             </div>
           )}
@@ -961,28 +967,28 @@ const RestaurantCard: React.FC<{
             </div>
             <div className="flex items-center gap-1.5 text-gray-500 text-xs bg-gray-50 px-2.5 py-1 rounded-full">
               <Clock size={12} />
-              <span className="font-semibold">{r.estimatedTime} min</span>
+              <span className="font-semibold">{r.estimatedTime} {t('market.cardMin')}</span>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-1.5 mb-4 py-2.5 border-y border-gray-100">
             {r.foundedYear && (
               <span className="text-[9px] font-extrabold uppercase tracking-tight bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded-lg">
-                ⏳ {2026 - r.foundedYear} anos no bairro
+                {t('market.cardYears', { count: 2026 - r.foundedYear })}
               </span>
             )}
             {r.isIndependent && (
               <span className="text-[9px] font-extrabold uppercase tracking-tight bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-lg">
-                👤 Independente
+                {t('market.cardIndependent')}
               </span>
             )}
             {r.familyRun && (
               <span className="text-[9px] font-extrabold uppercase tracking-tight bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-lg">
-                ❤️ Familiar
+                {t('market.cardFamily')}
               </span>
             )}
             <span className="text-[9px] font-extrabold uppercase tracking-tight bg-[#FFC928]/10 text-[#B8860B] border border-[#FFC928]/30 px-2 py-0.5 rounded-lg">
-              🍳 Pedido Direto
+              {t('market.cardDirect2')}
             </span>
           </div>
 
@@ -993,12 +999,12 @@ const RestaurantCard: React.FC<{
               </div>
               {r.deliveryEnabled ? (
                 r.deliveryFee === 0 ? (
-                  <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded-md text-[11px]">Grátis</span>
+                  <span className="text-green-700 font-bold bg-green-50 px-2 py-0.5 rounded-md text-[11px]">{t('market.cardFree')}</span>
                 ) : (
-                  <span className="text-gray-500">R$ {((r.deliveryFee ?? 0)).toFixed(2)}</span>
+                  <span className="text-gray-500">{fmtCard(r.deliveryFee ?? 0)}</span>
                 )
               ) : (
-                <span className="text-gray-400">Sem delivery</span>
+                <span className="text-gray-400">{t('market.cardNoDelivery')}</span>
               )}
             </div>
             <span className="font-extrabold text-sm bg-gradient-to-r from-[#FF7A00] to-[#FFC928] bg-clip-text text-transparent">
@@ -1009,14 +1015,14 @@ const RestaurantCard: React.FC<{
           {r.minimumOrder > 0 && (
             <p className="text-[11px] text-gray-400 mt-3 flex items-center gap-1.5">
               <span className="inline-block w-1 h-1 rounded-full bg-gray-300" />
-              Pedido mínimo: R$ {r.minimumOrder.toFixed(2)}
+              {t('market.cardMinOrder', { value: fmtCard(r.minimumOrder) })}
             </p>
           )}
         </div>
 
         <div className="px-4 pb-4">
           <div className="bg-[#111111] text-[#FFC928] text-xs font-black text-center py-2 rounded-xl group-hover:bg-[#FFC928] group-hover:text-[#111] transition-colors">
-            Ver cardápio
+            {t('market.cardViewMenu')}
           </div>
         </div>
       </div>

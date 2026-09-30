@@ -1461,7 +1461,7 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, isDark, onClose, o
                           const a = ALLERGEN_MAP.get(key);
                           return a ? (
                             <span key={key} className="inline-flex items-center gap-1 bg-red-500/10 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-red-500/20">
-                              {a.icon} {a.label}
+                              {a.icon} {t('allergen.' + key, { defaultValue: a.label })}
                             </span>
                           ) : null;
                         })}

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import i18n from './i18n';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,32 +30,52 @@ export function currencyLocale(lang: string): string {
   return 'pt-BR';
 }
 
+const FIREBASE_KEY_BY_CODE: Record<string, string> = {
+  'auth/email-already-in-use': 'emailInUse',
+  'auth/invalid-email': 'invalidEmail',
+  'auth/user-disabled': 'userDisabled',
+  'auth/user-not-found': 'userNotFound',
+  'auth/wrong-password': 'wrongPassword',
+  'auth/weak-password': 'weakPassword',
+  'auth/too-many-requests': 'tooMany',
+  'auth/network-request-failed': 'network',
+  'auth/invalid-credential': 'invalidCredential',
+  'auth/expired-action-code': 'expiredCode',
+  'auth/invalid-action-code': 'invalidCode',
+  'auth/missing-email': 'missingEmail',
+  'auth/internal-error': 'internal',
+};
+
+const FIREBASE_PT_FALLBACK: Record<string, string> = {
+  emailInUse: 'Este e-mail já está cadastrado. Faça login ou use outro e-mail.',
+  invalidEmail: 'E-mail inválido. Verifique e tente novamente.',
+  userDisabled: 'Esta conta foi desativada. Entre em contato com o suporte.',
+  userNotFound: 'Usuário não encontrado. Verifique o e-mail ou cadastre-se.',
+  wrongPassword: 'Senha incorreta. Verifique e tente novamente.',
+  weakPassword: 'Senha muito fraca. Use pelo menos 6 caracteres com letras e números.',
+  tooMany: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
+  network: 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
+  invalidCredential: 'E-mail ou senha incorretos.',
+  expiredCode: 'Este link expirou. Solicite um novo.',
+  invalidCode: 'Link inválido. Verifique ou solicite um novo.',
+  missingEmail: 'Digite seu e-mail para continuar.',
+  internal: 'Erro interno do servidor. Tente novamente em alguns instantes.',
+};
+
 export function translateFirebaseError(code: string): string {
-  const map: Record<string, string> = {
-    'auth/email-already-in-use': 'Este e-mail já está cadastrado. Faça login ou use outro e-mail.',
-    'auth/invalid-email': 'E-mail inválido. Verifique e tente novamente.',
-    'auth/user-disabled': 'Esta conta foi desativada. Entre em contato com o suporte.',
-    'auth/user-not-found': 'Usuário não encontrado. Verifique o e-mail ou cadastre-se.',
-    'auth/wrong-password': 'Senha incorreta. Verifique e tente novamente.',
-    'auth/weak-password': 'Senha muito fraca. Use pelo menos 6 caracteres com letras e números.',
-    'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-    'auth/network-request-failed': 'Sem conexão com a internet. Verifique sua rede e tente novamente.',
-    'auth/invalid-credential': 'E-mail ou senha incorretos.',
-    'auth/expired-action-code': 'Este link expirou. Solicite um novo.',
-    'auth/invalid-action-code': 'Link inválido. Verifique ou solicite um novo.',
-    'auth/missing-email': 'Digite seu e-mail para continuar.',
-    'auth/internal-error': 'Erro interno do servidor. Tente novamente em alguns instantes.',
-  };
-  return map[code] || 'Ocorreu um erro inesperado. Tente novamente.';
+  const key = FIREBASE_KEY_BY_CODE[code];
+  if (!key) return i18n.t('err.default', { defaultValue: 'Ocorreu um erro inesperado. Tente novamente.' });
+  return i18n.t(`err.${key}`, { defaultValue: FIREBASE_PT_FALLBACK[key] });
 }
 
 export function getFirebaseErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const match = error.message.match(/\(([^)]+)\)/);
     if (match && match[1]) return translateFirebaseError(match[1]);
+    if (error.message === 'EMAIL_NOT_VERIFIED' || error.message === 'Falha ao criar perfil. Tente novamente.') return error.message;
     return error.message;
   }
-  return 'Ocorreu um erro inesperado. Tente novamente.';
+  return i18n.t('err.default', { defaultValue: 'Ocorreu um erro inesperado. Tente novamente.' });
 }
 
 const CSV_INJECTION_RE = /^[=+\-@]/;

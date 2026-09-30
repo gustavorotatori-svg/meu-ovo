@@ -31,7 +31,8 @@ import {
   Ticket,
   Trash2
 } from 'lucide-react';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../components/Button';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
@@ -85,6 +86,8 @@ interface CustomizerGroup {
 
 export default function MenuDisplay() {
   const { slug } = useParams();
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -168,7 +171,7 @@ export default function MenuDisplay() {
       
       const snap = await getDocs(q);
       if (snap.empty) {
-        toast.error('Cupom inválido');
+        toast.error(t('display.couponInvalid'));
         return;
       }
 
@@ -176,27 +179,27 @@ export default function MenuDisplay() {
       
       // Check expiry
       if (new Date(coupon.expiryDate) < new Date()) {
-        toast.error('Cupom expirado');
+        toast.error(t('display.couponExpired'));
         return;
       }
 
       // Check usage limit
       if (coupon.usageLimit && coupon.usageCount >= coupon.usageLimit) {
-        toast.error('Cupom esgotado');
+        toast.error(t('display.couponExhausted'));
         return;
       }
 
       // Check minimum order
       if (cartTotal < coupon.minOrderValue) {
-        toast.error(`Pedido mínimo para este cupom: ${formatCurrency(coupon.minOrderValue)}`);
+        toast.error(`Pedido mínimo para este cupom: ${fmt(coupon.minOrderValue)}`);
         return;
       }
 
       setAppliedCoupon(coupon);
-      toast.success('Cupom aplicado!');
+      toast.success(t('display.couponApplied'));
       setCouponCode('');
     } catch (e) {
-      toast.error('Erro ao aplicar cupom');
+      toast.error(t('display.couponApplyError'));
     }
   };
 
@@ -316,9 +319,9 @@ export default function MenuDisplay() {
   useEffect(() => {
     if (appliedCoupon && cartTotal < appliedCoupon.minOrderValue) {
       setAppliedCoupon(null);
-      toast.error('Pedido mínimo do cupom não atingido. Cupom removido.');
+      toast.error(t('display.couponMinNotMet'));
     }
-  }, [cartTotal, appliedCoupon]);
+  }, [cartTotal, appliedCoupon, t]);
   
   // Calculate reward discount
   let rewardDiscount = 0;
@@ -350,7 +353,7 @@ export default function MenuDisplay() {
 
   const handleCheckout = async () => {
     if (!formData.name || !formData.phone || (orderType === 'delivery' && (!formData.address || (restaurant?.deliverySettings?.feeByNeighborhood?.length ? !formData.neighborhood : false))) || (orderType === 'table' && !formData.tableNumber)) {
-      toast.error('Preencha as informações obrigatórias');
+      toast.error(t('display.fillRequired'));
       return;
     }
 
@@ -430,15 +433,15 @@ export default function MenuDisplay() {
         }
       }
 
-      toast.success('Pedido enviado com sucesso!');
+      toast.success(t('display.orderSent'));
       
       // Build WhatsApp Message
-      const message = `Pedido pelo Meu Ovo 🥚\n\nCliente: ${formData.name}\nTipo: ${orderType === 'delivery' ? 'Delivery' : 'Mesa ' + formData.tableNumber}\n${orderType === 'delivery' ? 'Endereço: ' + formData.address + (formData.neighborhood ? ' - ' + formData.neighborhood : '') + '\n' : ''}Pagamento: ${formData.paymentMethod.toUpperCase()}\n\nItens:\n${cart.map(i => {
+      const message = `${t('display.waTitle')}\n\n${t('display.waCustomer', { v: formData.name })}\n${t('display.waType', { v: orderType === 'delivery' ? t('display.waDeliveryType') : t('display.waTableType', { n: formData.tableNumber }) })}\n${orderType === 'delivery' ? t('display.waAddress', { v: formData.address + (formData.neighborhood ? ' - ' + formData.neighborhood : '') }) + '\n' : ''}${t('display.waPayment', { v: formData.paymentMethod.toUpperCase() })}\n\n${t('display.waItems')}\n${cart.map(i => {
         const itemOptions = i.selectedOptions && i.selectedOptions.length > 0 
           ? `\n   - ${i.selectedOptions.map(o => o.optionName).join(', ')}` 
           : '';
-        return `${i.quantity}x ${i.name} - ${formatCurrency(i.price * i.quantity)}${itemOptions}`;
-      }).join('\n')}\n\nSubtotal: ${formatCurrency(cartTotal)}\n${orderType === 'delivery' ? 'Entrega: ' + formatCurrency(deliveryFee) + '\n' : ''}${donationAmount > 0 ? 'Doação social: ' + formatCurrency(donationAmount) + '\n' : ''}Total: ${formatCurrency(finalTotal)}`;
+        return `${i.quantity}x ${i.name} - ${fmt(i.price * i.quantity)}${itemOptions}`;
+      }).join('\n')}\n\n${t('display.waSubtotal', { v: fmt(cartTotal) })}\n${orderType === 'delivery' ? t('display.waDelivery', { v: fmt(deliveryFee) }) + '\n' : ''}${donationAmount > 0 ? t('display.waDonation', { v: fmt(donationAmount) }) + '\n' : ''}${t('display.waTotal', { v: fmt(finalTotal) })}`;
       
       const encodedMsg = encodeURIComponent(message);
       const whatsappUrl = `https://api.whatsapp.com/send?phone=${WA_NUMBER}&text=${encodedMsg}`;
@@ -453,7 +456,7 @@ export default function MenuDisplay() {
         window.location.href = `/m/${slug}/order/${docRef.id}`;
       }, 1500);
     } catch (e) {
-      toast.error('Erro ao enviar pedido');
+      toast.error(t('display.orderError'));
     }
   };
 
@@ -511,9 +514,9 @@ export default function MenuDisplay() {
   if (!restaurant) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-        <h1 className="text-2xl font-bold text-zinc-900 mb-2">Restaurante não encontrado</h1>
-        <p className="text-zinc-500">O link que você acessou pode estar incorreto ou o cardápio está temporariamente desativado.</p>
-        <Button className="mt-4" onClick={() => window.location.href = '/'}>Voltar ao Início</Button>
+        <h1 className="text-2xl font-bold text-zinc-900 mb-2">{t('display.notFoundTitle')}</h1>
+        <p className="text-zinc-500">{t('display.notFoundDesc')}</p>
+        <Button className="mt-4" onClick={() => window.location.href = '/'}>{t('display.backHome')}</Button>
       </div>
     );
   }
@@ -532,26 +535,26 @@ export default function MenuDisplay() {
               className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl text-white hover:bg-white/20 transition-all flex items-center gap-2"
             >
               <Gift size={20} className="text-orange-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">PONTOS</span>
+              <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">{t('display.pointsBtn')}</span>
             </button>
           )}
           <a 
-            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de fazer um novo pedido.')}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t('display.waNewOrder'))}`}
             target="_blank"
             rel="noreferrer"
             className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl text-white hover:bg-white/20 transition-all flex items-center gap-2"
           >
             <Smartphone size={20} className="text-[#FFC928]" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline text-white">PEDIR VIA WHATSAPP</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline text-white">{t('display.orderViaWA')}</span>
           </a>
           <a 
-            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de falar com o restaurante.')}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t('display.waTalkStore'))}`}
             target="_blank"
             rel="noreferrer"
             className="bg-white/10 backdrop-blur-md border border-white/20 p-2.5 rounded-xl text-white hover:bg-white/20 transition-all flex items-center gap-2"
           >
             <MessageCircle size={20} className="text-[#25D366]" />
-            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline text-white">SUPORTE</span>
+            <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline text-white">{t('display.supportBtn')}</span>
           </a>
         </div>
 
@@ -561,11 +564,11 @@ export default function MenuDisplay() {
            <div className="flex flex-wrap justify-center gap-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
                 <Clock size={12} className="text-orange-500" />
-                <span>30-45 min</span>
+                <span>{t('display.etaBadge')}</span>
               </div>
               <div className="flex items-center gap-1.5 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
                 <Truck size={12} className="text-orange-500" />
-                <span>Envio R$ {restaurant.deliverySettings?.fee.toFixed(2)}</span>
+                <span>{t('display.deliveryFeeBadge', { v: fmt(restaurant.deliverySettings?.fee ?? 0) })}</span>
               </div>
            </div>
         </div>
@@ -583,17 +586,17 @@ export default function MenuDisplay() {
           >
             <div className="relative z-10 flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-100">Fidelidade Meu Ovo</p>
-                <h3 className="text-xl font-black italic uppercase tracking-tighter leading-tight">Clube de Vantagens</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-100">{t('display.loyaltyEyebrow')}</p>
+                <h3 className="text-xl font-black italic uppercase tracking-tighter leading-tight">{t('display.loyaltyTitle')}</h3>
                 <p className="text-[10px] font-bold text-orange-100 uppercase tracking-widest mt-1">
                   {restaurant.loyaltySettings?.accumulationType === 'order'
-                    ? `Ganhe ${restaurant.loyaltySettings?.pointsPerOrder} pontos por pedido`
-                    : `Ganhe ${restaurant.loyaltySettings?.pointsPerReal} ponto por cada R$ 1,00`}
+                    ? t('display.earnPerOrder', { n: restaurant.loyaltySettings?.pointsPerOrder })
+                    : t('display.earnPerReal', { n: restaurant.loyaltySettings?.pointsPerReal })}
                 </p>
                 {loyaltyProfile && (
                   <div className="mt-3 inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                     <Star size={12} className="fill-current" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Saldo: {loyaltyProfile.pointsBalance} pts</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">{t('display.balance', { n: loyaltyProfile.pointsBalance })}</span>
                   </div>
                 )}
               </div>
@@ -630,14 +633,14 @@ export default function MenuDisplay() {
             type="text"
             value={menuSearch}
             onChange={e => setMenuSearch(e.target.value)}
-            placeholder="Buscar no cardápio..."
+            placeholder={t('display.searchPlaceholder')}
             className="w-full h-12 pl-12 pr-4 rounded-2xl bg-white border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-brand-egg/30 focus:border-brand-egg transition-all placeholder:text-slate-300"
           />
           {menuSearch && (
             <button
               onClick={() => setMenuSearch('')}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              aria-label="Limpar busca"
+              aria-label={t('display.clearSearch')}
             >
               <X size={18} />
             </button>
@@ -655,8 +658,8 @@ export default function MenuDisplay() {
               return (
                 <div className="text-center py-16">
                   <Search size={40} className="mx-auto text-slate-300 mb-4" />
-                  <p className="font-black text-slate-400 text-sm uppercase tracking-widest">Nenhum produto encontrado</p>
-                  <p className="text-xs text-slate-300 mt-1">Tente buscar por outro termo</p>
+                  <p className="font-black text-slate-400 text-sm uppercase tracking-widest">{t('display.noResults')}</p>
+                  <p className="text-xs text-slate-300 mt-1">{t('display.noResultsHint')}</p>
                 </div>
               );
             }
@@ -664,7 +667,7 @@ export default function MenuDisplay() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-px bg-slate-200 flex-1" />
-                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">Resultados ({searchResults.length})</h2>
+                  <h2 className="text-xs font-black text-slate-800 uppercase tracking-[0.2em]">{t('display.results', { n: searchResults.length })}</h2>
                   <div className="h-px bg-slate-200 flex-1" />
                 </div>
                 <div className="grid gap-3">
@@ -678,15 +681,15 @@ export default function MenuDisplay() {
                         <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">{product.name}</h3>
                         {product.description && <p className="text-[11px] text-slate-500 leading-relaxed">{product.description}</p>}
                         {product.estimatedPrepTime && (
-                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1"><Clock size={12} /> {product.estimatedPrepTime} min</p>
+                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1"><Clock size={12} /> {product.estimatedPrepTime} {t('display.minUnit')}</p>
                         )}
                         <div className="flex items-center justify-between mt-2">
                           <span className="font-black text-slate-900 text-sm">
                             {product.onPromotion && product.promotionPrice && product.price > product.promotionPrice ? (
-                              <>{formatCurrency(product.promotionPrice)} <span className="line-through text-slate-300 text-[10px]">{formatCurrency(product.price)}</span></>
-                            ) : formatCurrency(product.price)}
+                              <>{fmt(product.promotionPrice)} <span className="line-through text-slate-300 text-[10px]">{fmt(product.price)}</span></>
+                            ) : fmt(product.price)}
                           </span>
-                          <span className="text-[10px] font-black text-brand-egg uppercase tracking-widest">Adicionar +</span>
+                          <span className="text-[10px] font-black text-brand-egg uppercase tracking-widest">{t('display.addMore')}</span>
                         </div>
                       </div>
                     </div>
@@ -735,32 +738,32 @@ export default function MenuDisplay() {
                         <p className="text-[10px] text-slate-400 font-medium leading-relaxed line-clamp-2">{product.description}</p>
                         {product.notes && (
                           <div className="flex items-start gap-1.5 mt-1">
-                             <div className="bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-orange-500/10 flex items-center gap-1">
-                                <Info size={8} /> OBS
-                             </div>
+                              <div className="bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-orange-500/10 flex items-center gap-1">
+                                 <Info size={8} /> {t('display.obsTag')}
+                              </div>
                              <p className="text-[9px] font-bold text-slate-500 leading-tight italic">{product.notes}</p>
                           </div>
                         )}
                         {product.ingredients && (
                           <div className="flex items-start gap-1.5 mt-1">
-                             <div className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-slate-200">
-                                COMPOSIÇÃO
-                             </div>
+                              <div className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-slate-200">
+                                 {t('display.compositionTag')}
+                              </div>
                              <p className="text-[9px] font-medium text-slate-500 leading-tight">{product.ingredients}</p>
                           </div>
                         )}
                         {(product.selectedAllergens?.length ? product.selectedAllergens : product.allergens) && (
                           <div className="flex items-start gap-1.5 mt-1">
-                             <div className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-red-100 italic flex items-center gap-1">
-                                <X size={8} /> ALERGÊNICOS
-                             </div>
+                              <div className="bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter shrink-0 border border-red-100 italic flex items-center gap-1">
+                                 <X size={8} /> {t('display.allergensTag')}
+                              </div>
                              {product.selectedAllergens?.length ? (
                                <div className="flex flex-wrap gap-1">
                                  {product.selectedAllergens.map(key => {
                                    const a = ALLERGEN_MAP.get(key);
                                    return a ? (
                                      <span key={key} className="inline-flex items-center gap-0.5 bg-red-50 text-red-600 px-1.5 py-0.5 rounded text-[8px] font-bold border border-red-100">
-                                       {a.icon} {a.label}
+                                       {a.icon} {t('allergen.' + key, { defaultValue: a.label })}
                                      </span>
                                    ) : null;
                                  })}
@@ -773,7 +776,7 @@ export default function MenuDisplay() {
                         {product.estimatedPrepTime && (
                           <div className="flex items-center gap-1 mt-1">
                              <Clock size={10} className="text-slate-400 shrink-0" />
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{product.estimatedPrepTime} min</p>
+                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{product.estimatedPrepTime} {t('display.minUnit')}</p>
                           </div>
                         )}
                         <div className="pt-2 flex items-center justify-between">
@@ -781,15 +784,15 @@ export default function MenuDisplay() {
                              {product.onPromotion && product.promotionPrice ? (
                                <>
                                  <span className="font-black text-orange-600 text-sm tracking-tight">
-                                   {formatCurrency(product.promotionPrice)}
+                                   {fmt(product.promotionPrice)}
                                  </span>
                                  <span className="text-slate-400 text-[10px] line-through font-normal">
-                                   {formatCurrency(product.price)}
+                                   {fmt(product.price)}
                                  </span>
                                </>
                              ) : (
                                <span className="font-black text-orange-600 text-sm tracking-tight">
-                                 {formatCurrency(product.price)}
+                                 {fmt(product.price)}
                                </span>
                              )}
                            </div>
@@ -798,8 +801,8 @@ export default function MenuDisplay() {
                                 e.stopPropagation();
                                 addToCart(product);
                               }}
-                              className="bg-slate-50 hover:bg-orange-500 hover:text-white text-slate-400 p-2 rounded-lg transition-all shadow-sm"
-                              aria-label="Adicionar"
+                               className="bg-slate-50 hover:bg-orange-500 hover:text-white text-slate-400 p-2 rounded-lg transition-all shadow-sm"
+                               aria-label={t('display.addAria')}
                             >
                                <Plus size={16} />
                             </button>
@@ -830,7 +833,7 @@ export default function MenuDisplay() {
          <motion.a
            initial={{ scale: 0, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
-           href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent('Olá! Gostaria de tirar uma dúvida sobre o cardápio.')}`}
+            href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(t('display.waMenuQuestion'))}`}
            target="_blank"
            rel="noreferrer"
            className="fixed bottom-6 left-6 z-50 bg-[#25D366] text-white p-3.5 rounded-2xl shadow-xl hover:scale-110 active:scale-95 transition-all"
@@ -857,9 +860,9 @@ export default function MenuDisplay() {
                      {cart.reduce((acc, c) => acc + c.quantity, 0)}
                    </span>
                 </div>
-                <span className="text-[10px] font-black uppercase tracking-widest">Ver Carrinho</span>
-             </div>
-             <span className="font-black text-sm tracking-tight">{formatCurrency(cartTotal)}</span>
+                 <span className="text-[10px] font-black uppercase tracking-widest">{t('display.viewCart')}</span>
+              </div>
+              <span className="font-black text-sm tracking-tight">{fmt(cartTotal)}</span>
            </button>
          </motion.div>
        )}
@@ -874,8 +877,8 @@ export default function MenuDisplay() {
              className="fixed inset-0 z-[60] bg-zinc-50 flex flex-col sm:max-w-md sm:mx-auto"
            >
              <div className="p-6 border-b border-zinc-200 flex items-center justify-between bg-white">
-                <h2 className="text-xl font-black">Seu pedido</h2>
-                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full" aria-label="Fechar">
+                 <h2 className="text-xl font-black">{t('display.cartTitle')}</h2>
+                 <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full" aria-label={t('display.closeAria')}>
                    <X />
                 </button>
              </div>
@@ -884,7 +887,7 @@ export default function MenuDisplay() {
                 {cart.length === 0 ? (
                   <div className="text-center py-20">
                      <ShoppingCart className="mx-auto h-16 w-16 text-zinc-100 mb-4" />
-                     <p className="text-zinc-500 font-medium">Seu carrinho está vazio</p>
+                      <p className="text-zinc-500 font-medium">{t('display.cartEmpty')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -892,13 +895,13 @@ export default function MenuDisplay() {
                        <div key={`${item.productId}-${index}`} className="flex items-center justify-between bg-white p-4 rounded-2xl border border-zinc-100">
                           <div className="flex-1">
                              <p className="font-bold text-zinc-900">{item.name}</p>
-                             <p className="text-sm text-orange-600 font-bold">{formatCurrency(item.price)}</p>
+                             <p className="text-sm text-orange-600 font-bold">{fmt(item.price)}</p>
                           </div>
                           <div className="flex items-center gap-3 bg-zinc-100 rounded-lg p-1">
                              <button 
                                onClick={() => removeFromCart(index)}
                                className="p-1.5 hover:bg-white rounded-md transition-colors"
-                               aria-label="Diminuir"
+                                aria-label={t('display.decreaseAria')}
                              >
                                 <Minus size={16} />
                              </button>
@@ -908,8 +911,8 @@ export default function MenuDisplay() {
                                  const prod = products.find(p => p.id === item.productId);
                                  if (prod) addToCart(prod, item.selectedOptions || []);
                                }}
-                               className="p-1.5 hover:bg-white rounded-md transition-colors text-orange-500"
-                               aria-label="Adicionar"
+                                className="p-1.5 hover:bg-white rounded-md transition-colors text-orange-500"
+                                aria-label={t('display.addAria')}
                              >
                                 <Plus size={16} />
                              </button>
@@ -926,7 +929,7 @@ export default function MenuDisplay() {
                         >
                           <div className="flex items-center gap-2">
                             <Gift size={20} className="animate-pulse" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Resgatar Pontos</span>
+                             <span className="text-[10px] font-black uppercase tracking-widest">{t('display.redeemPoints')}</span>
                           </div>
                           {loyaltyProfile && (
                             <span className="text-xs font-black">{loyaltyProfile.pointsBalance} pts</span>
@@ -938,7 +941,7 @@ export default function MenuDisplay() {
                       <div className="flex gap-2">
                         <input 
                           type="text" 
-                          placeholder="Código do cupom"
+                           placeholder={t('display.couponPlaceholder')}
                           className="flex-1 px-4 h-11 bg-zinc-100 rounded-xl text-xs font-black uppercase tracking-widest outline-none focus:ring-1 focus:ring-orange-500"
                           value={couponCode}
                           onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -946,18 +949,18 @@ export default function MenuDisplay() {
                         <Button 
                           onClick={applyCoupon} 
                           className="h-11 px-4 text-[10px] font-black uppercase tracking-widest"
-                          variant="outline"
-                        >
-                          Aplicar
-                        </Button>
+                           variant="outline"
+                         >
+                           {t('display.applyCoupon')}
+                         </Button>
                       </div>
                       {appliedCoupon && (
                         <div className="mt-2 flex items-center justify-between bg-orange-50 p-2 rounded-xl border border-orange-100">
                           <div className="flex items-center gap-2">
                             <Ticket size={14} className="text-orange-500" />
-                            <span className="text-[10px] font-black uppercase text-orange-600">{appliedCoupon.code} aplicado!</span>
+                             <span className="text-[10px] font-black uppercase text-orange-600">{appliedCoupon.code} {t('display.couponAppliedTag')}</span>
                           </div>
-                          <button onClick={() => setAppliedCoupon(null)} className="text-orange-400 hover:text-orange-600" aria-label="Fechar">
+                           <button onClick={() => setAppliedCoupon(null)} className="text-orange-400 hover:text-orange-600" aria-label={t('display.closeAria')}>
                             <X size={14} />
                           </button>
                         </div>
@@ -976,8 +979,8 @@ export default function MenuDisplay() {
                         orderType === 'delivery' ? "border-orange-500 bg-orange-50 text-orange-600" : "border-zinc-200 bg-white text-zinc-500"
                       )}
                     >
-                       <Truck size={24} />
-                       <span className="font-bold text-sm">Delivery</span>
+                        <Truck size={24} />
+                        <span className="font-bold text-sm">{t('display.orderDelivery')}</span>
                     </button>
                   )}
                   {restaurant.dineInEnabled && (
@@ -988,52 +991,52 @@ export default function MenuDisplay() {
                         orderType === 'table' ? "border-orange-500 bg-orange-50 text-orange-600" : "border-zinc-200 bg-white text-zinc-500"
                       )}
                     >
-                       <ShoppingBag size={24} />
-                       <span className="font-bold text-sm">Na Mesa</span>
+                        <ShoppingBag size={24} />
+                        <span className="font-bold text-sm">{t('display.orderTable')}</span>
                     </button>
                   )}
                   {!restaurant.deliveryEnabled && !restaurant.dineInEnabled && (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-xl text-center text-xs font-bold border border-red-100">
-                      Pedidos online estão temporariamente desativados.
-                    </div>
+                     <div className="p-4 bg-red-50 text-red-600 rounded-xl text-center text-xs font-bold border border-red-100">
+                       {t('display.ordersDisabled')}
+                     </div>
                   )}
                </div>
             </div>
 
             <div className="p-6 bg-white border-t border-zinc-200 space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                   <span className="text-zinc-500">Subtotal</span>
-                   <span className="font-bold">{formatCurrency(cartTotal)}</span>
-                </div>
-                {rewardDiscount > 0 && (
-                  <div className="flex justify-between items-center text-sm text-green-600">
-                   <span className="font-medium">Resgate Fidelidade</span>
-                   <span className="font-bold">-{formatCurrency(rewardDiscount)}</span>
-                  </div>
-                )}
-                {couponDiscount > 0 && (
-                  <div className="flex justify-between items-center text-sm text-green-600">
-                   <span className="font-medium">Cupom ({appliedCoupon?.code})</span>
-                   <span className="font-bold">-{formatCurrency(couponDiscount)}</span>
-                  </div>
-                )}
-                {orderType === 'delivery' && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span className="text-zinc-500">Taxa de Entrega</span>
-                    <span className="font-bold text-green-600">{formatCurrency(deliveryFee)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between items-center text-lg font-black pt-2 border-t border-zinc-100">
-                   <span>Total</span>
-                   <span className="text-orange-600">{formatCurrency(finalTotal)}</span>
-                </div>
-                <Button 
-                  className="w-full h-14 text-lg" 
-                  disabled={cart.length === 0}
-                  onClick={() => setIsCheckoutOpen(true)}
-                >
-                   Continuar pedido
-                </Button>
+                 <div className="flex justify-between items-center text-sm">
+                    <span className="text-zinc-500">{t('display.subtotal')}</span>
+                    <span className="font-bold">{fmt(cartTotal)}</span>
+                 </div>
+                 {rewardDiscount > 0 && (
+                   <div className="flex justify-between items-center text-sm text-green-600">
+                    <span className="font-medium">{t('display.loyaltyRedeem')}</span>
+                    <span className="font-bold">-{fmt(rewardDiscount)}</span>
+                   </div>
+                 )}
+                 {couponDiscount > 0 && (
+                   <div className="flex justify-between items-center text-sm text-green-600">
+                    <span className="font-medium">{t('display.couponLine', { code: appliedCoupon?.code })}</span>
+                    <span className="font-bold">-{fmt(couponDiscount)}</span>
+                   </div>
+                 )}
+                 {orderType === 'delivery' && (
+                   <div className="flex justify-between items-center text-sm">
+                     <span className="text-zinc-500">{t('display.deliveryFeeLine')}</span>
+                     <span className="font-bold text-green-600">{fmt(deliveryFee)}</span>
+                   </div>
+                 )}
+                 <div className="flex justify-between items-center text-lg font-black pt-2 border-t border-zinc-100">
+                    <span>{t('display.totalLine')}</span>
+                    <span className="text-orange-600">{fmt(finalTotal)}</span>
+                 </div>
+                 <Button 
+                   className="w-full h-14 text-lg" 
+                   disabled={cart.length === 0}
+                   onClick={() => setIsCheckoutOpen(true)}
+                 >
+                    {t('display.continueOrder')}
+                 </Button>
             </div>
           </motion.div>
         )}
@@ -1048,17 +1051,17 @@ export default function MenuDisplay() {
             className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-8 space-y-6 max-h-[95vh] overflow-y-auto no-scrollbar"
            >
               <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black tracking-tighter uppercase italic">Dados do Pedido</h3>
-                <button onClick={() => setIsCheckoutOpen(false)} className="p-2 border border-slate-100 rounded-full hover:bg-slate-50" aria-label="Fechar"><X size={20} /></button>
+                 <h3 className="text-xl font-black tracking-tighter uppercase italic">{t('display.checkoutTitle')}</h3>
+                 <button onClick={() => setIsCheckoutOpen(false)} className="p-2 border border-slate-100 rounded-full hover:bg-slate-50" aria-label={t('display.closeAria')}><X size={20} /></button>
               </div>
 
               {/* Donation Section Requested */}
               <div className="bg-brand-gray p-5 rounded-2xl border-2 border-brand-egg/20 space-y-3">
                  <div className="flex items-center gap-2">
                     <Heart size={16} className="text-red-500 fill-current" />
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-black">Doe uma refeição</h4>
-                 </div>
-                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">Ajude uma pessoa em situação de vulnerabilidade na sua cidade. 100% da sua doação vai para quem precisa.</p>
+                     <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-black">{t('display.donateTitle')}</h4>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight">{t('display.donateDesc')}</p>
                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {[0, 5, 10, 15].map(amt => (
                       <button 
@@ -1069,29 +1072,29 @@ export default function MenuDisplay() {
                           donationAmount === amt ? "bg-brand-black text-brand-white" : "bg-white text-slate-400 border border-slate-100"
                         )}
                       >
-                        {amt === 0 ? 'Não' : `R$ ${amt}`}
+                        {amt === 0 ? t('display.donateNo') : fmt(amt)}
                       </button>
                     ))}
                  </div>
-                 <p className="text-[8px] font-bold text-slate-400 uppercase italic">O pedido do restaurante continua 100% dele.</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase italic">{t('display.donateNote')}</p>
               </div>
 
               <div className="space-y-4">
                  <div className="space-y-1">
-                    <label className="text-xs font-black uppercase text-zinc-400">Nome do Cliente</label>
-                    <input 
-                      type="text" 
-                      placeholder="Como podemos te chamar?"
+                     <label className="text-xs font-black uppercase text-zinc-400">{t('display.nameLabel')}</label>
+                     <input 
+                       type="text" 
+                       placeholder={t('display.namePlaceholder')}
                       className="w-full p-3 bg-zinc-50 border-none rounded-xl outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-orange-500"
                       value={formData.name}
                       onChange={e => setFormData({...formData, name: e.target.value})}
                     />
                  </div>
                  <div className="space-y-1">
-                    <label className="text-xs font-black uppercase text-zinc-400">Telefone do Cliente</label>
-                    <input 
-                      type="tel" 
-                      placeholder="(00) 00000-0000"
+                     <label className="text-xs font-black uppercase text-zinc-400">{t('display.phoneLabel')}</label>
+                     <input 
+                       type="tel" 
+                       placeholder={t('display.phonePlaceholder')}
                       className="w-full p-3 bg-zinc-50 border-none rounded-xl outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-orange-500"
                       value={formData.phone}
                       onChange={e => setFormData({...formData, phone: e.target.value})}
@@ -1102,24 +1105,24 @@ export default function MenuDisplay() {
                    <>
                     {restaurant.deliverySettings?.feeByNeighborhood && restaurant.deliverySettings.feeByNeighborhood.length > 0 && (
                       <div className="space-y-1">
-                        <label className="text-xs font-black uppercase text-zinc-400">Bairro</label>
+                         <label className="text-xs font-black uppercase text-zinc-400">{t('display.hoodLabel')}</label>
                         <select 
                           className="w-full p-3 bg-zinc-50 border-none rounded-xl outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-orange-500 appearance-none"
                           value={formData.neighborhood}
                           onChange={e => setFormData({...formData, neighborhood: e.target.value})}
                         >
-                          <option value="">Selecione seu bairro</option>
-                          {restaurant.deliverySettings.feeByNeighborhood.map((n, i) => (
-                            <option key={i} value={n.neighborhood}>{n.neighborhood} ({formatCurrency(n.fee)})</option>
-                          ))}
-                          <option value="outro">Outro bairro ({formatCurrency(restaurant.deliverySettings.fee)})</option>
+                           <option value="">{t('display.hoodPlaceholder')}</option>
+                           {restaurant.deliverySettings.feeByNeighborhood.map((n, i) => (
+                             <option key={i} value={n.neighborhood}>{n.neighborhood} ({fmt(n.fee)})</option>
+                           ))}
+                           <option value="outro">{t('display.hoodOther', { v: fmt(restaurant.deliverySettings.fee) })}</option>
                         </select>
                       </div>
                     )}
                     <div className="space-y-1">
-                        <label className="text-xs font-black uppercase text-zinc-400">Endereço Completo</label>
-                        <textarea 
-                          placeholder="Rua, número, bairro e complemento"
+                         <label className="text-xs font-black uppercase text-zinc-400">{t('display.addressLabel')}</label>
+                         <textarea 
+                           placeholder={t('display.addressPlaceholder')}
                           className="w-full p-3 bg-zinc-50 border-none rounded-xl outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-orange-500 h-24"
                           value={formData.address}
                           onChange={e => setFormData({...formData, address: e.target.value})}
@@ -1128,10 +1131,10 @@ export default function MenuDisplay() {
                    </>
                  ) : (
                    <div className="space-y-1">
-                      <label className="text-xs font-black uppercase text-zinc-400">Número da Mesa</label>
-                      <input 
-                        type="number" 
-                        placeholder="Ex: 05"
+                       <label className="text-xs font-black uppercase text-zinc-400">{t('display.tableLabel')}</label>
+                       <input 
+                         type="number" 
+                         placeholder={t('display.tablePlaceholder')}
                         className="w-full p-3 bg-zinc-50 border-none rounded-xl outline-none ring-1 ring-zinc-200 focus:ring-2 focus:ring-orange-500"
                         value={formData.tableNumber}
                         onChange={e => setFormData({...formData, tableNumber: e.target.value})}
@@ -1140,9 +1143,9 @@ export default function MenuDisplay() {
                  )}
 
                  <div className="space-y-1">
-                    <label className="text-xs font-black uppercase text-zinc-400">Forma de Pagamento</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                       {[{id:'pix', icon:<Smartphone size={16}/>, label:'PIX'}, {id:'cartao', icon:<CreditCard size={16}/>, label:'Cartão'}, {id:'dinheiro', icon:<Banknote size={16}/>, label:'Dinheiro'}].map(p => (
+                     <label className="text-xs font-black uppercase text-zinc-400">{t('display.payLabel')}</label>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {[{id:'pix', icon:<Smartphone size={16}/>, label:t('display.payPix')}, {id:'cartao', icon:<CreditCard size={16}/>, label:t('display.payCard')}, {id:'dinheiro', icon:<Banknote size={16}/>, label:t('display.payCash')}].map(p => (
                          <button
                           key={p.id}
                           onClick={() => setFormData({...formData, paymentMethod: p.id})}
@@ -1160,9 +1163,9 @@ export default function MenuDisplay() {
               </div>
 
               <div className="pt-4 border-t border-zinc-100">
-                 <Button className="w-full h-14 text-lg" onClick={handleCheckout}>
-                    Finalizar Pedido • {formatCurrency(finalTotal)}
-                 </Button>
+                  <Button className="w-full h-14 text-lg" onClick={handleCheckout}>
+                     {t('display.finishOrder', { v: fmt(finalTotal) })}
+                  </Button>
               </div>
            </motion.div>
         </div>
@@ -1170,7 +1173,7 @@ export default function MenuDisplay() {
       {/* Loyalty Modal */}
       <AnimatePresence>
         {isLoyaltyOpen && (
-          <div role="dialog" aria-modal="true" aria-label="Fidelidade" className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-label={t('display.loyaltyAria')} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
              <motion.div 
                initial={{ scale: 0.9, opacity: 0 }}
                animate={{ scale: 1, opacity: 1 }}
@@ -1183,13 +1186,13 @@ export default function MenuDisplay() {
                       <div className="bg-white/10 backdrop-blur-md border border-white/20 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
                         <Gift className="text-orange-500 h-8 w-8" />
                       </div>
-                      <h2 className="text-xl font-black text-white uppercase tracking-tight">Clube de Fidelidade</h2>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Acumule pontos em cada pedido</p>
+                       <h2 className="text-xl font-black text-white uppercase tracking-tight">{t('display.loyaltyClub')}</h2>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('display.loyaltyEarn')}</p>
                    </div>
                     <button 
                       onClick={() => setIsLoyaltyOpen(false)}
-                      className="absolute top-4 right-4 text-slate-500 hover:text-white"
-                      aria-label="Fechar"
+                       className="absolute top-4 right-4 text-slate-500 hover:text-white"
+                       aria-label={t('display.closeAria')}
                     >
                        <X size={20} />
                    </button>
@@ -1201,31 +1204,31 @@ export default function MenuDisplay() {
                         <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
                            <Smartphone size={24} className="text-slate-300" />
                         </div>
-                        <p className="text-xs font-bold text-slate-500 leading-relaxed">Insira seu WhatsApp para ver seus pontos e resgatar prêmios</p>
-                        <input 
-                          type="tel"
-                          placeholder="(00) 00000-0000"
+                         <p className="text-xs font-bold text-slate-500 leading-relaxed">{t('display.loyaltyLookup')}</p>
+                         <input 
+                           type="tel"
+                           placeholder={t('display.phonePlaceholder')}
                           className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl text-center font-black text-slate-900 outline-none focus:ring-2 focus:ring-orange-500 h-12"
                           value={formData.phone}
                           onChange={(e) => setFormData({...formData, phone: e.target.value})}
                         />
-                        <p className="text-[9px] text-slate-400 font-bold uppercase">
-                          {restaurant.loyaltySettings?.accumulationType === 'order' 
-                            ? `Ganha ${restaurant.loyaltySettings?.pointsPerOrder} pontos por pedido`
-                            : `Ganha ${restaurant.loyaltySettings?.pointsPerReal} ponto por cada R$ 1,00 gasto`}
-                        </p>
+                         <p className="text-[9px] text-slate-400 font-bold uppercase">
+                           {restaurant.loyaltySettings?.accumulationType === 'order' 
+                             ? t('display.earnPerOrderShort', { n: restaurant.loyaltySettings?.pointsPerOrder })
+                             : t('display.earnPerRealShort', { n: restaurant.loyaltySettings?.pointsPerReal })}
+                         </p>
                      </div>
                    ) : loyaltyProfile ? (
                      <div className="space-y-6">
                         <div className="bg-orange-50 rounded-2xl p-6 border border-orange-100 text-center">
-                           <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">Seu Saldo Atual</p>
+                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest mb-1">{t('display.balanceNow')}</p>
                            <p className="text-5xl font-black text-slate-900 tracking-tighter">{loyaltyProfile.pointsBalance}</p>
-                           <p className="text-[10px] font-black text-slate-400 uppercase mt-1">Pontos Disponíveis</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase mt-1">{t('display.pointsAvail')}</p>
                         </div>
 
                         {/* History Section for Customer */}
                         <div className="space-y-3">
-                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Histórico Recente</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('display.historyRecent')}</h3>
                            <div className="space-y-2">
                               {loyaltyProfile.history?.slice().reverse().slice(0, 5).map((item, i: number) => (
                                 <div key={i} className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50/50 border border-slate-100">
@@ -1238,7 +1241,7 @@ export default function MenuDisplay() {
                                       </div>
                                       <div>
                                          <p className="text-[10px] font-bold text-slate-900 leading-none">{item.description}</p>
-                                         <p className="text-[8px] font-medium text-slate-400 mt-1">{new Date(item.createdAt).toLocaleDateString('pt-BR')}</p>
+                                          <p className="text-[8px] font-medium text-slate-400 mt-1">{new Date(item.createdAt).toLocaleDateString(currencyLocale(i18n.language))}</p>
                                       </div>
                                    </div>
                                    <span className={cn(
@@ -1250,13 +1253,13 @@ export default function MenuDisplay() {
                                 </div>
                               ))}
                               {(!loyaltyProfile.history || loyaltyProfile.history.length === 0) && (
-                                <p className="text-center py-4 text-[9px] font-black text-slate-300 uppercase italic tracking-widest">Sem histórico</p>
+                                 <p className="text-center py-4 text-[9px] font-black text-slate-300 uppercase italic tracking-widest">{t('display.noHistory')}</p>
                               )}
                            </div>
                         </div>
 
                         <div className="space-y-3">
-                           <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resgatar Prêmios</h3>
+                            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('display.redeemRewards')}</h3>
                            <div className="grid gap-2">
                               {restaurant.loyaltySettings?.redemptionRules?.map((rule: RewardRule) => {
                                 const canRedeem = loyaltyProfile.pointsBalance >= rule.pointsRequired;
@@ -1269,7 +1272,7 @@ export default function MenuDisplay() {
                                     onClick={() => {
                                       setAppliedReward(isApplied ? null : rule);
                                       setIsLoyaltyOpen(false);
-                                      if (!isApplied) toast.success(`Recompensa aplicada!`, { position: 'bottom-center' });
+                                       if (!isApplied) toast.success(t('display.rewardApplied'), { position: 'bottom-center' });
                                     }}
                                     className={cn(
                                       "w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all text-left",
@@ -1287,7 +1290,7 @@ export default function MenuDisplay() {
                                        <div>
                                           <p className="text-xs font-black text-slate-900 uppercase tracking-tight leading-none">{rule.description}</p>
                                           <p className={cn("text-[9px] font-bold uppercase tracking-widest mt-1", canRedeem ? "text-orange-500" : "text-slate-400")}>
-                                            {rule.pointsRequired} PONTOS
+                                             {rule.pointsRequired} {t('display.pointsUnit')}
                                           </p>
                                        </div>
                                     </div>
@@ -1303,15 +1306,15 @@ export default function MenuDisplay() {
                              onClick={() => setLoyaltyProfile(null)}
                              className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-orange-600 w-full"
                            >
-                              Trocar de conta
+                               {t('display.switchAccount')}
                            </button>
                         </div>
                      </div>
                    ) : (
                      <div className="text-center py-12">
                         <Star size={32} className="mx-auto text-slate-200 mb-4 animate-pulse" />
-                        <p className="text-xs font-bold text-slate-500">Você ainda não tem pontos neste restaurante.</p>
-                        <p className="text-[10px] text-slate-400 mt-2">Comece a comprar para ganhar!</p>
+                         <p className="text-xs font-bold text-slate-500">{t('display.noPointsYet')}</p>
+                         <p className="text-[10px] text-slate-400 mt-2">{t('display.startEarning')}</p>
                      </div>
                    )}
                 </div>
@@ -1323,7 +1326,7 @@ export default function MenuDisplay() {
       {/* Product Customizer Modal */}
       <AnimatePresence>
         {customizingProduct && (
-          <div role="dialog" aria-modal="true" aria-label="Personalizar produto" className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
+          <div role="dialog" aria-modal="true" aria-label={t('display.customizeAria')} className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-0 sm:p-6 bg-slate-900/60 backdrop-blur-sm overflow-hidden">
             <motion.div 
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
@@ -1335,14 +1338,14 @@ export default function MenuDisplay() {
                   <h3 className="text-xl font-black">{customizingProduct.name}</h3>
                   {customizingProduct.onPromotion && customizingProduct.promotionPrice ? (
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-orange-600 font-extrabold">{formatCurrency(customizingProduct.promotionPrice)}</span>
-                      <span className="text-[10px] text-slate-400 font-bold line-through">{formatCurrency(customizingProduct.price)}</span>
+                      <span className="text-xs text-orange-600 font-extrabold">{fmt(customizingProduct.promotionPrice)}</span>
+                      <span className="text-[10px] text-slate-400 font-bold line-through">{fmt(customizingProduct.price)}</span>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{formatCurrency(customizingProduct.price)}</p>
+                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">{fmt(customizingProduct.price)}</p>
                   )}
                 </div>
-                <button onClick={() => setCustomizingProduct(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100" aria-label="Fechar">
+                <button onClick={() => setCustomizingProduct(null)} className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100" aria-label={t('display.closeAria')}>
                   <X size={20} />
                 </button>
               </div>
@@ -1351,16 +1354,16 @@ export default function MenuDisplay() {
                 {customizingProduct.notes && (
                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-start gap-3">
                     <Info size={16} className="text-slate-400 shrink-0 mt-0.5" />
-                    <p className="text-[11px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight italic">
-                      OBS: {customizingProduct.notes}
-                    </p>
+                     <p className="text-[11px] font-bold text-slate-500 leading-relaxed uppercase tracking-tight italic">
+                       {t('display.obsPrefix')}: {customizingProduct.notes}
+                     </p>
                   </div>
                 )}
                 {customizingProduct.ingredients && (
                   <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-start gap-3">
                     <ChefHat size={16} className="text-slate-400 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingredientes / Composição</p>
+                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('display.ingredientsTitle')}</p>
                       <p className="text-[11px] font-medium text-slate-600 leading-relaxed">
                         {customizingProduct.ingredients}
                       </p>
@@ -1371,7 +1374,7 @@ export default function MenuDisplay() {
                   <div className="bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
                     <X size={16} className="text-red-500 shrink-0 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-[10px] font-black text-red-600/60 uppercase tracking-widest">Atenção: Alergênicos</p>
+                       <p className="text-[10px] font-black text-red-600/60 uppercase tracking-widest">{t('display.allergensTitle')}</p>
                       {customizingProduct.selectedAllergens?.length ? (
                         <div className="flex flex-wrap gap-1.5 mt-1">
                           {customizingProduct.selectedAllergens.map(key => {
@@ -1394,12 +1397,11 @@ export default function MenuDisplay() {
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <h4 className="text-sm font-black text-slate-800 uppercase tracking-tight">{group.name}</h4>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                          {(group.minSelection > 0 || group.type === 'single')
-                            ? `Obrigatório • Selecione ${(group.minSelection === group.maxSelection && group.minSelection > 0) ? group.minSelection : (group.type === 'single' ? 1 : `de ${group.minSelection} a ${group.maxSelection}`)}`
-                            : `Opcional • Selecione até ${group.maxSelection || 99}`
-                          }
-                        </p>
+                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                           {(group.minSelection > 0 || group.type === 'single')
+                             ? t('display.groupRequired', { n: (group.minSelection === group.maxSelection && group.minSelection > 0) ? group.minSelection : (group.type === 'single' ? 1 : t('display.groupRange', { a: group.minSelection, b: group.maxSelection })) })
+                             : t('display.groupOptional', { n: group.maxSelection || 99 })}
+                         </p>
                       </div>
                       {selectedOptions.filter(o => o.groupId === group.id).length >= (group.minSelection || (group.type === 'single' ? 1 : 0)) && (
                         <div className="bg-green-500/10 text-green-600 p-1 rounded-full"><Plus size={12} className="rotate-45" /></div>
@@ -1465,7 +1467,7 @@ export default function MenuDisplay() {
                             </div>
                             {option.price !== 0 && (
                               <span className={cn("text-xs font-black", option.price > 0 ? "text-orange-600" : "text-slate-400")}>
-                                {option.price > 0 ? `+${formatCurrency(option.price)}` : `-${formatCurrency(Math.abs(option.price))}`}
+                                {option.price > 0 ? `+${fmt(option.price)}` : `-${fmt(Math.abs(option.price))}`}
                               </span>
                             )}
                           </button>
@@ -1488,7 +1490,7 @@ export default function MenuDisplay() {
                   }
                   onClick={() => addToCart(customizingProduct, selectedOptions)}
                 >
-                  Adicionar • {formatCurrency((customizingProduct.onPromotion && customizingProduct.promotionPrice ? customizingProduct.promotionPrice : customizingProduct.price) + selectedOptions.reduce((acc, o) => acc + o.price, 0))}
+                                     {t('display.addToCart', { v: fmt((customizingProduct.onPromotion && customizingProduct.promotionPrice ? customizingProduct.promotionPrice : customizingProduct.price) + selectedOptions.reduce((acc, o) => acc + o.price, 0)) })}
                 </Button>
               </div>
             </motion.div>

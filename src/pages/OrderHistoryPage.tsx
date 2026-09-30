@@ -17,7 +17,8 @@ import {
   History,
   RotateCcw
 } from 'lucide-react';
-import { formatCurrency, cn } from '../lib/utils';
+import { formatCurrency, currencyLocale, cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import Navbar from '../components/Navbar';
@@ -26,6 +27,8 @@ import BackButton from '../components/BackButton';
 
 export default function OrderHistoryPage() {
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { restaurants } = useRestaurant();
@@ -94,7 +97,7 @@ export default function OrderHistoryPage() {
   const handleReorder = async (order: Order) => {
     const restaurant = restaurants.find(r => r.id === order.restaurantId);
     if (!restaurant) {
-      toast.error('Restaurante não encontrado');
+      toast.error(t('history.restNotFound'));
       return;
     }
     try {
@@ -123,14 +126,14 @@ export default function OrderHistoryPage() {
       }
 
       if (addedCount === 0) {
-        toast.error('Nenhum item disponível para reordenar');
+        toast.error(t('history.noItems'));
         return;
       }
-      toast.success(`${addedCount} item(ns) adicionado(s) ao carrinho!`);
+      toast.success(t('history.reordered', { count: addedCount }));
       navigate('/carrinho');
     } catch (err) {
       console.error('Error reordering:', err);
-      toast.error('Erro ao reordenar. Tente novamente.');
+      toast.error(t('history.reorderError'));
     }
   };
 
@@ -153,13 +156,13 @@ export default function OrderHistoryPage() {
 
   const getStatusLabel = (status: Order['status']) => {
     switch (status) {
-      case 'received': return 'Recebido';
-      case 'accepted': return 'Aguardando Pagamento';
-      case 'preparing': return 'Em preparo';
-      case 'ready': return 'Pronto';
-      case 'out-for-delivery': return 'Saiu para entrega';
-      case 'finished': return 'Entregue';
-      case 'cancelled': return 'Cancelado';
+      case 'received': return t('orderStatus.stepReceived');
+      case 'accepted': return t('orderStatus.stepAccepted');
+      case 'preparing': return t('orderStatus.stepPreparing');
+      case 'ready': return t('orderStatus.stepReady');
+      case 'out-for-delivery': return t('orderStatus.stepOutForDelivery');
+      case 'finished': return t('orderStatus.stepFinished');
+      case 'cancelled': return t('orderStatus.etaCancelled');
       default: return status;
     }
   };
@@ -170,17 +173,17 @@ export default function OrderHistoryPage() {
       
       <main className="max-w-3xl mx-auto px-6 pt-32 pb-24">
         <div className="flex items-center gap-4 mb-8">
-          <BackButton to="/busca" label="Voltar" />
+          <BackButton to="/busca" label={t('history.back')} />
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-brand-egg text-brand-black shadow-lg shadow-yellow-500/10">
               <History size={24} />
             </div>
             <div>
               <h1 className={cn("text-2xl font-display font-black leading-none uppercase tracking-tight", isDark ? "text-white" : "text-[#111]")}>
-                Meus Pedidos
+                {t('history.title')}
               </h1>
               <p className={cn("text-xs font-bold mt-1 opacity-50", isDark ? "text-gray-400" : "text-gray-500")}>
-                Acompanhe e visualize seu histórico de pedidos
+                {t('history.subtitle')}
               </p>
             </div>
           </div>
@@ -198,7 +201,7 @@ export default function OrderHistoryPage() {
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <label className={cn("text-[10px] font-black uppercase tracking-widest ml-1 mb-2 block", isDark ? "text-gray-400" : "text-gray-500")}>
-                Seu WhatsApp
+                {t('history.phoneLabel')}
               </label>
               <div className="relative">
                 <Search className={cn("absolute left-4 top-1/2 -translate-y-1/2", isDark ? "text-gray-500" : "text-gray-400")} size={20} />
@@ -219,12 +222,12 @@ export default function OrderHistoryPage() {
               disabled={phone.replace(/\D/g, '').length < 10 || loading}
               className="sm:self-end h-14 px-8 bg-brand-black text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all disabled:opacity-30 flex items-center justify-center gap-2"
             >
-              {loading ? "Buscando..." : "Buscar Pedidos"}
+              {loading ? t('history.searching') : t('history.searchBtn')}
             </button>
           </form>
           {phone.replace(/\D/g, '').length > 0 && phone.replace(/\D/g, '').length < 10 && (
             <p className="text-red-500 text-[10px] font-black uppercase tracking-widest mt-2 ml-1">
-              Telefone incompleto
+              {t('history.phoneIncomplete')}
             </p>
           )}
         </motion.div>
@@ -241,7 +244,7 @@ export default function OrderHistoryPage() {
               >
                 <ShoppingBag size={64} className="mx-auto mb-4" />
                 <p className={cn("font-black uppercase tracking-widest text-sm", isDark ? "text-white" : "text-brand-black")}>
-                  Digite seu telefone para ver seus pedidos
+                  {t('history.emptyPrompt')}
                 </p>
               </motion.div>
             ) : loading ? (
@@ -265,9 +268,9 @@ export default function OrderHistoryPage() {
                 <div className={cn("w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center", isDark ? "bg-white/5" : "bg-gray-100")}>
                   <Package size={32} className="opacity-20" />
                 </div>
-                <h3 className={cn("font-black text-xl mb-2", isDark ? "text-white" : "text-[#111]")}>Nenhum pedido encontrado</h3>
+                <h3 className={cn("font-black text-xl mb-2", isDark ? "text-white" : "text-[#111]")}>{t('history.noResults')}</h3>
                 <p className={cn("text-sm opacity-50", isDark ? "text-gray-400" : "text-gray-500")}>
-                  Não encontramos pedidos vinculados a este número de telefone.
+                  {t('history.noResultsDesc')}
                 </p>
               </motion.div>
             ) : (
@@ -307,33 +310,33 @@ export default function OrderHistoryPage() {
                             <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-1", isDark ? "text-white" : "text-brand-black")}>
                               #{order.id.slice(-6).toUpperCase()}
                             </p>
-                            <h3 className={cn("font-black text-lg leading-tight", isDark ? "text-white" : "text-[#111]")}>
-                              {restaurant?.name || 'Restaurante'}
-                            </h3>
+                              <h3 className={cn("font-black text-lg leading-tight", isDark ? "text-white" : "text-[#111]")}>
+                                {restaurant?.name || t('history.restFallback')}
+                              </h3>
                             <div className="flex items-center gap-3 mt-2">
                                <div className="flex items-center gap-1 opacity-50">
                                   <Calendar size={12} />
-                                  <span className="text-[10px] font-bold">
-                                    {new Date(order.createdAt).toLocaleDateString('pt-BR')}
-                                  </span>
+                                   <span className="text-[10px] font-bold">
+                                     {new Date(order.createdAt).toLocaleDateString(currencyLocale(i18n.language))}
+                                   </span>
                                </div>
                                <div className="flex items-center gap-1 opacity-50">
                                   <Clock size={12} />
-                                  <span className="text-[10px] font-bold">
-                                    {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                                  </span>
+                                   <span className="text-[10px] font-bold">
+                                     {new Date(order.createdAt).toLocaleTimeString(currencyLocale(i18n.language), { hour: '2-digit', minute: '2-digit' })}
+                                   </span>
                                </div>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-4">
-                          <div className="text-right">
-                            <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", isDark ? "text-white" : "text-brand-black")}>Total</p>
-                            <p className={cn("text-xl font-display font-black leading-none", isDark ? "text-[#FFC928]" : "text-brand-orange")}>
-                              {formatCurrency(order.total)}
-                            </p>
-                          </div>
+                            <div className="text-right">
+                              <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40 mb-0.5", isDark ? "text-white" : "text-brand-black")}>{t('history.totalLabel')}</p>
+                              <p className={cn("text-xl font-display font-black leading-none", isDark ? "text-[#FFC928]" : "text-brand-orange")}>
+                                {fmt(order.total)}
+                              </p>
+                            </div>
                           <span className={cn(
                             "px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest",
                             getStatusColor(order.status)
@@ -350,11 +353,11 @@ export default function OrderHistoryPage() {
                                 {item.quantity}x {item.productName}
                               </span>
                             ))}
-                            {order.items.length > 3 && (
-                              <span className={cn("text-[10px] font-bold opacity-30", isDark ? "text-white" : "text-[#111]")}>
-                                +{order.items.length - 3} mais
-                              </span>
-                            )}
+                              {order.items.length > 3 && (
+                                <span className={cn("text-[10px] font-bold opacity-30", isDark ? "text-white" : "text-[#111]")}>
+                                  {t('history.moreItems', { count: order.items.length - 3 })}
+                                </span>
+                              )}
                          </div>
                          <motion.div
                            animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -379,7 +382,7 @@ export default function OrderHistoryPage() {
                           <div className="p-6 space-y-6">
                             <div className="space-y-4">
                               <p className={cn("text-[10px] font-black uppercase tracking-widest opacity-40", isDark ? "text-white" : "text-brand-black")}>
-                                Detalhes do Pedido
+                                {t('history.detailsTitle')}
                               </p>
                               {order.items.map((item, i) => (
                                 <div key={i} className="flex justify-between items-start">
@@ -390,41 +393,41 @@ export default function OrderHistoryPage() {
                                     </div>
                                     {(item.selectedAdditionals?.length > 0 || item.observations) && (
                                       <div className="mt-2 ml-7 space-y-1">
-                                        {item.selectedAdditionals?.map((add, ai) => (
-                                          <p key={ai} className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
-                                            + {add.name} ({formatCurrency(add.price)})
-                                          </p>
-                                        ))}
-                                        {item.observations && (
-                                          <p className="text-[10px] text-gray-400 italic font-medium">
-                                            Obs: "{item.observations}"
-                                          </p>
-                                        )}
+                                         {item.selectedAdditionals?.map((add, ai) => (
+                                           <p key={ai} className="text-[10px] text-gray-500 font-bold uppercase tracking-tight">
+                                             + {add.name} ({fmt(add.price)})
+                                           </p>
+                                         ))}
+                                         {item.observations && (
+                                           <p className="text-[10px] text-gray-400 italic font-medium">
+                                             {t('history.obsLabel')}: "{item.observations}"
+                                           </p>
+                                         )}
                                       </div>
                                     )}
                                   </div>
-                                  <p className={cn("text-sm font-black text-right", isDark ? "text-white" : "text-[#111]")}>
-                                    {formatCurrency((item.price + (item.selectedAdditionals?.reduce((sum, a) => sum + a.price, 0) || 0)) * item.quantity)}
-                                  </p>
+                                   <p className={cn("text-sm font-black text-right", isDark ? "text-white" : "text-[#111]")}>
+                                     {fmt((item.price + (item.selectedAdditionals?.reduce((sum, a) => sum + a.price, 0) || 0)) * item.quantity)}
+                                   </p>
                                 </div>
                               ))}
                             </div>
 
                             <div className={cn("pt-6 border-t space-y-2", isDark ? "border-white/5" : "border-slate-100")}>
                               {order.type === 'delivery' && (
-                                <div className="flex justify-between text-xs font-bold text-gray-400">
-                                  <span>Taxa de Entrega</span>
-                                  <span className={cn(isDark ? "text-white" : "text-[#111]")}>
-                                    {order.deliveryFee === 0 ? 'Grátis' : formatCurrency(order.deliveryFee || 0)}
-                                  </span>
-                                </div>
+                                 <div className="flex justify-between text-xs font-bold text-gray-400">
+                                   <span>{t('history.deliveryFee')}</span>
+                                   <span className={cn(isDark ? "text-white" : "text-[#111]")}>
+                                     {order.deliveryFee === 0 ? t('history.free') : fmt(order.deliveryFee || 0)}
+                                   </span>
+                                 </div>
                               )}
-                              {order.donationAmount && (
-                                <div className="flex justify-between text-xs font-bold text-red-400">
-                                  <span>Doação Social ❤️</span>
-                                  <span>{formatCurrency(order.donationAmount)}</span>
-                                </div>
-                              )}
+                               {order.donationAmount && (
+                                 <div className="flex justify-between text-xs font-bold text-red-400">
+                                   <span>{t('history.socialLine')}</span>
+                                   <span>{fmt(order.donationAmount)}</span>
+                                 </div>
+                               )}
                             </div>
 
                             <div className="flex flex-col sm:flex-row gap-3 pt-4">
@@ -432,13 +435,13 @@ export default function OrderHistoryPage() {
                                 onClick={() => handleReorder(order)}
                                 className="flex-1 h-12 bg-brand-egg text-brand-black rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-yellow-400 transition-all shadow-lg shadow-yellow-500/20 active:scale-95"
                               >
-                                <RotateCcw size={14} /> Repetir Pedido
+                                 <RotateCcw size={14} /> {t('history.reorderBtn')}
                               </button>
                               <button 
                                 onClick={() => navigate(`/r/${restaurant?.slug}/status/${order.id}`)}
                                 className="flex-1 h-12 bg-[#111] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg shadow-black/10 active:scale-95"
                               >
-                                <Clock size={16} /> Acompanhar
+                                 <Clock size={16} /> {t('history.trackBtn')}
                               </button>
                             </div>
                           </div>

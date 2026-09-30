@@ -1,5 +1,6 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import i18n from '../lib/i18n';
 import { showLocalNotification, getNotifPreferences } from './notificationService';
 
 export interface StreakData {
@@ -28,11 +29,20 @@ const MILESTONES = [
 ];
 
 export function getMilestones() {
-  return MILESTONES;
+  return MILESTONES.map(localizeMilestone);
 }
 
 export function getNextMilestone(currentStreak: number) {
-  return MILESTONES.find(m => m.days > currentStreak) || null;
+  const m = MILESTONES.find(m => m.days > currentStreak) || null;
+  return m ? localizeMilestone(m) : null;
+}
+
+function localizeMilestone(m: { days: number; label: string; reward: string }): MilestoneInfo {
+  return {
+    days: m.days,
+    label: i18n.t(`achieve.ms${m.days}Label`, { defaultValue: m.label }),
+    reward: i18n.t(`achieve.ms${m.days}Reward`, { defaultValue: m.reward }),
+  };
 }
 
 export async function getStreak(userId: string): Promise<StreakData> {
@@ -68,7 +78,7 @@ export async function updateStreak(userId: string): Promise<UpdateStreakResult> 
   } catch { }
 
   const milestone = MILESTONES.find(m => m.days === newStreak) || null;
-  return { updated, milestone };
+  return { updated, milestone: milestone ? localizeMilestone(milestone) : null };
 }
 
 const STREAK_REMINDER_KEY = 'meuovo_streak_reminded';
@@ -96,7 +106,7 @@ export function checkStreakReminder(streak: StreakData): void {
   if (!prefs.streak_reminder) return;
   markStreakReminded();
   showLocalNotification(
-    '🔥 Streak em risco!',
-    `Você está com ${streak.currentStreak} dia(s) seguidos! Faça um pedido hoje para não perder sua sequência.`
+    i18n.t('achieve.streakRiskTitle', { defaultValue: '🔥 Streak em risco!' }),
+    i18n.t('achieve.streakRiskBody', { defaultValue: 'Você está com {{count}} dia(s) seguidos! Faça um pedido hoje para não perder sua sequência.', count: streak.currentStreak })
   );
 }
