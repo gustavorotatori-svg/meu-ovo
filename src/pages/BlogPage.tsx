@@ -7,6 +7,7 @@ import SEO from '../components/SEO';
 import BackButton from '../components/BackButton';
 import OptimizedImage from '../components/OptimizedImage';
 import { Newspaper, ExternalLink, Loader2, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface NewsItem {
   title: string;
@@ -21,35 +22,34 @@ interface BlogData {
   news: NewsItem[];
 }
 
-const fallbackNews: NewsItem[] = [
-  {
-    title: 'Restaurantes independentes crescem 23% em São Paulo',
-    summary: 'Levantamento aponta que consumidores estão migrando para restaurantes locais em busca de comida artesanal e atendimento personalizado.',
-    url: 'https://abrasel.com.br',
-    source: 'Abrasel SP',
-    imageUrl: 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?w=400&h=300&fit=crop',
-  },
-  {
-    title: 'Comissão de 30%: por que restaurantes estão deixando os grandes apps',
-    summary: 'Taxas abusivas levam donos de restaurantes a buscar alternativas como QR Code e pedidos diretos via WhatsApp.',
-    url: 'https://mercadoeconsumo.com.br',
-    source: 'Mercado & Consumo',
-    imageUrl: 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?w=400&h=300&fit=crop',
-  },
-  {
-    title: 'QR Code nas mesas já é realidade em 78% dos restaurantes',
-    summary: 'A tecnologia que elimina intermediários e dá autonomia ao cliente está transformando o setor de foodservice.',
-    url: 'https://anrbrasil.org.br',
-    source: 'ANR Brasil',
-    imageUrl: 'https://images.pexels.com/photos/5900345/pexels-photo-5900345.jpeg?w=400&h=300&fit=crop',
-  },
-];
-
-const fallbackSummary = 'O setor de foodservice brasileiro segue em expansão, com destaque para restaurantes independentes que investem em atendimento direto ao cliente e cardápios autorais. A tendência de pedidos via WhatsApp e QR Code continua crescendo como alternativa às plataformas tradicionais.';
-
 export default function BlogPage() {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
+  const fallbackNews: NewsItem[] = [
+    {
+      title: t('blog.fb1Title'),
+      summary: t('blog.fb1Desc'),
+      url: 'https://abrasel.com.br',
+      source: 'Abrasel SP',
+      imageUrl: 'https://images.pexels.com/photos/262978/pexels-photo-262978.jpeg?w=400&h=300&fit=crop',
+    },
+    {
+      title: t('blog.fb2Title'),
+      summary: t('blog.fb2Desc'),
+      url: 'https://mercadoeconsumo.com.br',
+      source: 'Mercado & Consumo',
+      imageUrl: 'https://images.pexels.com/photos/1267320/pexels-photo-1267320.jpeg?w=400&h=300&fit=crop',
+    },
+    {
+      title: t('blog.fb3Title'),
+      summary: t('blog.fb3Desc'),
+      url: 'https://anrbrasil.org.br',
+      source: 'ANR Brasil',
+      imageUrl: 'https://images.pexels.com/photos/5900345/pexels-photo-5900345.jpeg?w=400&h=300&fit=crop',
+    },
+  ];
+  const fallbackSummary = t('blog.fbSummary');
   const [data, setData] = useState<BlogData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -76,8 +76,8 @@ export default function BlogPage() {
   return (
     <div className={`min-h-screen font-sans transition-colors ${isDark ? 'bg-black text-white' : 'bg-white text-[#111]'}`}>
       <SEO 
-        title="Blog Meu Ovo - Notícias Foodservice"
-        description="Fique por dentro das últimas notícias do setor de foodservice, bares e restaurantes."
+        title={t('blog.seoTitle')}
+        description={t('blog.seoDesc')}
       />
       <Navbar />
 
@@ -102,14 +102,14 @@ export default function BlogPage() {
             Blog <span className="text-[#FFC928]">Meu Ovo</span>
           </motion.h1>
           <p className={`text-xl font-medium max-w-2xl mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-            As notícias que importam para o seu restaurante.
+            {t('blog.heroSub')}
           </p>
         </header>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-40 gap-4">
             <Loader2 size={40} className="animate-spin text-[#FFC928]" />
-            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Minerando as melhores notícias...</p>
+            <p className="text-[10px] font-black uppercase tracking-widest opacity-40">{t('blog.loadingText')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -123,7 +123,7 @@ export default function BlogPage() {
                 <div className={`p-12 rounded-[3.5rem] border-2 relative overflow-hidden group ${isDark ? 'bg-white/5 border-white/5' : 'bg-gray-50 border-gray-100'}`}>
                   <div className="absolute top-0 right-0 w-96 h-96 bg-[#FFC928] opacity-5 blur-[100px] -translate-y-1/2 translate-x-1/2" />
                   <div className="relative z-10 space-y-6">
-                    <h2 className="text-3xl font-display font-black italic uppercase tracking-tighter">Resumo da Semana</h2>
+                    <h2 className="text-3xl font-display font-black italic uppercase tracking-tighter">{t('blog.summaryTitle')}</h2>
                     <p className={`text-lg leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       {data.weeklySummary}
                     </p>
@@ -170,7 +170,7 @@ export default function BlogPage() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#FFC928] hover:gap-4 transition-all"
                     >
-                      Ler na fonte <ExternalLink size={12} />
+                      {t('blog.readSource')} <ExternalLink size={12} />
                     </a>
                   </div>
                 </motion.article>
@@ -182,7 +182,7 @@ export default function BlogPage() {
         {/* Sources Attribution */}
         <footer className="mt-20 pt-12 border-t border-white/5 text-center">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
-            Fontes: Abrasel SP, ANR Brasil, Mercado & Consumo Foodservice
+            {t('blog.sourcesLabel')}: Abrasel SP, ANR Brasil, Mercado & Consumo Foodservice
           </p>
         </footer>
       </main>

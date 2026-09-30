@@ -8,9 +8,11 @@ import { useTheme } from '../context/ThemeContext';
 import { db } from '../lib/firebase';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency, currencyLocale } from '../lib/utils';
 
 // Custom lightweight high-performance count-up animator
-function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: number; prefix?: string; suffix?: string }) {
+function AnimatedCounter({ value, prefix = "", suffix = "", locale = "pt-BR" }: { value: number; prefix?: string; suffix?: string; locale?: string }) {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
@@ -43,11 +45,14 @@ function AnimatedCounter({ value, prefix = "", suffix = "" }: { value: number; p
   }, [value]);
 
   return (
-    <span>{prefix}{displayValue.toLocaleString('pt-BR')}{suffix}</span>
+    <span>{prefix}{displayValue.toLocaleString(locale)}{suffix}</span>
   );
 }
 
 export default function SocialImpactPage() {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
+  const fmt = (v: number) => formatCurrency(v, loc);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -112,8 +117,8 @@ export default function SocialImpactPage() {
   return (
     <div className={`min-h-screen transition-colors ${isDark ? 'bg-black text-white' : 'bg-white text-[#111]'}`}>
       <SEO 
-        title="Impacto Social - Meu Ovo"
-        description="O Meu Ovo transforma o ato de pedir comida em uma força de mudança social. Veja nosso impacto em restaurantes locais e comunidades."
+        title={t('impact.seoTitle')}
+        description={t('impact.seoDesc')}
       />
       <Navbar />
 
@@ -128,21 +133,21 @@ export default function SocialImpactPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:divide-x-2 md:divide-black/10">
             <div className="px-4">
               <div className="text-3xl lg:text-5xl font-black text-black">
-                <AnimatedCounter value={restaurantsCount} suffix="+" />
+                <AnimatedCounter value={restaurantsCount} suffix="+" locale={loc} />
               </div>
-              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Restaurantes ativos</div>
+              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">{t('impact.statRestaurants')}</div>
             </div>
             <div className="px-4">
-              <div className="text-3xl lg:text-5xl font-black text-black">R$ 0</div>
-              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2 font-display">Taxa por pedido</div>
+              <div className="text-3xl lg:text-5xl font-black text-black">{fmt(0)}</div>
+              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2 font-display">{t('impact.statFee')}</div>
             </div>
             <div className="px-4">
-              <div className="text-3xl lg:text-5xl font-black text-black">5 passos</div>
-              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Para fazer um pedido</div>
+              <div className="text-3xl lg:text-5xl font-black text-black">{t('impact.stepsValue')}</div>
+              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">{t('impact.statSteps')}</div>
             </div>
             <div className="px-4">
-              <div className="text-3xl lg:text-5xl font-black text-black">100%</div>
-              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">Grátis</div>
+              <div className="text-3xl lg:text-5xl font-black text-black">{t('impact.freeValue')}</div>
+              <div className="text-black/60 text-[10px] lg:text-xs font-bold uppercase tracking-widest mt-2">{t('impact.statFree')}</div>
             </div>
           </div>
           </ScrollReveal>
@@ -155,16 +160,16 @@ export default function SocialImpactPage() {
           <ScrollReveal direction="up" delay={0} className="space-y-8">
             <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest relative group">
               <Sparkles size={16} className="text-red-500 animate-sparkle" />
-              <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent animate-gradient-shift">Impacto em Tempo Real</span>
+              <span className="bg-gradient-to-r from-red-500 via-red-400 to-red-500 bg-clip-text text-transparent animate-gradient-shift">{t('impact.liveTag')}</span>
               <span className="absolute -bottom-1.5 left-0 right-0 h-[2px] bg-gradient-to-r from-red-500/60 via-red-400/40 to-red-500/60 animate-gradient-shift rounded-full" />
               <span className="absolute -inset-x-2 -inset-y-1 bg-red-500/5 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </div>
             <h1 className={`text-5xl md:text-7xl font-black leading-[1.1] tracking-tight transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>
-              Comida de verdade<br />
-              <span className="text-[#FF7A00]">também faz o bem.</span>
+              {t('impact.heroA')}<br />
+              <span className="text-[#FF7A00]">{t('impact.heroB')}</span>
             </h1>
             <p className={`text-xl font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              No checkout, o cliente pode escolher doar uma refeição para pessoas em situação de vulnerabilidade. As doações serão direcionadas a um projeto social parceiro na sua cidade.
+              {t('impact.heroDesc')}
             </p>
 
             <div className={`rounded-3xl p-8 border mt-12 relative overflow-hidden group transition-all ${
@@ -176,9 +181,9 @@ export default function SocialImpactPage() {
                 </div>
                 <div>
                   <h3 className={`text-xl font-black mb-2 uppercase italic tracking-tight transition-colors ${isDark ? 'text-white' : 'text-[#111]'}`}>Cozinha Solidária SP</h3>
-                  <p className="text-[#FF7A00] text-sm font-bold uppercase mb-4 tracking-tighter italic">Parceiro atual do mês</p>
+                  <p className="text-[#FF7A00] text-sm font-bold uppercase mb-4 tracking-tighter italic">{t('impact.partnerTag')}</p>
                   <p className={`text-sm font-medium leading-relaxed transition-colors ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    100% das doações são repassadas diretamente para a instituição parceira. Transparência total.
+                    {t('impact.partnerDesc')}
                   </p>
                 </div>
               </div>
@@ -193,7 +198,7 @@ export default function SocialImpactPage() {
                 isDark ? 'bg-white text-black hover:bg-white/90' : 'bg-[#111] text-white hover:bg-black/90'
               }`}
             >
-              Quero apoiar essa causa <ArrowRight size={24} />
+              {t('impact.supportCta')} <ArrowRight size={24} />
             </a>
           </ScrollReveal>
 
@@ -205,7 +210,7 @@ export default function SocialImpactPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#FFC928] opacity-5 rounded-full blur-3xl translate-x-20 -translate-y-20" />
             
             <div className="flex justify-between items-center mb-12">
-              <h2 className="text-2xl sm:text-3xl font-black text-[#FFC928] italic uppercase tracking-tighter">Impacto real em números</h2>
+              <h2 className="text-2xl sm:text-3xl font-black text-[#FFC928] italic uppercase tracking-tighter">{t('impact.numbersTitle')}</h2>
               <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded animate-pulse">
                 ● Live
               </span>
@@ -213,43 +218,43 @@ export default function SocialImpactPage() {
             
             <div className="space-y-10">
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Total arrecadado</span>
+                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">{t('impact.rowDonated')}</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
                   {totalDonated > 0
-                    ? <AnimatedCounter value={totalDonated} prefix="R$ " suffix=",00" />
-                    : <span className="text-lg sm:text-xl lg:text-2xl">R$ 0,00</span>
+                    ? <AnimatedCounter value={Math.floor(totalDonated)} prefix={t('impact.moneyPrefix')} suffix={t('impact.moneySuffix')} locale={loc} />
+                    : <span className="text-lg sm:text-xl lg:text-2xl">{fmt(0)}</span>
                   }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Refeições doadas</span>
+                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">{t('impact.rowMeals')}</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
                   {mealsServed > 0
-                    ? <AnimatedCounter value={mealsServed} />
+                    ? <AnimatedCounter value={mealsServed} locale={loc} />
                     : <span className="text-lg sm:text-xl lg:text-2xl">0</span>
                   }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Famílias beneficiadas</span>
+                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">{t('impact.rowFamilies')}</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
                   {families > 0
-                    ? <AnimatedCounter value={families} />
+                    ? <AnimatedCounter value={families} locale={loc} />
                     : <span className="text-lg sm:text-xl lg:text-2xl">0</span>
                   }
                 </span>
               </div>
               <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Restaurantes ativos</span>
+                <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">{t('impact.rowRestaurants')}</span>
                 <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                  <AnimatedCounter value={restaurantsCount} />
+                  <AnimatedCounter value={restaurantsCount} locale={loc} />
                 </span>
               </div>
               {citiesCount > 0 && (
                 <div className="flex items-end justify-between border-b border-white/10 pb-4">
-                  <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">Cidades atendidas</span>
+                  <span className="text-gray-400 font-bold text-xs sm:text-sm lg:text-base uppercase tracking-tight">{t('impact.rowCities')}</span>
                   <span className="text-xl sm:text-2xl lg:text-4xl font-black text-[#FFC928]">
-                    <AnimatedCounter value={citiesCount} />
+                    <AnimatedCounter value={citiesCount} locale={loc} />
                   </span>
                 </div>
               )}
@@ -257,13 +262,13 @@ export default function SocialImpactPage() {
 
             {totalDonated === 0 && !loading && (
               <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl text-center">
-                <p className="text-gray-300 text-sm font-bold mb-2">As doações ainda não começaram</p>
-                <p className="text-gray-500 text-xs font-medium">Quando os clientes doarem no checkout, os números aparecem aqui em tempo real.</p>
+                 <p className="text-gray-300 text-sm font-bold mb-2">{t('impact.emptyTitle')}</p>
+                 <p className="text-gray-500 text-xs font-medium">{t('impact.emptyDesc')}</p>
               </div>
             )}
 
             <p className="mt-8 text-gray-500 text-[10px] font-black uppercase tracking-widest italic flex items-center gap-1.5">
-              <span>* Dados sincronizados com o banco em tempo real</span>
+               <span>{t('impact.syncedNote')}</span>
             </p>
           </div>
           </ScrollReveal>
