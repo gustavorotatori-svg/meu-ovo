@@ -4,9 +4,12 @@ import AdminLayout from './AdminLayout';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Order } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
+import { cn, currencyLocale } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export default function AdminKitchen() {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
   const { orders, updateOrderStatus, currentRestaurant } = useRestaurant();
   const preparingOrders = orders.filter(o => ['received', 'preparing'].includes(o.status));
   const previousOrdersCount = useRef(preparingOrders.length);
@@ -55,9 +58,9 @@ export default function AdminKitchen() {
             <ChefHat size={32} className="text-black" />
           </div>
           <div>
-            <h1 className="font-black text-3xl italic tracking-tighter uppercase leading-none">MODO COZINHA</h1>
+            <h1 className="font-black text-3xl italic tracking-tighter uppercase leading-none">{t('admKitchen.title')}</h1>
             <p className="text-[#FFC928] text-xs font-black uppercase tracking-widest mt-1">
-              {currentRestaurant?.name} • <span className="text-white">{preparingOrders.length} PEDIDOS</span>
+              {currentRestaurant?.name} • <span className="text-white">{preparingOrders.length} {t('admKitchen.ordersUnit')}</span>
             </p>
           </div>
         </div>
@@ -71,14 +74,14 @@ export default function AdminKitchen() {
               <span className="absolute -inset-1 rounded-xl bg-[#FFC928]/20 animate-ping pointer-events-none" />
             )}
             <Bell size={14} className={`text-[#FFC928] ${soundPulse ? 'animate-bounce' : ''}`} />
-            <span>Testar Alerta Sonoro</span>
+            <span>{t('admKitchen.testAlert')}</span>
           </button>
           
           <div className="text-right border-r-2 border-white/10 pr-8">
-            <p className="text-2xl font-black italic">{time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
-            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">{time.toLocaleDateString('pt-BR', { weekday: 'long' })}</p>
+            <p className="text-2xl font-black italic">{time.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">{time.toLocaleDateString(loc, { weekday: 'long' })}</p>
           </div>
-          <button onClick={() => window.history.back()} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border-2 border-white/5 transition-all active:scale-95" aria-label="Expandir tela">
+          <button onClick={() => window.history.back()} className="bg-white/5 hover:bg-white/10 p-4 rounded-2xl border-2 border-white/5 transition-all active:scale-95" aria-label={t('admKitchen.expandAria')}>
             <Maximize2 size={24} className="text-gray-400" />
           </button>
         </div>
@@ -89,8 +92,8 @@ export default function AdminKitchen() {
         {preparingOrders.length === 0 ? (
           <div className="col-span-full flex flex-col items-center justify-center py-40 opacity-20">
             <ChefHat size={120} className="mb-8" />
-            <h2 className="text-4xl font-black italic tracking-tight uppercase">Cozinha Limpa!</h2>
-            <p className="text-lg font-bold">Nenhum pedido na chapa por enquanto.</p>
+            <h2 className="text-4xl font-black italic tracking-tight uppercase">{t('admKitchen.emptyTitle')}</h2>
+            <p className="text-lg font-bold">{t('admKitchen.emptyDesc')}</p>
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
@@ -119,24 +122,24 @@ export default function AdminKitchen() {
         <div className="flex gap-10 text-[10px] font-black uppercase tracking-widest">
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 bg-white/10 border-2 border-white/20 rounded-md" /> 
-            <span className="text-gray-500">Aguardando</span>
+            <span className="text-gray-500">{t('admKitchen.legWait')}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 bg-[#FFC928] rounded-md shadow-lg shadow-[#FFC928]/20" /> 
-            <span className="text-[#FFC928]">Em preparo</span>
+            <span className="text-[#FFC928]">{t('admKitchen.legPrep')}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 bg-red-650 rounded-md animate-pulse shadow-lg shadow-red-650/20" /> 
-            <span className="text-red-500">Atrasado (&gt; limite)</span>
+            <span className="text-red-500">{t('admKitchen.legLate')}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 rounded-md bg-white animate-pulse shadow-lg shadow-white/50" /> 
-            <span className="text-white">Novo (Alerta)</span>
+            <span className="text-white">{t('admKitchen.legNew')}</span>
           </div>
         </div>
         
         <div className="text-gray-600 font-bold text-[10px]">
-          MEU OVO KDS v1.0 • SISTEMA DE GESTÃO EM TEMPO REAL
+          {t('admKitchen.footerBrand')}
         </div>
       </footer>
     </div>
@@ -144,6 +147,8 @@ export default function AdminKitchen() {
 }
 
 const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => void; onPrepare: () => void }> = ({ order, currentTime, onReady, onPrepare }) => {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
   const targetMinutes = order.type === 'delivery' ? 25 : 15;
   const createdAtTime = new Date(order.createdAt).getTime();
   const deadlineTime = createdAtTime + targetMinutes * 60 * 1000;
@@ -158,7 +163,7 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
   const elapsedMinutes = Math.floor((currentTime.getTime() - createdAtTime) / 60000);
   const isVeryNew = elapsedMinutes < 1;
 
-  const typeLabel = { 'dine-in': `MESA ${order.tableNumber}`, 'delivery': 'DELIVERY', 'pickup': 'RETIRADA' };
+  const typeLabel = { 'dine-in': t('admKitchen.typeTable', { n: order.tableNumber }), 'delivery': t('admKitchen.typeDelivery'), 'pickup': t('admKitchen.typePickup') };
   const typeColor = { 
     'dine-in': 'bg-purple-600 border-purple-500', 
     'delivery': 'bg-blue-600 border-blue-500', 
@@ -173,12 +178,12 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
     }`}>
       {isVeryNew ? (
         <div className="absolute top-0 right-0 bg-white text-black font-black text-[10px] px-4 py-1 rounded-bl-xl uppercase tracking-widest z-10 animate-bounce">
-          Novo Pedido
+          {t('admKitchen.newOrder')}
         </div>
       ) : isDelayed ? (
         <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-[9px] px-3.5 py-1 rounded-bl-xl uppercase tracking-widest z-10 flex items-center gap-1 border-l border-b border-red-500 animate-pulse">
           <AlertCircle size={10} className="text-white shrink-0" />
-          <span>Atrasado {leftMin}m</span>
+          <span>{t('admKitchen.lateBadge', { m: leftMin })}</span>
         </div>
       ) : null}
 
@@ -201,8 +206,8 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
           <span className="font-black text-3xl italic tracking-tighter">#{order.id.slice(-4)}</span>
           <div className="text-right">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">Recebido</p>
-            <p className="text-white font-bold text-sm tracking-tight">{new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">{t('admKitchen.receivedAt')}</p>
+            <p className="text-white font-bold text-sm tracking-tight">{new Date(order.createdAt).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}</p>
           </div>
         </div>
 
@@ -236,7 +241,7 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
 
         {order.observations && (
           <div className="mt-8 pt-4 border-t-2 border-dashed border-white/5 text-[10px] text-[#FFC928] font-black uppercase italic leading-relaxed">
-            <span className="text-white/30 block mb-1">Observação do pedido:</span>
+             <span className="text-white/30 block mb-1">{t('admKitchen.orderObs')}</span>
             {order.observations}
           </div>
         )}
@@ -248,7 +253,7 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
             onClick={onPrepare}
             className="flex-1 bg-white text-black font-black py-4 rounded-2xl text-sm hover:bg-[#FFC928] transition-all active:scale-95 shadow-xl uppercase italic tracking-tighter"
           >
-            INICIAR PREPARO
+            {t('admKitchen.startPrep')}
           </button>
         ) : (
           <button
@@ -256,7 +261,7 @@ const KitchenTicket: React.FC<{ order: Order; currentTime: Date; onReady: () => 
             className="flex-1 bg-[#FFC928] text-black font-black py-4 rounded-2xl text-sm hover:bg-[#e6b520] transition-all active:scale-95 flex items-center justify-center gap-2 shadow-xl shadow-[#FFC928]/10 uppercase italic tracking-tighter"
           >
             <Check size={24} strokeWidth={4} />
-            PRONTO
+            {t('admKitchen.readyBtn')}
           </button>
         )}
       </div>

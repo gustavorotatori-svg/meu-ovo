@@ -20,6 +20,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency, currencyLocale } from '../../lib/utils';
 
 const EMPTY_PRODUCT: Omit<Product, 'id' | 'restaurantId' | 'createdAt' | 'isActive'> = {
   name: '',
@@ -39,6 +41,8 @@ const EMPTY_PRODUCT: Omit<Product, 'id' | 'restaurantId' | 'createdAt' | 'isActi
 };
 
 export default function AdminMenu() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { products, categories, currentRestaurant, addProduct, updateProduct, deleteProduct, addCategory, deleteCategory, reorderProducts, reorderCategories } = useRestaurant();
   const restaurantProducts = products.filter(p => p.restaurantId === currentRestaurant?.id).sort((a, b) => a.order - b.order);
   const restaurantCategories = categories.filter(c => c.restaurantId === currentRestaurant?.id).sort((a, b) => a.order - b.order);
@@ -132,23 +136,23 @@ export default function AdminMenu() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!form.name.trim()) newErrors.name = 'Nome é obrigatório';
-    else if (form.name.trim().length < 3) newErrors.name = 'Nome deve ter pelo menos 3 caracteres';
+    if (!form.name.trim()) newErrors.name = t('admMenu.errNameRequired');
+    else if (form.name.trim().length < 3) newErrors.name = t('admMenu.errNameShort');
     
-    if (form.price <= 0) newErrors.price = 'Preço deve ser maior que zero';
+    if (form.price <= 0) newErrors.price = t('admMenu.errPrice');
     
-    if (!form.categoryId) newErrors.categoryId = 'Selecione uma categoria';
+    if (!form.categoryId) newErrors.categoryId = t('admMenu.errCategory');
     
     if (form.onPromotion) {
       if (!form.promotionPrice || form.promotionPrice <= 0) {
-        newErrors.promotionPrice = 'Preço promocional inválido';
+        newErrors.promotionPrice = t('admMenu.errPromoInvalid');
       } else if (form.promotionPrice >= form.price) {
-        newErrors.promotionPrice = 'Deve ser menor que o preço original';
+        newErrors.promotionPrice = t('admMenu.errPromoHigh');
       }
     }
     
     if (form.imageUrl && !form.imageUrl.startsWith('http')) {
-      newErrors.imageUrl = 'URL da imagem deve começar com http/https';
+      newErrors.imageUrl = t('admMenu.errImageUrl');
     }
 
     setErrors(newErrors);
@@ -188,19 +192,19 @@ export default function AdminMenu() {
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="font-black text-2xl text-[#111]">Cardápio</h2>
+        <h2 className="font-black text-2xl text-[#111]">{t('admMenu.title')}</h2>
         <button
           onClick={openNew}
           className="bg-[#FFC928] text-[#111] font-black px-5 py-3 rounded-xl hover:bg-[#e6b520] transition-colors flex items-center gap-2"
         >
           <Plus size={20} />
-          Novo produto
+          {t('admMenu.newProduct')}
         </button>
       </div>
 
       {/* Categories management */}
       <div className="bg-white rounded-2xl p-5 mb-6">
-        <h3 className="font-bold text-[#111] mb-3">Categorias (Arraste para reordenar)</h3>
+        <h3 className="font-bold text-[#111] mb-3">{t('admMenu.catsTitle')}</h3>
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -222,10 +226,10 @@ export default function AdminMenu() {
             value={newCatName}
             onChange={e => setNewCatName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addCat()}
-            placeholder="Nova categoria..."
+            placeholder={t('admMenu.newCatPh')}
             className="flex-1 border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-[#FFC928]"
           />
-          <button onClick={addCat} aria-label="Adicionar" className="bg-[#FFC928] text-[#111] font-bold px-4 py-2 rounded-xl hover:bg-[#e6b520]">
+          <button onClick={addCat} aria-label={t('common.add')} className="bg-[#FFC928] text-[#111] font-bold px-4 py-2 rounded-xl hover:bg-[#e6b520]">
             <Plus size={18} />
           </button>
         </div>
@@ -236,7 +240,7 @@ export default function AdminMenu() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         <input
           type="text"
-          placeholder="Buscar produtos pelo nome ou descrição..."
+          placeholder={t('admMenu.searchPh')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full bg-white border border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#FFC928] shadow-sm transition-all"
@@ -278,17 +282,17 @@ export default function AdminMenu() {
 
       {/* Product modal */}
       {(isNew || editingProduct) && (
-        <div role="dialog" aria-modal="true" aria-label="Gerenciar item do cardápio" className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+        <div role="dialog" aria-modal="true" aria-label={t('admMenu.dialogAria')} className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
           <div role="presentation" className="absolute inset-0 bg-black/60" onClick={closeModal} />
           <div className="relative bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-3xl">
-              <h3 className="font-black text-[#111] text-lg">{isNew ? 'Novo produto' : 'Editar produto'}</h3>
-              <button onClick={closeModal} aria-label="Fechar" className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
+              <h3 className="font-black text-[#111] text-lg">{isNew ? t('admMenu.newTitle') : t('admMenu.editTitle')}</h3>
+              <button onClick={closeModal} aria-label={t('ui.close')} className="p-2 hover:bg-gray-100 rounded-full"><X size={20} /></button>
             </div>
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-1">Nome *</label>
+                <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.nameLabel')}</label>
                 <input 
                   value={form.name} 
                   onChange={e => {
@@ -304,12 +308,12 @@ export default function AdminMenu() {
                 {errors.name && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.name}</p>}
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-1">Descrição</label>
+                <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.descLabel')}</label>
                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm h-20 resize-none focus:outline-none focus:border-[#FFC928]" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-1">Preço (R$) *</label>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.priceLabel')}</label>
                   <input 
                     type="number" 
                     value={form.price} 
@@ -326,7 +330,7 @@ export default function AdminMenu() {
                   {errors.price && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.price}</p>}
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-1">Categoria</label>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.catLabel')}</label>
                   <select 
                     value={form.categoryId} 
                     onChange={e => {
@@ -339,14 +343,14 @@ export default function AdminMenu() {
                     }} 
                     className={`w-full border ${errors.categoryId ? 'border-red-500' : 'border-gray-200'} rounded-xl px-4 py-3 text-sm bg-white focus:outline-none focus:border-[#FFC928]`}
                   >
-                    <option value="">Sem categoria</option>
+                    <option value="">{t('admMenu.noCat')}</option>
                     {restaurantCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   {errors.categoryId && <p className="text-red-500 text-[10px] mt-1 font-bold">{errors.categoryId}</p>}
                 </div>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600 block mb-1">URL da foto</label>
+                <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.photoLabel')}</label>
                 <input 
                   value={form.imageUrl} 
                   onChange={e => {
@@ -365,7 +369,7 @@ export default function AdminMenu() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-1">Ingredientes</label>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.ingLabel')}</label>
                   <textarea 
                     value={form.ingredients} 
                     onChange={e => setForm(f => ({ ...f, ingredients: e.target.value }))} 
@@ -373,7 +377,7 @@ export default function AdminMenu() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-1">Alergênicos</label>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.allergenLabel')}</label>
                   <textarea 
                     value={form.allergens} 
                     onChange={e => setForm(f => ({ ...f, allergens: e.target.value }))} 
@@ -384,7 +388,7 @@ export default function AdminMenu() {
 
               {form.onPromotion && (
                 <div>
-                  <label className="text-sm font-medium text-gray-600 block mb-1">Preço promocional (R$)</label>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">{t('admMenu.promoLabel')}</label>
                   <input 
                     type="number" 
                     value={form.promotionPrice || ''} 
@@ -402,13 +406,13 @@ export default function AdminMenu() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { key: 'isAvailable', label: 'Disponível' },
-                  { key: 'isFeatured', label: 'Destaque' },
-                  { key: 'bestSeller', label: 'Mais vendido' },
-                  { key: 'onPromotion', label: 'Promoção' },
-                ].map(opt => (
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { key: 'isAvailable', label: t('admMenu.optAvailable') },
+                    { key: 'isFeatured', label: t('admMenu.optFeatured') },
+                    { key: 'bestSeller', label: t('admMenu.optBestSeller') },
+                    { key: 'onPromotion', label: t('admMenu.optPromo') },
+                  ].map(opt => (
                   <label key={opt.key} className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${form[opt.key as keyof typeof form] ? 'border-[#FFC928] bg-[#FFF8E1]' : 'border-gray-200'}`}>
                     <span className="text-sm font-medium text-[#111]">{opt.label}</span>
                     <div
@@ -423,10 +427,10 @@ export default function AdminMenu() {
 
               <div className="flex gap-3 pt-2">
                 <button onClick={closeModal} className="flex-1 border border-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button onClick={save} className="flex-1 bg-[#FFC928] text-[#111] font-black py-3 rounded-xl hover:bg-[#e6b520]">
-                  {isNew ? 'Criar produto' : 'Salvar'}
+                  {isNew ? t('admMenu.createBtn') : t('common.save')}
                 </button>
               </div>
             </div>
@@ -438,6 +442,7 @@ export default function AdminMenu() {
 }
 
 const SortableCategoryItem: React.FC<{ cat: Category; onDelete: () => void }> = ({ cat, onDelete }) => {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -459,11 +464,11 @@ const SortableCategoryItem: React.FC<{ cat: Category; onDelete: () => void }> = 
       style={style}
       className={`flex items-center gap-1 bg-[#F5F5F5] rounded-full px-3 py-1.5 border ${isDragging ? 'border-[#FFC928]' : 'border-transparent'}`}
     >
-      <button {...attributes} {...listeners} aria-label="Reordenar" className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
+      <button {...attributes} {...listeners} aria-label={t('admMenu.reorderAria')} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing">
         <GripVertical size={14} />
       </button>
       <span className="text-sm font-medium text-[#111]">{cat.name}</span>
-      <button onClick={onDelete} aria-label="Remover" className="text-gray-400 hover:text-red-500 ml-1">
+      <button onClick={onDelete} aria-label={t('common.delete')} className="text-gray-400 hover:text-red-500 ml-1">
         <X size={14} />
       </button>
     </div>
@@ -476,6 +481,8 @@ const SortableProductItem: React.FC<{
   onEdit: () => void;
   onDelete: () => void;
 }> = ({ product, onToggleAvailable, onEdit, onDelete }) => {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const {
     attributes,
     listeners,
@@ -498,7 +505,7 @@ const SortableProductItem: React.FC<{
       style={style}
       className={`bg-white rounded-2xl p-4 flex gap-4 border-2 transition-colors ${isDragging ? 'border-[#FFC928] ring-4 ring-[#FFC928]/10' : !product.isAvailable ? 'border-gray-200 opacity-60' : 'border-transparent'}`}
     >
-      <button {...attributes} {...listeners} aria-label="Reordenar" className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing px-1">
+      <button {...attributes} {...listeners} aria-label={t('admMenu.reorderAria')} className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing px-1">
         <GripVertical size={20} />
       </button>
 
@@ -507,21 +514,21 @@ const SortableProductItem: React.FC<{
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-bold text-[#111] text-sm">{product.name}</h4>
-          {product.bestSeller && <span className="bg-[#FFC928] text-[#111] text-xs font-bold px-1.5 py-0.5 rounded-full">Top</span>}
-          {product.onPromotion && <span className="bg-red-100 text-red-600 text-xs font-bold px-1.5 py-0.5 rounded-full">Promo</span>}
+          {product.bestSeller && <span className="bg-[#FFC928] text-[#111] text-xs font-bold px-1.5 py-0.5 rounded-full">{t('admMenu.topBadge')}</span>}
+          {product.onPromotion && <span className="bg-red-100 text-red-600 text-xs font-bold px-1.5 py-0.5 rounded-full">{t('admMenu.promoBadge')}</span>}
         </div>
         <p className="text-gray-500 text-xs line-clamp-1 mb-2">{product.description}</p>
-        <span className="font-black text-[#111]">R$ {product.price.toFixed(2)}</span>
+        <span className="font-black text-[#111]">{fmt(product.price)}</span>
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={onToggleAvailable} aria-label="Alternar disponibilidade" className={product.isAvailable ? 'text-green-500' : 'text-gray-400'}>
+        <button onClick={onToggleAvailable} aria-label={t('admMenu.toggleAria')} className={product.isAvailable ? 'text-green-500' : 'text-gray-400'}>
           {product.isAvailable ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
         </button>
-        <button onClick={onEdit} aria-label="Editar" className="p-2 text-gray-400 hover:text-[#111] hover:bg-gray-100 rounded-lg transition-colors">
+        <button onClick={onEdit} aria-label={t('common.edit')} className="p-2 text-gray-400 hover:text-[#111] hover:bg-gray-100 rounded-lg transition-colors">
           <Edit2 size={16} />
         </button>
-        <button onClick={onDelete} aria-label="Excluir" className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
+        <button onClick={onDelete} aria-label={t('common.delete')} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
           <Trash2 size={16} />
         </button>
       </div>

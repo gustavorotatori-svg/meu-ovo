@@ -186,7 +186,7 @@ export default function MenuManagement() {
   const handleCreateCategory = async () => {
     if (!restaurant) return;
     if (!newCatName.trim()) {
-      setErrors({ categoryName: 'Nome da categoria é obrigatório' });
+      setErrors({ categoryName: t('menu.errCatName') });
       return;
     }
     try {
@@ -239,40 +239,40 @@ export default function MenuManagement() {
 
   const validateProduct = () => {
     const newErrors: Record<string, string> = {};
-    if (!newProd.name.trim()) newErrors.name = 'Nome do produto é obrigatório';
-    else if (newProd.name.trim().length < 3) newErrors.name = 'Nome deve ter pelo menos 3 caracteres';
+    if (!newProd.name.trim()) newErrors.name = t('menu.errProdName');
+    else if (newProd.name.trim().length < 3) newErrors.name = t('menu.errNameShort');
 
     const priceNum = parseFloat(newProd.price);
-    if (!newProd.price) newErrors.price = 'Preço é obrigatório';
-    else if (isNaN(priceNum) || priceNum <= 0) newErrors.price = 'Preço deve ser maior que zero';
+    if (!newProd.price) newErrors.price = t('menu.errPriceRequired');
+    else if (isNaN(priceNum) || priceNum <= 0) newErrors.price = t('menu.errPrice');
 
-    if (!newProd.categoryId) newErrors.categoryId = 'Selecione uma categoria';
+    if (!newProd.categoryId) newErrors.categoryId = t('menu.errCategory');
 
     if (newProd.description && newProd.description.length > 500) {
-      newErrors.description = 'Descrição muito longa (máx 500 caracteres)';
+      newErrors.description = t('menu.errDescLong');
     }
 
     if (newProd.estimatedPrepTime) {
       const prepTimeNum = parseInt(newProd.estimatedPrepTime);
-      if (isNaN(prepTimeNum) || prepTimeNum < 0) newErrors.estimatedPrepTime = 'Tempo inválido';
+      if (isNaN(prepTimeNum) || prepTimeNum < 0) newErrors.estimatedPrepTime = t('menu.errPrepTime');
     }
 
     if (newProd.imageUrl && !newProd.imageUrl.startsWith('http') && !newProd.imageUrl.startsWith('data:image') && !newProd.imageUrl.startsWith('blob:') && !imageFile) {
-      newErrors.imageUrl = 'URL ou formato de imagem inválido';
+      newErrors.imageUrl = t('menu.errImage');
     }
 
     // Validate Option Groups
     if (newProd.optionGroups && newProd.optionGroups.length > 0) {
       newProd.optionGroups.forEach((group: OptionGroup, gIdx: number) => {
         if (!group.name.trim()) {
-          newErrors[`group_${group.id}`] = 'Nome do grupo é obrigatório';
+          newErrors[`group_${group.id}`] = t('menu.errGroupName');
         }
         if (group.options.length === 0) {
-          newErrors[`group_options_${group.id}`] = 'Adicione pelo menos uma opção';
+          newErrors[`group_options_${group.id}`] = t('menu.errGroupOptions');
         } else {
           group.options.forEach((opt: Option) => {
             if (!opt.name.trim()) {
-              newErrors[`opt_${opt.id}`] = 'Nome obrigatório';
+              newErrors[`opt_${opt.id}`] = t('menu.errOptName');
             }
           });
         }
@@ -297,7 +297,7 @@ export default function MenuManagement() {
       });
       if (errors.imageUrl) setErrors(prev => { const n = { ...prev }; delete n.imageUrl; return n; });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Erro ao processar a imagem');
+      toast.error(err instanceof Error ? err.message : t('menu.imageError'));
     } finally {
       setProcessingImage(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -505,7 +505,7 @@ export default function MenuManagement() {
         isActive: !product.isActive
       });
     } catch (e) {
-      toast.error('Erro ao atualizar produto');
+      toast.error(t('menu.productUpdateError'));
     }
   };
 
@@ -516,7 +516,7 @@ export default function MenuManagement() {
         isAvailable: newAvailability
       });
     } catch (e) {
-      toast.error('Erro ao atualizar disponibilidade');
+      toast.error(t('menu.availabilityError'));
     }
   };
 
@@ -690,7 +690,7 @@ export default function MenuManagement() {
                 <button 
                   onClick={() => setSearchTerm('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label="Remover filtro"
+                  aria-label={t('menu.clearFilterAria')}
                 >
                   <X size={12} />
                 </button>
@@ -710,7 +710,7 @@ export default function MenuManagement() {
                 </div>
               )}
               <Button variant="outline" size="sm" onClick={() => setIsAIProductModalOpen(true)} className="h-10 px-4 font-black tracking-widest text-[10px] italic border-2 border-orange-500/10 hover:bg-orange-50/50 transition-colors">
-                <Sparkles className="mr-2 h-3.5 w-3.5 text-orange-500" /> GERAR COM IA
+                <Sparkles className="mr-2 h-3.5 w-3.5 text-orange-500" /> {t('menu.generateAI')}
               </Button>
             </div>
           </div>
@@ -926,7 +926,7 @@ export default function MenuManagement() {
                            "text-[9px] font-black uppercase tracking-widest",
                            product.isActive ? "text-green-600" : "text-slate-400"
                          )}>
-                           {product.isActive ? "Visível no Cardápio" : "Oculto no Cardápio"}
+                            {product.isActive ? t('menu.visibleMenu') : t('menu.hiddenMenu')}
                          </span>
                       </div>
                       <button 
@@ -938,7 +938,7 @@ export default function MenuManagement() {
                           "h-5 w-10 rounded-full relative transition-all duration-300 shadow-inner",
                           product.isActive ? "bg-brand-black" : "bg-slate-200"
                         )}
-                        title={product.isActive ? "Ocultar do Cardápio" : "Exibir no Cardápio"}
+                        title={product.isActive ? t('menu.hideMenu') : t('menu.showMenu')}
                       >
                         <div className={cn(
                           "absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all duration-300 shadow flex items-center justify-center",
@@ -1066,7 +1066,7 @@ export default function MenuManagement() {
           <div className="bg-white rounded-xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-5 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
-                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+                 {editingCategory ? t('menu.editCategoryTitle') : t('menu.newCategory')}
                </h3>
                <button onClick={() => {
                  setIsCategoryModalOpen(false);
@@ -1078,14 +1078,14 @@ export default function MenuManagement() {
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Título da Categoria</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.catTitleLabel')}</label>
                 <input 
                   type="text" 
                   className={cn(
                     "w-full border-2 border-slate-100 rounded-xl p-3 text-sm outline-none focus:border-brand-egg focus:bg-white transition-all font-bold text-brand-black",
                     errors.categoryName && "border-red-500"
                   )}
-                  placeholder="Ex: Hambúrgueres Artesanais"
+                  placeholder={t('menu.catTitlePh')}
                   value={newCatName}
                   onChange={(e) => {
                     setNewCatName(e.target.value);
@@ -1099,9 +1099,9 @@ export default function MenuManagement() {
                   setIsCategoryModalOpen(false);
                   setEditingCategory(null);
                   setNewCatName('');
-                }}>DESCARTAR</Button>
+                }}> {t('common.discard').toUpperCase()}</Button>
                 <Button size="sm" className="text-[10px] uppercase font-black tracking-widest bg-brand-black text-white hover:bg-slate-800" onClick={handleCreateCategory}>
-                  {editingCategory ? 'ATUALIZAR' : 'SALVAR'}
+                  {t('common.save').toUpperCase()}
                 </Button>
               </div>
             </div>
@@ -1111,11 +1111,11 @@ export default function MenuManagement() {
 
       {/* Product Modal */}
       {isProductModalOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Gerenciar produto" className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label={t('menu.prodDialogAria')} className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white rounded-xl w-full max-w-lg overflow-hidden shadow-2xl border border-slate-200 max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-50 bg-slate-50/30 flex items-center justify-between">
                <h3 className="text-xs font-black text-slate-800 uppercase tracking-widest">
-                 {editingProduct ? 'Editar Item' : 'Novo Item do Cardápio'}
+                 {editingProduct ? t('menu.editItemTitle') : t('menu.newItemTitle')}
                </h3>
                 <button onClick={() => {
                   setIsProductModalOpen(false);
@@ -1152,9 +1152,9 @@ export default function MenuManagement() {
                         )}
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={handleImageDrop}
-                        title="Clique ou arraste uma imagem aqui"
+                        title={t('menu.dropImageTitle')}
                       >
-                        {processingImage ? 'PROCESSANDO...' : uploadingImage ? 'ENVIANDO...' : 'UPLOAD'}
+                        {processingImage ? t('menu.processingImg') : uploadingImage ? t('menu.uploadingImg') : t('menu.uploadLbl')}
                         <input 
                           type="file" 
                           ref={fileInputRef}
@@ -1178,7 +1178,7 @@ export default function MenuManagement() {
                             setNewProd({...newProd, imageUrl: ''});
                           }}
                           className="absolute inset-0 bg-black/40 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                          aria-label="Remover imagem"
+                          aria-label={t('menu.removeImageAria')}
                         >
                           <X size={16} />
                         </button>
@@ -1187,14 +1187,14 @@ export default function MenuManagement() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Nome do Produto</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.prodNameLabel')}</label>
                   <input 
                     type="text" 
                     className={cn(
                       "w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none",
                       errors.name && "border-red-500"
                     )}
-                    placeholder="X-Bacon Supremo"
+                    placeholder={t('menu.prodNamePh')}
                     value={newProd.name}
                     onChange={(e) => {
                       setNewProd({...newProd, name: e.target.value});
@@ -1204,7 +1204,7 @@ export default function MenuManagement() {
                   {errors.name && <p className="text-red-500 text-[9px] font-black uppercase tracking-widest">{errors.name}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Valor de Venda (R$)</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.salePriceLabel')}</label>
                   <input 
                     type="number" 
                     step="0.01"
@@ -1223,7 +1223,7 @@ export default function MenuManagement() {
                   {errors.price && <p className="text-red-500 text-[9px] font-black uppercase tracking-widest">{errors.price}</p>}
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Tempo de Preparo (min)</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.prepTimeLabel')}</label>
                   <div className="relative">
                     <Clock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input 
@@ -1233,7 +1233,7 @@ export default function MenuManagement() {
                         "w-full border border-slate-200 rounded-md py-2 pl-9 pr-3 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none",
                         errors.estimatedPrepTime && "border-red-500"
                       )}
-                      placeholder="Ex: 20"
+                       placeholder={t('menu.prepTimePh')}
                       value={newProd.estimatedPrepTime}
                       onChange={(e) => {
                         setNewProd({...newProd, estimatedPrepTime: e.target.value});
@@ -1246,7 +1246,7 @@ export default function MenuManagement() {
               </div>
               
               <div className="space-y-1.5">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Categoria de Exibição</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.displayCatLabel')}</label>
                  <select 
                   className={cn(
                     "w-full border border-slate-200 rounded-md p-2 text-sm font-semibold bg-white outline-none focus:ring-1 focus:ring-orange-500",
@@ -1266,23 +1266,23 @@ export default function MenuManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5 font-sans">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Estoque Atual</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.stockLabel')}</label>
                    <input 
                      type="number" 
                      min="0"
                      className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
-                     placeholder="Ex: 50 (Vazio = Ilimitado)"
+                      placeholder={t('menu.stockPh')}
                      value={newProd.stock}
                      onChange={(e) => setNewProd({...newProd, stock: e.target.value})}
                    />
                 </div>
                 <div className="space-y-1.5 font-sans">
-                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Limite de Alerta</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.alertLimitLabel')}</label>
                    <input 
                      type="number" 
                      min="0"
                      className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
-                     placeholder="Ex: 5"
+                      placeholder={t('menu.alertLimitPh')}
                      value={newProd.minStockAlert}
                      onChange={(e) => setNewProd({...newProd, minStockAlert: e.target.value})}
                    />
@@ -1290,13 +1290,13 @@ export default function MenuManagement() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Composição / Detalhes</label>
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.compositionLabel')}</label>
                 <textarea 
                   className={cn(
                     "w-full border border-slate-200 rounded-md p-2 text-sm font-medium h-20 resize-none outline-none focus:ring-1 focus:ring-orange-500",
                     errors.description && "border-red-500"
                   )}
-                  placeholder="Descreva os ingredientes..."
+                   placeholder={t('menu.compositionPh')}
                   value={newProd.description}
                   onChange={(e) => {
                     setNewProd({...newProd, description: e.target.value});
@@ -1307,10 +1307,10 @@ export default function MenuManagement() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Observações (Visível para o cliente)</label>
+                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.notesLabel')}</label>
                 <textarea 
                   className="w-full border border-slate-200 rounded-md p-2 text-sm font-medium h-20 resize-none outline-none focus:ring-1 focus:ring-orange-500"
-                  placeholder="Ex: Contém glúten, Prato apimentado, Serve 2 pessoas..."
+                   placeholder={t('menu.notesPh')}
                   value={newProd.notes}
                   onChange={(e) => setNewProd({...newProd, notes: e.target.value})}
                 />
@@ -1318,16 +1318,16 @@ export default function MenuManagement() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Ingredientes</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.ingListLabel')}</label>
                   <textarea 
                     className="w-full border border-slate-200 rounded-md p-2 text-sm font-medium h-20 resize-none outline-none focus:ring-1 focus:ring-orange-500"
-                    placeholder="Lista de ingredientes..."
+                    placeholder={t('menu.ingListPh')}
                     value={newProd.ingredients}
                     onChange={(e) => setNewProd({...newProd, ingredients: e.target.value})}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Alergênicos</label>
+                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.allergenListLabel')}</label>
                   <div className="grid grid-cols-2 gap-1.5">
                     {ALLERGENS.map(a => {
                       const isSelected = newProd.selectedAllergens.includes(a.key);
@@ -1353,12 +1353,12 @@ export default function MenuManagement() {
               {/* Label Info Section */}
               <div className="pt-4 border-t border-slate-100 space-y-4">
                 <div>
-                  <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Informações de Validade</h4>
-                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Configure para gerar etiquetas automaticamente</p>
+                   <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{t('menu.shelfTitle')}</h4>
+                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t('menu.shelfSub')}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Validade (dias)</label>
+                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.shelfLabel')}</label>
                     <input type="number" min="0"
                       className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
                       placeholder="Ex: 7"
@@ -1367,17 +1367,17 @@ export default function MenuManagement() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Armazenamento</label>
+                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.storageLabel')}</label>
                     <select value={newProd.storageType}
                       onChange={(e) => setNewProd({...newProd, storageType: e.target.value as StorageType})}
                       className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none bg-white"
                     >
-                      {STORAGE_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                      {STORAGE_OPTIONS.map(s => <option key={s.value} value={s.value}>{t('admLabels.st' + s.value.charAt(0).toUpperCase() + s.value.slice(1), { defaultValue: s.label })}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Instruções de Armazenamento (opcional)</label>
+                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('menu.storageInstrLabel')}</label>
                   <input type="text"
                     className="w-full border border-slate-200 rounded-md p-2 text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none"
                     placeholder="Ex: Manter refrigerado entre 2°C e 8°C"
@@ -1403,8 +1403,8 @@ export default function MenuManagement() {
                       )} />
                     </button>
                     <div>
-                       <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Visível no Cardápio</p>
-                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Mostrar ou ocultar este produto para os clientes no cardápio</p>
+                       <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{t('menu.visibleLbl')}</p>
+                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t('menu.visibleDesc')}</p>
                      </div>
                   </div>
 
@@ -1423,8 +1423,8 @@ export default function MenuManagement() {
                       )} />
                     </button>
                     <div>
-                       <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">Disponível</p>
-                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Estoque para venda</p>
+                       <p className="text-[11px] font-black text-slate-700 uppercase tracking-tight">{t('menu.availLbl')}</p>
+                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">{t('menu.availDesc')}</p>
                      </div>
                   </div>
                </div>
@@ -1433,11 +1433,11 @@ export default function MenuManagement() {
                <div className="pt-4 border-t border-slate-100 space-y-4">
                   <div className="flex items-center justify-between">
                      <div>
-                        <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight">Opções do Produto</h4>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Adicione tamanhos, adicionais ou complementos</p>
+                      <h4 className="text-[11px] font-black text-slate-800 uppercase tracking-tight">{t('menu.optsTitle')}</h4>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{t('menu.optsDesc')}</p>
                      </div>
                      <Button type="button" variant="outline" size="sm" onClick={addOptionGroup} className="h-7 text-[9px] font-black px-3 border-slate-200">
-                        + GRUPO
+                         + {t('menu.groupBtn')}
                      </Button>
                   </div>
 
@@ -1448,10 +1448,10 @@ export default function MenuManagement() {
                               <div className="flex-1 space-y-3">
                                  <div className="grid grid-cols-2 gap-3">
                                     <div className="space-y-1">
-                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Nome do Grupo</label>
+                                       <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{t('menu.groupNameLbl')}</label>
                                        <input 
                                           type="text"
-                                          placeholder="Ex: Tamanho, Adicionais"
+                                           placeholder={t('menu.groupNamePh')}
                                           className={cn(
                                             "w-full text-xs font-bold bg-white border rounded p-1.5 outline-none focus:ring-1 focus:ring-orange-500",
                                             errors[`group_${group.id}`] ? "border-red-500" : "border-slate-200"
@@ -1486,19 +1486,19 @@ export default function MenuManagement() {
                                     </div>
                                  </div>
                               </div>
-                              <button onClick={() => removeOptionGroup(group.id)} className="text-slate-400 hover:text-red-500 transition-colors pt-5" aria-label="Excluir">
+                                        <button onClick={() => removeOptionGroup(group.id)} className="text-slate-400 hover:text-red-500 transition-colors pt-5" aria-label={t('common.delete')}>
                                  <Trash size={14} />
                               </button>
                            </div>
 
                            <div className="space-y-2">
                               <div className="flex items-center justify-between px-1">
-                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Opções</span>
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{t('menu.optionsLbl')}</span>
                                  <button onClick={() => {
                                    addOptionToGroup(group.id);
                                    if (errors[`group_options_${group.id}`]) setErrors(prev => { const n = {...prev}; delete n[`group_options_${group.id}`]; return n; });
                                  }} className="text-[9px] font-black text-orange-600 uppercase tracking-widest hover:underline">
-                                    + ADICIONAR OPÇÃO
+                                     {t('menu.addOptionBtn')}
                                  </button>
                               </div>
                               {errors[`group_options_${group.id}`] && <p className="text-red-500 text-[8px] font-black px-1">{errors[`group_options_${group.id}`]}</p>}
@@ -1512,7 +1512,7 @@ export default function MenuManagement() {
                                        <div className="flex-1 space-y-0.5">
                                          <input 
                                             type="text"
-                                            placeholder="Nome da opção"
+                                            placeholder={t('menu.optNamePh')}
                                             className="w-full text-[10px] font-bold p-1 border-none outline-none"
                                             value={opt.name}
                                             onChange={(e) => {
@@ -1532,13 +1532,13 @@ export default function MenuManagement() {
                                              onChange={(e) => updateOptionInGroup(group.id, opt.id, { price: parseFloat(e.target.value) })}
                                           />
                                        </div>
-                                       <button onClick={() => removeOptionFromGroup(group.id, opt.id)} className="text-slate-300 hover:text-red-500 p-1" aria-label="Excluir">
+                                        <button onClick={() => removeOptionFromGroup(group.id, opt.id)} className="text-slate-300 hover:text-red-500 p-1" aria-label={t('common.delete')}>
                                           <Trash size={12} />
                                        </button>
                                     </div>
                                  ))}
                                  {group.options.length === 0 && (
-                                    <p className="text-[8px] text-slate-400 text-center py-2 italic font-medium uppercase tracking-wider">Nenhuma opção adicionada</p>
+                                     <p className="text-[8px] text-slate-400 text-center py-2 italic font-medium uppercase tracking-wider">{t('menu.noOptionsYet')}</p>
                                  )}
                               </div>
                            </div>
@@ -1546,7 +1546,7 @@ export default function MenuManagement() {
                      ))}
                      {newProd.optionGroups.length === 0 && (
                         <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-6 text-center">
-                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Sem variações ou opcionais</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t('menu.noVariations')}</p>
                         </div>
                      )}
                   </div>
@@ -1561,7 +1561,7 @@ export default function MenuManagement() {
                 setNewProd({ name: '', description: '', price: '', categoryId: '', imageUrl: '', isActive: true, isAvailable: true, estimatedPrepTime: '', notes: '', ingredients: '', allergens: '', selectedAllergens: [], shelfLifeDays: '', storageType: 'refrigerated', storageInstructions: '', optionGroups: [], stock: '', minStockAlert: '' });
               }}>DESCARTAR</Button>
               <Button size="sm" className="text-[10px] uppercase font-black tracking-widest" onClick={handleCreateProduct} disabled={uploadingImage || processingImage}>
-                {uploadingImage || processingImage ? 'ENVIANDO FOTO...' : (editingProduct ? 'ATUALIZAR PRODUTO' : 'CRIAR PRODUTO')}
+                {uploadingImage || processingImage ? t('menu.sendingPhoto') : (editingProduct ? t('menu.updateProductBtn') : t('menu.createProductBtn'))}
               </Button>
             </div>
           </div>
@@ -1599,16 +1599,16 @@ export default function MenuManagement() {
       )}
       {/* Delete Confirmation Modal (Product) */}
       {isDeleteModalOpen && productToDelete && (
-        <div role="dialog" aria-modal="true" aria-label="Confirmar exclusão de produto" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label={t('menu.delProdAria')} className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
                 <Trash2 size={24} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight">Excluir Produto?</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight">{t('menu.delProdTitle')}</h3>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Você tem certeza que deseja excluir <span className="text-slate-900">"{productToDelete.name}"</span>? Esta ação não pode ser desfeita.
+                  {t('menu.delProdDescA')} <span className="text-slate-900">"{productToDelete.name}"</span>? {t('menu.delProdDescB')}
                 </p>
               </div>
             </div>
@@ -1621,13 +1621,13 @@ export default function MenuManagement() {
                   setProductToDelete(null);
                 }}
               >
-                CANCELAR
+                {t('common.cancel').toUpperCase()}
               </Button>
               <Button 
                 className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border-b-4 border-red-800 active:border-b-0 active:translate-y-1 transition-all"
                 onClick={handleDeleteProduct}
               >
-                EXCLUIR
+                {t('common.delete').toUpperCase()}
               </Button>
             </div>
           </div>
@@ -1636,16 +1636,16 @@ export default function MenuManagement() {
 
       {/* Delete Confirmation Modal (Category) */}
       {categoryToDelete && (
-        <div role="dialog" aria-modal="true" aria-label="Confirmar exclusão de categoria" className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
+        <div role="dialog" aria-modal="true" aria-label={t('menu.delCatAria')} className="fixed inset-0 z-[110] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-[2rem] w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200">
             <div className="p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-600">
                 <Trash2 size={24} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight">Excluir Categoria?</h3>
+                <h3 className="text-xl font-black text-slate-800 uppercase italic tracking-tight">{t('menu.delCatTitle')}</h3>
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                  Você tem certeza que deseja excluir <span className="text-slate-900">"{categoryToDelete.name}"</span>?
+                  {t('menu.delCatDescA')} <span className="text-slate-900">"{categoryToDelete.name}"</span>?
                 </p>
               </div>
             </div>
@@ -1655,13 +1655,13 @@ export default function MenuManagement() {
                 className="flex-1 h-12 rounded-2xl font-black text-[10px] uppercase tracking-widest border-2"
                 onClick={() => setCategoryToDelete(null)}
               >
-                CANCELAR
+                {t('common.cancel').toUpperCase()}
               </Button>
               <Button 
                 className="flex-1 h-12 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest border-b-4 border-red-800 active:border-b-0 active:translate-y-1 transition-all"
                 onClick={handleDeleteCategory}
               >
-                EXCLUIR
+                {t('common.delete').toUpperCase()}
               </Button>
             </div>
           </div>

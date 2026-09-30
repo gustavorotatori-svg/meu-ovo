@@ -8,8 +8,10 @@ import { cn, formatCurrency } from '../../lib/utils';
 import { CardSkeleton, Skeleton } from '../../components/Skeleton';
 import { Link } from 'react-router-dom';
 import { Button } from '../../components/Button';
+import { useTranslation } from 'react-i18next';
 
 export default function Overview() {
+  const { t, i18n } = useTranslation();
   const { currentRestaurant: restaurant } = useRestaurant();
   const [stats, setStats] = useState({
     todayRevenue: 0,
@@ -76,9 +78,9 @@ export default function Overview() {
   }
 
   const cards = [
-    { label: 'Faturamento', value: formatCurrency(stats.todayRevenue), icon: <TrendingUp size={24} />, color: 'text-brand-black', bg: 'bg-brand-egg' },
-    { label: 'Pedidos Hoje', value: stats.todayOrders, icon: <ShoppingBag size={24} />, color: 'text-brand-white', bg: 'bg-brand-black' },
-    { label: 'Itens Ativos', value: stats.activeProducts, icon: <Star size={24} />, color: 'text-brand-black', bg: 'bg-slate-100' },
+    { label: t('admOverview.revenue'), value: formatCurrency(stats.todayRevenue), icon: <TrendingUp size={24} />, color: 'text-brand-black', bg: 'bg-brand-egg' },
+    { label: t('admOverview.ordersToday'), value: stats.todayOrders, icon: <ShoppingBag size={24} />, color: 'text-brand-white', bg: 'bg-brand-black' },
+    { label: t('admOverview.activeItems'), value: stats.activeProducts, icon: <Star size={24} />, color: 'text-brand-black', bg: 'bg-slate-100' },
   ];
 
   return (
@@ -87,13 +89,13 @@ export default function Overview() {
         <div className="bg-gradient-to-r from-brand-black to-slate-800 p-8 rounded-3xl text-white shadow-xl flex flex-col md:flex-row items-center gap-8 relative overflow-hidden group">
           <div className="absolute top-0 right-0 -translate-y-12 translate-x-12 w-64 h-64 bg-brand-egg/10 rounded-full blur-3xl group-hover:bg-brand-egg/20 transition-all duration-700" />
           <div className="relative z-10 space-y-4 flex-1">
-             <h3 className="text-3xl font-black italic uppercase tracking-tighter leading-tight">Monte seu Cardápio <br /><span className="text-brand-egg">com Inteligência Artificial</span></h3>
+             <h3 className="text-3xl font-black italic uppercase tracking-tighter leading-tight">{t('admOverview.emptyTitleA')} <br /><span className="text-brand-egg">{t('admOverview.emptyTitleB')}</span></h3>
              <p className="text-sm font-medium text-slate-400 max-w-md">
-               Seu catálogo ainda está vazio. Deixe nossa IA criar sugestões de categorias e produtos para o seu restaurante em segundos.
+               {t('admOverview.emptyDesc')}
              </p>
              <Link to="/admin/dashboard/menu?generate=true">
                <Button className="h-14 px-8 bg-brand-egg text-brand-black hover:bg-yellow-400 rounded-2xl font-black text-sm uppercase tracking-widest italic border-b-4 border-yellow-600 shadow-xl shadow-yellow-500/20 active:border-b-0 active:translate-y-1 transition-all mt-4">
-                  Gerar cardápio com IA
+                  {t('admOverview.emptyCta')}
                </Button>
              </Link>
           </div>
@@ -101,7 +103,7 @@ export default function Overview() {
      )}
 
       <div>
-        <h2 className="text-2xl font-black text-brand-black tracking-tight uppercase italic">Resumo de Hoje</h2>
+        <h2 className="text-2xl font-black text-brand-black tracking-tight uppercase italic">{t('admOverview.todayTitle')}</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -121,18 +123,18 @@ export default function Overview() {
       <div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
           <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
-             <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-brand-black italic">Últimos Pedidos</h3>
-             <Link to="/admin/pedidos" className="text-[10px] font-black text-brand-orange hover:tracking-widest transition-all uppercase italic">Ver todos</Link>
+             <h3 className="font-black text-[10px] uppercase tracking-[0.2em] text-brand-black italic">{t('admOverview.recentTitle')}</h3>
+             <Link to="/admin/pedidos" className="text-[10px] font-black text-brand-orange hover:tracking-widest transition-all uppercase italic">{t('admOverview.viewAll')}</Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
-                <tr>
-                  <th className="px-5 py-3 border-b border-slate-100">Status</th>
-                  <th className="px-5 py-3 border-b border-slate-100">Cliente</th>
-                  <th className="px-5 py-3 border-b border-slate-100">Tipo</th>
-                  <th className="px-5 py-3 border-b border-slate-100 text-right">Valor</th>
-                </tr>
+                 <tr>
+                   <th className="px-5 py-3 border-b border-slate-100">{t('admOverview.colStatus')}</th>
+                   <th className="px-5 py-3 border-b border-slate-100">{t('admOverview.colCustomer')}</th>
+                   <th className="px-5 py-3 border-b border-slate-100">{t('admOverview.colType')}</th>
+                   <th className="px-5 py-3 border-b border-slate-100 text-right">{t('admOverview.colValue')}</th>
+                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {stats.recentOrders.map((order, i) => (
@@ -146,23 +148,23 @@ export default function Overview() {
                         (order.status === 'out-for-delivery' || order.status === 'out_for_delivery') ? "bg-purple-50 text-purple-600 border-purple-100" :
                         (order.status === 'finished' || order.status === 'completed') ? "bg-green-50 text-green-600 border-green-100" : "bg-red-50 text-red-600 border-red-100"
                       )}>
-                        {order.status === 'received' ? 'RECEBIDO' : 
-                         order.status === 'preparing' ? 'PREPARANDO' : 
-                         order.status === 'ready' ? 'PRONTO' :
-                         (order.status === 'out-for-delivery' || order.status === 'out_for_delivery') ? 'ENTREGA' :
-                         (order.status === 'finished' || order.status === 'completed') ? 'FINALIZADO' : 'CANCELADO'}
+                        {order.status === 'received' ? t('orderStatus.stepReceived') : 
+                         order.status === 'preparing' ? t('orderStatus.stepPreparing') : 
+                         order.status === 'ready' ? t('orderStatus.stepReady') :
+                         (order.status === 'out-for-delivery' || order.status === 'out_for_delivery') ? t('orderStatus.stepOutForDelivery') :
+                         (order.status === 'finished' || order.status === 'completed') ? t('orderStatus.stepFinished') : t('orderStatus.etaCancelled')}
                       </span>
                     </td>
                     <td className="px-5 py-3 font-semibold text-slate-700">{order.customerName}</td>
-                    <td className="px-5 py-3 text-slate-400 text-xs font-bold uppercase tracking-wider">{order.type === 'delivery' ? 'DELIVERY' : 'MESA'}</td>
+                    <td className="px-5 py-3 text-slate-400 text-xs font-bold uppercase tracking-wider">{order.type === 'delivery' ? t('admOverview.typeDelivery') : t('admOverview.typeTable')}</td>
                     <td className="px-5 py-3 text-right font-bold text-slate-900">{formatCurrency(order.total)}</td>
                   </tr>
                 ))}
                 {stats.recentOrders.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-5 py-12 text-center text-slate-400 italic text-sm">
-                      Aguardando novos pedidos...
-                    </td>
+                     <td colSpan={4} className="px-5 py-12 text-center text-slate-400 italic text-sm">
+                       {t('admOverview.waitingOrders')}
+                     </td>
                   </tr>
                 )}
               </tbody>

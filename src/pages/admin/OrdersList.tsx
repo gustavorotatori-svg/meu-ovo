@@ -12,14 +12,21 @@ import {
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Order } from '../../types';
 import { toast } from 'react-hot-toast';
-import { cn, formatCurrency } from '../../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../../lib/utils';
 import { Button } from '../../components/Button';
 import { Clock, MapPin, Phone, ChefHat, Bike, CheckCircle, Smartphone, Package, XCircle, ClipboardList } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, type Locale } from 'date-fns';
+import { ptBR, enUS, es } from 'date-fns/locale';
 import { Skeleton } from '../../components/Skeleton';
+import { useTranslation } from 'react-i18next';
+
+const dateFnsLocales: Record<string, Locale> = { 'pt-BR': ptBR, 'en-US': enUS, 'es-ES': es };
 
 export default function OrdersList() {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
+  const dateLocale = dateFnsLocales[loc] || ptBR;
+  const fmt = (v: number) => formatCurrency(v, loc);
   const { currentRestaurant: restaurant } = useRestaurant();
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'preparing' | 'delivery' | 'completed'>('all');
@@ -53,9 +60,9 @@ export default function OrdersList() {
         status,
         updatedAt: new Date().toISOString()
       });
-      toast.success('Status atualizado!');
+      toast.success(t('admOrdersList.statusOk'));
     } catch (e) {
-      toast.error('Erro ao atualizar status');
+      toast.error(t('admOrdersList.statusError'));
     }
   };
 
@@ -117,14 +124,15 @@ export default function OrdersList() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'received': return 'Recebido';
-      case 'preparing': return 'Em Preparo';
-      case 'ready': return 'Pronto';
+      case 'received': return t('orderStatus.stepReceived');
+      case 'accepted': return t('orderStatus.stepAccepted');
+      case 'preparing': return t('orderStatus.stepPreparing');
+      case 'ready': return t('orderStatus.stepReady');
       case 'out-for-delivery':
-      case 'out_for_delivery': return 'Saiu p/ Entrega';
+      case 'out_for_delivery': return t('orderStatus.stepOutForDelivery');
       case 'finished':
-      case 'completed': return 'Finalizado';
-      case 'cancelled': return 'Cancelado';
+      case 'completed': return t('orderStatus.stepFinished');
+      case 'cancelled': return t('orderStatus.etaCancelled');
       default: return status;
     }
   };
@@ -133,8 +141,8 @@ export default function OrdersList() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">Gestão de Pedidos</h2>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Acompanhe e despache suas vendas</p>
+          <h2 className="text-xl font-extrabold text-slate-900 uppercase tracking-tight">{t('admOrdersList.title')}</h2>
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('admOrdersList.subtitle')}</p>
         </div>
         <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm overflow-x-auto no-scrollbar max-w-full">
            {(['all', 'pending', 'preparing', 'delivery', 'completed'] as const).map(tab => (
@@ -146,7 +154,7 @@ export default function OrdersList() {
                 activeTab === tab ? "bg-slate-900 text-white shadow-md shadow-slate-200" : "text-slate-500 hover:bg-slate-50"
               )}
              >
-                {tab === 'all' ? 'Todos' : tab === 'pending' ? 'Recebido' : tab === 'preparing' ? 'Em Preparo' : tab === 'delivery' ? 'Em Entrega' : 'Finalizado'}
+                {tab === 'all' ? t('admOrdersList.tabAll') : tab === 'pending' ? t('admOrdersList.tabPending') : tab === 'preparing' ? t('admOrdersList.tabPreparing') : tab === 'delivery' ? t('admOrdersList.tabDelivery') : t('admOrdersList.tabDone')}
                
                {orders.filter(o => {
                   if (tab === 'all') return true;
@@ -191,7 +199,7 @@ export default function OrdersList() {
                    )} />
                    <div>
                      <div className="flex flex-wrap items-center gap-2">
-                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">PEDIDO #{order.id.slice(-6).toUpperCase()}</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none">{t('admOrdersList.orderLbl')} #{order.id.slice(-6).toUpperCase()}</p>
                        <span className={cn(
                          "text-[9px] px-2 py-0.5 rounded-lg font-black uppercase flex items-center gap-1",
                          getStatusColor(order.status)
@@ -204,9 +212,9 @@ export default function OrdersList() {
                      <p className="font-extrabold text-slate-900 tracking-tight leading-tight mt-1">{order.customerName}</p>
                    </div>
                  </div>
-                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                    {order.createdAt ? format(new Date(order.createdAt), "HH:mm", { locale: ptBR }) : '-'}
-                 </p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                     {order.createdAt ? format(new Date(order.createdAt), "HH:mm", { locale: dateLocale }) : '-'}
+                  </p>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3 pb-3 border-b border-slate-50">
@@ -216,7 +224,7 @@ export default function OrdersList() {
                  </div>
                  <div className="flex items-start gap-2 text-xs font-semibold text-slate-600">
                     <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" />
-                    <p className="truncate">{order.type === 'table' ? `Mesa ${order.tableNumber}` : order.address || 'Retirada no Balcão'}</p>
+                     <p className="truncate">{order.type === 'table' ? t('admOrdersList.tableOf', { n: order.tableNumber }) : order.address || t('admOrdersList.pickupCounter')}</p>
                  </div>
               </div>
 
@@ -228,7 +236,7 @@ export default function OrdersList() {
                           <span className="font-black text-orange-600 mr-2">{item.quantity}x</span>
                           {item.productName || item.name}
                         </p>
-                        <p className="text-slate-400 font-bold tracking-tighter">{formatCurrency(item.unitPrice * item.quantity)}</p>
+                        <p className="text-slate-400 font-bold tracking-tighter">{fmt(item.unitPrice * item.quantity)}</p>
                      </div>
                      {item.observations && (
                        <div className={cn(
@@ -237,7 +245,7 @@ export default function OrdersList() {
                            ? "bg-red-50 border-red-100 text-red-600"
                            : "bg-orange-50 border-orange-100 text-orange-600"
                        )}>
-                         <span className="opacity-70 uppercase mr-1">Obs:</span> {item.observations}
+                          <span className="opacity-70 uppercase mr-1">{t('admOrdersList.obsPrefix')}</span> {item.observations}
                        </div>
                      )}
                    </div>
@@ -246,7 +254,7 @@ export default function OrdersList() {
 
               {order.observations && (
                 <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl mt-3">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Observações do Pedido</p>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{t('admOrdersList.orderObs')}</p>
                   <p className="text-xs text-slate-700 font-medium">{order.observations}</p>
                 </div>
               )}
@@ -255,46 +263,46 @@ export default function OrdersList() {
             {/* Actions & Total */}
             <div className="bg-slate-50 p-4 flex flex-row md:flex-col items-center justify-between md:justify-center gap-4 border-t md:border-t-0 md:border-l border-slate-100 w-full md:w-48">
                <div className="text-right md:text-center w-full">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">Total Pago</p>
-                  <p className="text-xl font-black text-slate-900 tracking-tighter">{formatCurrency(order.total)}</p>
+                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-0.5">{t('admOrdersList.totalPaid')}</p>
+                   <p className="text-xl font-black text-slate-900 tracking-tighter">{fmt(order.total)}</p>
                </div>
                
                <div className="flex md:flex-col gap-2 shrink-0 md:w-full">
-                 {order.status === 'received' && (
-                   <Button onClick={() => updateStatus(order.id, 'preparing')} size="sm" className="w-full">
-                      Aceitar
-                   </Button>
-                 )}
-                 
-                 {order.status === 'preparing' && (
-                   <Button onClick={() => updateStatus(order.id, 'ready')} size="sm" className="w-full">
-                      Pronto
-                   </Button>
-                 )}
-                 
-                 {order.status === 'ready' && (
-                   <Button onClick={() => updateStatus(order.id, order.type === 'delivery' ? 'out-for-delivery' : 'finished')} size="sm" className="w-full">
-                      {order.type === 'delivery' ? 'Expedir' : 'Finalizar'}
-                   </Button>
-                 )}
-                 
-                 {(order.status === 'out-for-delivery' || order.status === 'out_for_delivery') && (
-                   <Button onClick={() => updateStatus(order.id, 'finished')} size="sm" className="w-full">
-                      Entregue
-                   </Button>
-                 )}
+                  {order.status === 'received' && (
+                    <Button onClick={() => updateStatus(order.id, 'preparing')} size="sm" className="w-full">
+                       {t('admOrdersList.acceptBtn')}
+                    </Button>
+                  )}
+                  
+                  {order.status === 'preparing' && (
+                    <Button onClick={() => updateStatus(order.id, 'ready')} size="sm" className="w-full">
+                       {t('admOrdersList.readyBtn')}
+                    </Button>
+                  )}
+                  
+                  {order.status === 'ready' && (
+                    <Button onClick={() => updateStatus(order.id, order.type === 'delivery' ? 'out-for-delivery' : 'finished')} size="sm" className="w-full">
+                       {order.type === 'delivery' ? t('admOrdersList.dispatchBtn') : t('admOrdersList.finishBtn')}
+                    </Button>
+                  )}
+                  
+                  {(order.status === 'out-for-delivery' || order.status === 'out_for_delivery') && (
+                    <Button onClick={() => updateStatus(order.id, 'finished')} size="sm" className="w-full">
+                       {t('admOrdersList.deliveredBtn')}
+                    </Button>
+                  )}
 
-                 {order.status !== 'finished' && order.status !== 'completed' && order.status !== 'cancelled' && (
-                   <Button variant="ghost" onClick={() => updateStatus(order.id, 'cancelled')} size="sm" className="text-red-500 hover:bg-red-50 text-[10px]">
-                      RECUSAR
-                   </Button>
-                 )}
-                 
-                 {(order.status === 'finished' || order.status === 'completed') && (
-                   <div className="bg-green-100 text-green-700 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
-                      <CheckCircle size={12} /> CONCLUÍDO
-                   </div>
-                 )}
+                  {order.status !== 'finished' && order.status !== 'completed' && order.status !== 'cancelled' && (
+                    <Button variant="ghost" onClick={() => updateStatus(order.id, 'cancelled')} size="sm" className="text-red-500 hover:bg-red-50 text-[10px]">
+                       {t('admOrdersList.declineBtn')}
+                    </Button>
+                  )}
+                  
+                  {(order.status === 'finished' || order.status === 'completed') && (
+                    <div className="bg-green-100 text-green-700 px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                       <CheckCircle size={12} /> {t('admOrdersList.doneBadge')}
+                    </div>
+                  )}
                </div>
             </div>
           </div>
@@ -305,7 +313,7 @@ export default function OrdersList() {
              <div className="bg-slate-50 p-4 rounded-full inline-block mb-3">
                <ClipboardList className="h-8 w-8 text-slate-200" />
              </div>
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Fila de pedidos vazia</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{t('admOrdersList.emptyQueue')}</p>
           </div>
         )}
       </div>

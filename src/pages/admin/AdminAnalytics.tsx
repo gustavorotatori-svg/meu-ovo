@@ -5,17 +5,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useRestaurant } from '../../context/RestaurantContext';
 import type { Order, OrderItem } from '../../types';
 import AdminLayout from './AdminLayout';
-import { format, parseISO, getDay, getHours, startOfWeek, addDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, parseISO, getDay, getHours } from 'date-fns';
+import { useTranslation } from 'react-i18next';
+import { formatCurrency, currencyLocale } from '../../lib/utils';
 
-const PERIODS = [
-  { label: '7 dias', value: 7 },
-  { label: '30 dias', value: 30 },
-  { label: '90 dias', value: 90 },
-  { label: 'Tudo', value: 0 },
-];
-
-const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 8);
 
 const CHART_COLORS = ['#FFC928', '#FF7A00', '#10B981', '#6366F1', '#EC4899', '#F59E0B', '#8B5CF6'];
@@ -29,33 +22,44 @@ const STATUS_COLORS: Record<string, string> = {
   finished: '#6B7280',
   cancelled: '#EF4444',
 };
-const STATUS_LABELS: Record<string, string> = {
-  received: 'Recebido',
-  accepted: 'Aceito',
-  preparing: 'Preparando',
-  ready: 'Pronto',
-  'out-for-delivery': 'Saiu p/ entrega',
-  finished: 'Finalizado',
-  cancelled: 'Cancelado',
-};
-const TYPE_LABELS: Record<string, string> = {
-  delivery: 'Delivery',
-  pickup: 'Retirada',
-  'dine-in': 'Presencial',
-};
-const PAY_LABELS: Record<string, string> = {
-  pix: 'PIX',
-  cash: 'Dinheiro',
-  'card-on-delivery': 'Cartão na entrega',
-  'on-site': 'No local',
-  credit: 'Crédito',
-  debit: 'Débito',
-  voucher: 'Voucher',
-};
 
 export default function AdminAnalytics() {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
+  const fmt = (v: number) => formatCurrency(v, loc);
   const { orders, currentRestaurant } = useRestaurant();
   const [period, setPeriod] = useState(30);
+
+  const PERIODS = [
+    { label: t('admAnalytics.p7'), value: 7 },
+    { label: t('admAnalytics.p30'), value: 30 },
+    { label: t('admAnalytics.p90'), value: 90 },
+    { label: t('admAnalytics.pAll'), value: 0 },
+  ];
+  const DAY_LABELS = [t('admAnalytics.daySun'), t('admAnalytics.dayMon'), t('admAnalytics.dayTue'), t('admAnalytics.dayWed'), t('admAnalytics.dayThu'), t('admAnalytics.dayFri'), t('admAnalytics.daySat')];
+  const STATUS_LABELS: Record<string, string> = {
+    received: t('orderStatus.stepReceived'),
+    accepted: t('orderStatus.stepAccepted'),
+    preparing: t('orderStatus.stepPreparing'),
+    ready: t('orderStatus.stepReady'),
+    'out-for-delivery': t('orderStatus.stepOutForDelivery'),
+    finished: t('orderStatus.stepFinished'),
+    cancelled: t('orderStatus.etaCancelled'),
+  };
+  const TYPE_LABELS: Record<string, string> = {
+    delivery: t('checkout.delivery'),
+    pickup: t('checkout.pickup'),
+    'dine-in': t('checkout.dineIn'),
+  };
+  const PAY_LABELS: Record<string, string> = {
+    pix: t('checkout.pix'),
+    cash: t('checkout.cash'),
+    'card-on-delivery': t('checkout.cardOnDelivery'),
+    'on-site': t('checkout.onSite'),
+    credit: t('checkout.credit'),
+    debit: t('checkout.debit'),
+    voucher: t('checkout.voucher'),
+  };
 
   const filteredOrders = useMemo(() => {
     if (!orders?.length) return [];
@@ -216,7 +220,7 @@ export default function AdminAnalytics() {
           <div>
             <h1 className="text-2xl font-black uppercase tracking-tight">Analytics</h1>
             <p className="text-sm text-gray-400 font-medium">
-              {currentRestaurant?.name || 'Seu restaurante'}
+              {currentRestaurant?.name || t('admAnalytics.restFallback')}
             </p>
           </div>
           <div className="flex gap-1 bg-zinc-900 rounded-xl p-1">
@@ -239,10 +243,10 @@ export default function AdminAnalytics() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: ShoppingBag, label: 'Pedidos', value: kpis.total, prefix: '', suffix: '' },
-            { icon: DollarSign, label: 'Faturamento', value: kpis.revenue, prefix: 'R$ ', suffix: '', decimals: 2 },
-            { icon: TrendingUp, label: 'Ticket Médio', value: kpis.avgTicket, prefix: 'R$ ', suffix: '', decimals: 2 },
-            { icon: Users, label: 'Recorrência', value: kpis.repeatRate, prefix: '', suffix: '%', decimals: 1 },
+            { icon: ShoppingBag, label: t('admAnalytics.kpiOrders'), value: kpis.total, money: false, decimals: 0, suffix: '' },
+            { icon: DollarSign, label: t('admAnalytics.kpiRevenue'), value: kpis.revenue, money: true, decimals: 2, suffix: '' },
+            { icon: TrendingUp, label: t('admAnalytics.kpiTicket'), value: kpis.avgTicket, money: true, decimals: 2, suffix: '' },
+            { icon: Users, label: t('admAnalytics.kpiRepeat'), value: kpis.repeatRate, money: false, decimals: 1, suffix: '%' },
           ].map((k, i) => (
             <motion.div
               key={i}
@@ -258,7 +262,7 @@ export default function AdminAnalytics() {
                 <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">{k.label}</span>
               </div>
               <p className="text-2xl font-black text-white">
-                {k.prefix}{k.decimals ? k.value.toFixed(k.decimals) : Math.round(k.value)}{k.suffix}
+                {k.money ? fmt(k.value) : `${k.decimals ? k.value.toFixed(k.decimals) : Math.round(k.value)}${k.suffix}`}
               </p>
             </motion.div>
           ))}
@@ -268,7 +272,7 @@ export default function AdminAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-              <Calendar size={14} /> Pedidos por dia da semana
+              <Calendar size={14} /> {t('admAnalytics.chartOrdersDay')}
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={ordersByDay}>
@@ -286,7 +290,7 @@ export default function AdminAnalytics() {
 
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-              <DollarSign size={14} /> Faturamento por dia da semana
+              <DollarSign size={14} /> {t('admAnalytics.chartRevenueDay')}
             </h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={ordersByDay}>
@@ -296,7 +300,7 @@ export default function AdminAnalytics() {
                 <Tooltip
                   contentStyle={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12 }}
                   labelStyle={{ color: '#f4f4f5' }}
-                  formatter={(value: number) => [`R$ ${value.toFixed(2)}`, 'Faturamento']}
+                  formatter={(value: number) => [fmt(value), t('admAnalytics.kpiRevenue')]}
                 />
                 <Bar dataKey="faturamento" fill="#10B981" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -307,7 +311,7 @@ export default function AdminAnalytics() {
         {/* Peak Hours Heatmap */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
           <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-            <Clock size={14} /> Horários de pico
+             <Clock size={14} /> {t('admAnalytics.chartPeak')}
           </h3>
           <div className="overflow-x-auto">
             <div className="grid gap-1" style={{ gridTemplateColumns: `60px repeat(7, minmax(56px, 1fr))` }}>
@@ -324,7 +328,7 @@ export default function AdminAnalytics() {
                       <div
                         key={`${h}-${d}`}
                         className={`rounded-lg p-2 text-center text-[10px] font-bold transition-colors ${heatColor(val)} ${val > 0 ? 'text-black' : 'text-gray-500'}`}
-                        title={`${h}:00 - ${DAY_LABELS[d]}: ${val} pedidos`}
+                        title={`${h}:00 - ${DAY_LABELS[d]}: ${val} ${t('admAnalytics.heatUnit')}`}
                       >
                         {val || ''}
                       </div>
@@ -339,7 +343,7 @@ export default function AdminAnalytics() {
         {/* Top Products + Daily Trend */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Pratos mais vendidos</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t('admAnalytics.topDishes')}</h3>
             <div className="space-y-3">
               {topProducts.slice(0, 6).map((p, i) => {
                 const pct = topProducts[0]?.qty ? (p.qty / topProducts[0].qty) * 100 : 0;
@@ -347,7 +351,7 @@ export default function AdminAnalytics() {
                   <div key={p.name}>
                     <div className="flex justify-between text-xs mb-1">
                       <span className="font-bold text-white truncate mr-2">{i + 1}. {p.name}</span>
-                      <span className="text-gray-400 shrink-0">{p.qty} vendidos</span>
+                      <span className="text-gray-400 shrink-0">{t('admAnalytics.soldUnit', { n: p.qty })}</span>
                     </div>
                     <div className="h-2 bg-zinc-800 rounded-full overflow-hidden">
                       <div
@@ -359,13 +363,13 @@ export default function AdminAnalytics() {
                 );
               })}
               {topProducts.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-8">Nenhum pedido no período</p>
+                <p className="text-sm text-gray-500 text-center py-8">{t('admAnalytics.noOrdersPeriod')}</p>
               )}
             </div>
           </div>
 
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">Tendência de pedidos</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4">{t('admAnalytics.trendTitle')}</h3>
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={dailyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
@@ -394,7 +398,7 @@ export default function AdminAnalytics() {
         {/* Pie Charts Row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">Status dos pedidos</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">{t('admAnalytics.pieStatus')}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={statusData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -407,7 +411,7 @@ export default function AdminAnalytics() {
           </div>
 
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">Forma de pagamento</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">{t('admAnalytics.piePay')}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={payMethodData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -420,7 +424,7 @@ export default function AdminAnalytics() {
           </div>
 
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">Tipo de pedido</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 text-center">{t('admAnalytics.pieType')}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={typeData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
@@ -435,18 +439,18 @@ export default function AdminAnalytics() {
 
         {/* Customers Table */}
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
-            <Users size={14} /> Clientes ({customers.length})
-          </h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 mb-4 flex items-center gap-2">
+              <Users size={14} /> {t('admAnalytics.customersTitle', { n: customers.length })}
+            </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[10px] font-black uppercase tracking-widest text-gray-500 border-b border-zinc-800">
-                  <th className="pb-3 pr-4">Cliente</th>
-                  <th className="pb-3 pr-4">Telefone</th>
-                  <th className="pb-3 pr-4 text-center">Pedidos</th>
-                  <th className="pb-3 pr-4 text-right">Total gasto</th>
-                  <th className="pb-3 text-right">Último pedido</th>
+                  <th className="pb-3 pr-4">{t('admAnalytics.colCustomer')}</th>
+                  <th className="pb-3 pr-4">{t('admAnalytics.colPhone')}</th>
+                  <th className="pb-3 pr-4 text-center">{t('admAnalytics.colOrders')}</th>
+                  <th className="pb-3 pr-4 text-right">{t('admAnalytics.colSpent')}</th>
+                  <th className="pb-3 text-right">{t('admAnalytics.colLast')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -457,7 +461,7 @@ export default function AdminAnalytics() {
                     <td className="py-3 pr-4 text-center">
                       <span className="bg-zinc-800 text-[#FFC928] text-[10px] font-black px-2 py-0.5 rounded-full">{c.orders}x</span>
                     </td>
-                    <td className="py-3 pr-4 text-right font-bold text-white">R$ {c.total.toFixed(2)}</td>
+                    <td className="py-3 pr-4 text-right font-bold text-white">{fmt(c.total)}</td>
                     <td className="py-3 text-right text-gray-400 text-xs">
                       {c.lastOrder ? (() => {
                         try { return format(parseISO(c.lastOrder), 'dd/MM/yyyy'); } catch { return '-'; }
@@ -466,7 +470,7 @@ export default function AdminAnalytics() {
                   </tr>
                 ))}
                 {customers.length === 0 && (
-                  <tr><td colSpan={5} className="text-center py-8 text-gray-500 text-sm">Nenhum cliente no período</td></tr>
+                  <tr><td colSpan={5} className="text-center py-8 text-gray-500 text-sm">{t('admAnalytics.noCustomers')}</td></tr>
                 )}
               </tbody>
             </table>

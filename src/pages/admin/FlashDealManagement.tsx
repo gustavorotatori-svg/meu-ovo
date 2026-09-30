@@ -6,9 +6,12 @@ import { db } from '../../lib/firebase';
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import type { FlashDeal, Product } from '../../types';
 import { motion, AnimatePresence } from 'motion/react';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, currencyLocale } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 export default function FlashDealManagement() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const { products, currentRestaurant } = useRestaurant();
   const [deals, setDeals] = useState<FlashDeal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,11 +29,11 @@ export default function FlashDealManagement() {
       const snap = await getDocs(q);
       setDeals(snap.docs.map(d => ({ id: d.id, ...d.data() } as FlashDeal)));
     } catch {
-      toast.error('Erro ao carregar ofertas relâmpago');
+      toast.error(t('admFlash.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [currentRestaurant]);
+  }, [currentRestaurant, t]);
 
   useEffect(() => { loadDeals(); }, [loadDeals]);
 
@@ -58,12 +61,12 @@ export default function FlashDealManagement() {
         isActive: true,
         createdAt: now.toISOString(),
       });
-      toast.success('Oferta relâmpago criada!');
+      toast.success(t('admFlash.createOk'));
       setShowForm(false);
       setSelectedProduct('');
       loadDeals();
     } catch {
-      toast.error('Erro ao criar oferta');
+      toast.error(t('admFlash.createError'));
     }
   };
 
@@ -72,17 +75,17 @@ export default function FlashDealManagement() {
       await updateDoc(doc(db, 'flash_deals', deal.id), { isActive: !deal.isActive });
       loadDeals();
     } catch {
-      toast.error('Erro ao atualizar');
+      toast.error(t('admFlash.updateError'));
     }
   };
 
   const handleDelete = async (deal: FlashDeal) => {
     try {
       await deleteDoc(doc(db, 'flash_deals', deal.id));
-      toast.success('Oferta removida');
+      toast.success(t('admFlash.deleteOk'));
       loadDeals();
     } catch {
-      toast.error('Erro ao remover');
+      toast.error(t('admFlash.deleteError'));
     }
   };
 
@@ -93,19 +96,19 @@ export default function FlashDealManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <Zap size={22} className="text-[#FFC928]" /> Ofertas Relâmpago
+            <Zap size={22} className="text-[#FFC928]" /> {t('admFlash.title')}
           </h2>
-          <p className="text-gray-400 text-sm mt-1">Crie promoções com tempo limitado para seus produtos</p>
+          <p className="text-gray-400 text-sm mt-1">{t('admFlash.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
-          <button onClick={loadDeals} className="p-2 rounded-xl bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors" aria-label="Atualizar">
+          <button onClick={loadDeals} className="p-2 rounded-xl bg-[#1a1a1a] text-gray-400 hover:text-white transition-colors" aria-label={t('admFlash.refreshAria')}>
             <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
           </button>
           <button
             onClick={() => setShowForm(true)}
             className="flex items-center gap-2 bg-[#FFC928] text-[#111] font-black px-4 py-3 rounded-xl text-sm hover:bg-[#e6b520] transition-all"
           >
-            <Plus size={18} /> Nova Oferta
+            <Plus size={18} /> {t('admFlash.newDeal')}
           </button>
         </div>
       </div>
@@ -118,25 +121,25 @@ export default function FlashDealManagement() {
             exit={{ opacity: 0, y: -10 }}
             className="bg-[#1a1a1a] rounded-2xl p-6 border border-[#2a2a2a] space-y-4"
           >
-            <h3 className="text-white font-black text-sm uppercase tracking-widest">Nova Oferta Relâmpago</h3>
+            <h3 className="text-white font-black text-sm uppercase tracking-widest">{t('admFlash.formTitle')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Produto *</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('admFlash.productLabel')}</label>
                 <select
                   value={selectedProduct}
                   onChange={e => setSelectedProduct(e.target.value)}
                   className="w-full bg-[#111] border border-[#2a2a2a] rounded-xl px-4 py-3 text-sm text-white font-bold focus:outline-none focus:border-[#FFC928]"
                 >
-                  <option value="">Selecione um produto...</option>
+                  <option value="">{t('admFlash.productPh')}</option>
                   {availableProducts.map(p => (
-                    <option key={p.id} value={p.id}>{p.name} - R$ {p.price.toFixed(2)}</option>
+                    <option key={p.id} value={p.id}>{p.name} - {fmt(p.price)}</option>
                   ))}
                 </select>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Desconto (%) *</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('admFlash.discountLabel')}</label>
                 <input
                   type="number"
                   value={discount}
@@ -148,7 +151,7 @@ export default function FlashDealManagement() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Unidades disponíveis *</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('admFlash.unitsLabel')}</label>
                 <input
                   type="number"
                   value={maxUnits}
@@ -159,7 +162,7 @@ export default function FlashDealManagement() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Duração (horas) *</label>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('admFlash.durationLabel')}</label>
                 <input
                   type="number"
                   value={durationHours}
@@ -180,10 +183,10 @@ export default function FlashDealManagement() {
                   {p.imageUrl && <img src={p.imageUrl} alt={p.name} className="w-14 h-14 rounded-xl object-cover" />}
                   <div className="flex-1">
                     <p className="text-white font-bold text-sm">{p.name}</p>
-                    <p className="text-gray-400 text-xs">Preço original: {formatCurrency(p.price)}</p>
+                    <p className="text-gray-400 text-xs">{t('admFlash.origPrice', { v: fmt(p.price) })}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-black text-red-400">{formatCurrency(Math.round(dealPrice * 100) / 100)}</p>
+                    <p className="text-lg font-black text-red-400">{fmt(Math.round(dealPrice * 100) / 100)}</p>
                     <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{discount}% OFF</p>
                   </div>
                 </div>
@@ -192,14 +195,14 @@ export default function FlashDealManagement() {
 
             <div className="flex gap-3 justify-end">
               <button onClick={() => setShowForm(false)} className="px-6 py-3 rounded-xl text-sm font-bold text-gray-400 hover:text-white transition-colors">
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
                 disabled={!selectedProduct}
                 className="px-6 py-3 rounded-xl text-sm font-black bg-[#FFC928] text-[#111] disabled:opacity-40 hover:bg-[#e6b520] transition-all"
               >
-                Criar Oferta
+                {t('admFlash.createBtn')}
               </button>
             </div>
           </motion.div>
@@ -213,8 +216,8 @@ export default function FlashDealManagement() {
       ) : deals.length === 0 ? (
         <div className="text-center py-12 bg-[#1a1a1a] rounded-2xl border border-[#2a2a2a]">
           <Zap size={40} className="mx-auto text-gray-600 mb-3" />
-          <p className="text-gray-400 font-bold">Nenhuma oferta relâmpago ativa</p>
-          <p className="text-gray-600 text-sm mt-1">Crie sua primeira oferta para destacar produtos no cardápio</p>
+          <p className="text-gray-400 font-bold">{t('admFlash.emptyTitle')}</p>
+          <p className="text-gray-600 text-sm mt-1">{t('admFlash.emptyDesc')}</p>
         </div>
       ) : (
         <div className="grid gap-3">
@@ -230,14 +233,14 @@ export default function FlashDealManagement() {
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold truncate">{deal.productName}</p>
                   <div className="flex items-center gap-3 mt-1 text-sm">
-                    <span className="text-gray-400 line-through">{formatCurrency(deal.originalPrice)}</span>
-                    <span className="text-red-400 font-black">{formatCurrency(deal.dealPrice)}</span>
+                    <span className="text-gray-400 line-through">{fmt(deal.originalPrice)}</span>
+                    <span className="text-red-400 font-black">{fmt(deal.dealPrice)}</span>
                     <span className="text-[#FFC928] font-black">-{deal.discountPercentage}%</span>
                   </div>
                   <div className="flex items-center gap-4 mt-1.5 text-[10px] font-black text-gray-500 uppercase tracking-widest">
-                    <span className="flex items-center gap-1"><Clock size={10} />{new Date(deal.endsAt).toLocaleString('pt-BR')}</span>
-                    <span>Vendidos: {deal.soldUnits}/{deal.maxUnits}</span>
-                    {isExpired && <span className="text-red-500">Expirada</span>}
+                    <span className="flex items-center gap-1"><Clock size={10} />{new Date(deal.endsAt).toLocaleString(currencyLocale(i18n.language))}</span>
+                    <span>{t('admFlash.sold', { a: deal.soldUnits, b: deal.maxUnits })}</span>
+                    {isExpired && <span className="text-red-500">{t('admFlash.expired')}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -249,9 +252,9 @@ export default function FlashDealManagement() {
                         : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
                     }`}
                   >
-                    {deal.isActive && !isExpired ? 'Ativa' : 'Inativa'}
+                    {deal.isActive && !isExpired ? t('admFlash.active') : t('admFlash.inactive')}
                   </button>
-                  <button onClick={() => handleDelete(deal)} className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all" aria-label="Excluir">
+                  <button onClick={() => handleDelete(deal)} className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all" aria-label={t('common.delete')}>
                     <Trash2 size={16} />
                   </button>
                 </div>

@@ -7,8 +7,10 @@ import { Trophy, Shield, Calendar, Utensils, CheckCircle2, Loader2, ArrowRight }
 import AdminLayout from './AdminLayout';
 import { Button } from '../../components/Button';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 
 export default function OvosDeOuro() {
+  const { t } = useTranslation();
   const { currentRestaurant, setCurrentRestaurant } = useRestaurant();
   const [loading, setLoading] = useState(true);
   const [isParticipant, setIsParticipant] = useState(false);
@@ -55,9 +57,9 @@ export default function OvosDeOuro() {
         } as Restaurant);
       }
       setIsParticipant(true);
-      toast.success('Participação confirmada!');
+      toast.success(t('admOvos.joinOk'));
     } catch {
-      toast.error('Erro ao registrar participação.');
+      toast.error(t('admOvos.joinError'));
     } finally {
       setAccepting(false);
     }
@@ -68,7 +70,7 @@ export default function OvosDeOuro() {
       <AdminLayout>
         <div className="flex flex-col items-center justify-center p-12 min-h-[50vh]">
           <Loader2 className="animate-spin text-amber-500 mb-4" size={40} />
-          <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Carregando...</p>
+          <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">{t('common.loading')}</p>
         </div>
       </AdminLayout>
     );
@@ -86,11 +88,11 @@ export default function OvosDeOuro() {
             </div>
             <div className="flex-1 text-center md:text-left space-y-2">
               <div className="inline-flex items-center gap-2 bg-[#FFC928]/10 text-[#FFC928] border border-[#FFC928]/20 px-3.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider">
-                👑 Prêmio Ovos de Ouro
+                👑 {t('admOvos.badge')}
               </div>
-              <h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">Votação Popular Meu Ovo</h2>
+              <h2 className="text-3xl font-black italic uppercase tracking-tighter leading-none">{t('admOvos.title')}</h2>
               <p className="text-sm text-gray-400 font-medium max-w-xl leading-relaxed">
-                O prêmio que elege os melhores pratos e restaurantes do ano, impulsionado pelas notas dos consumidores.
+                {t('admOvos.subtitle')}
               </p>
             </div>
           </div>
@@ -99,17 +101,17 @@ export default function OvosDeOuro() {
         {!isParticipant ? (
           <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-xl space-y-6">
             <div className="space-y-2">
-              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#111]">Regulamento e Termo de Adesão</h3>
-              <p className="text-sm text-slate-500">Leia atentamente as diretrizes para inscrever seu estabelecimento:</p>
+              <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#111]">{t('admOvos.rulesTitle')}</h3>
+              <p className="text-sm text-slate-500">{t('admOvos.rulesSub')}</p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5">
                 <Calendar className="text-amber-500 shrink-0 mt-0.5" size={20} />
                 <div className="text-left space-y-1">
-                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">Cronograma Anual</p>
+                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">{t('admOvos.card1Title')}</p>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Votação de <strong>1 de Janeiro</strong> a <strong>15 de Dezembro</strong>. Resultados divulgados em <strong>20 de Dezembro</strong>. A competição fica offline de 15 de Dezembro a 1 de Janeiro.
+                    {t('admOvos.card1Desc')}
                   </p>
                 </div>
               </div>
@@ -117,9 +119,9 @@ export default function OvosDeOuro() {
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5">
                 <Utensils className="text-amber-500 shrink-0 mt-0.5" size={20} />
                 <div className="text-left space-y-1">
-                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">Metodologia</p>
+                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">{t('admOvos.card2Title')}</p>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Clientes avaliam pratos que realmente compraram. Bebidas e industrializados não entram na disputa. Sistema antifraude contra votos falsos.
+                    {t('admOvos.card2Desc')}
                   </p>
                 </div>
               </div>
@@ -127,9 +129,9 @@ export default function OvosDeOuro() {
               <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-3.5">
                 <Trophy className="text-amber-500 shrink-0 mt-0.5" size={20} />
                 <div className="text-left space-y-1">
-                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">Categorias</p>
+                  <p className="font-extrabold text-[#111] text-xs uppercase tracking-wider">{t('admOvos.card3Title')}</p>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    Top 3 por bairro • Melhores por tipo de cozinha • Top 3 por cidade • Pratos premiados ganham selo por 1 ano.
+                    {t('admOvos.card3Desc')}
                   </p>
                 </div>
               </div>
@@ -137,9 +139,9 @@ export default function OvosDeOuro() {
               <div className="p-5 rounded-2xl bg-amber-50/50 border border-amber-100 flex gap-3.5">
                 <Shield className="text-amber-600 shrink-0 mt-0.5" size={20} />
                 <div className="text-left space-y-1">
-                  <p className="font-extrabold text-amber-950 text-xs uppercase tracking-wider">Ranking 100% Privado</p>
+                  <p className="font-extrabold text-amber-950 text-xs uppercase tracking-wider">{t('admOvos.card4Title')}</p>
                   <p className="text-xs text-amber-850 leading-relaxed">
-                    O ranking geral e as notas brutas individuais são confidenciais. Nenhum concorrente ou cliente terá acesso às suas notas. Apenas o Top 3 é revelado publicamente em 20 de Dezembro.
+                    {t('admOvos.card4Desc')}
                   </p>
                 </div>
               </div>
@@ -148,7 +150,7 @@ export default function OvosDeOuro() {
             <div className="border-t border-slate-100 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-2 text-slate-500 text-xs font-bold">
                 <CheckCircle2 className="text-green-500" size={18} />
-                <span>Inscrição Gratuita</span>
+                <span>{t('admOvos.freeEntry')}</span>
               </div>
 
               <Button
@@ -159,11 +161,11 @@ export default function OvosDeOuro() {
                 {accepting ? (
                   <>
                     <Loader2 className="animate-spin text-yellow-500" size={16} />
-                    <span>PROCESSANDO...</span>
+                    <span>{t('admOvos.processing')}</span>
                   </>
                 ) : (
                   <>
-                    <span>ACEITAR PARTICIPAÇÃO & CONCORRER</span>
+                    <span>{t('admOvos.joinCta')}</span>
                     <ArrowRight size={14} />
                   </>
                 )}
@@ -176,18 +178,17 @@ export default function OvosDeOuro() {
               <CheckCircle2 size={32} className="text-[#111]" />
             </div>
             <h3 className="text-2xl font-black italic uppercase tracking-tighter text-[#111]">
-              Você está participando!
+              {t('admOvos.joinedTitle')}
             </h3>
             <p className="text-slate-500 text-sm max-w-lg mx-auto">
-              Seus pratos estão concorrendo nas categorias. As notas e o ranking são confidenciais — apenas a administração da plataforma tem acesso. 
-              Acompanhe em 20 de Dezembro a divulgação dos vencedores.
+              {t('admOvos.joinedDesc')}
             </p>
             <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 max-w-lg mx-auto">
               <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-2">
-                📅 Ciclo {new Date().getFullYear()}
+                📅 {t('admOvos.cycle', { year: new Date().getFullYear() })}
               </p>
               <p className="text-xs text-amber-800 font-medium">
-                Votação encerra em 15 de Dezembro. Resultados divulgados em 20 de Dezembro.
+                {t('admOvos.cycleDesc')}
               </p>
             </div>
           </div>

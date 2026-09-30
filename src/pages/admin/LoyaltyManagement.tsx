@@ -16,7 +16,7 @@ import { useRestaurant } from '../../context/RestaurantContext';
 import { WA_NUMBER } from '../../services/whatsappService';
 import { Button } from '../../components/Button';
 import { toast } from 'react-hot-toast';
-import { cn, formatCurrency } from '../../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../../lib/utils';
 import { Product } from '../../types';
 import AdminLayout from './AdminLayout';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,9 @@ import { useTheme } from '../../context/ThemeContext';
 import { Skeleton } from '../../components/Skeleton';
 
 export default function LoyaltyManagement() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
+  const fmt = (v: number) => formatCurrency(v, loc);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { currentRestaurant: restaurant } = useRestaurant();
@@ -143,7 +145,7 @@ export default function LoyaltyManagement() {
     if (!restaurant || !selectedProfileHistory) return;
     const pointsToAdd = parseInt(addPointsValue, 10);
     if (isNaN(pointsToAdd) || pointsToAdd <= 0) {
-      toast.error('Informe um valor de pontos válido.');
+      toast.error(t('loyalty.invalidPoints'));
       return;
     }
 
@@ -153,7 +155,7 @@ export default function LoyaltyManagement() {
         id: Math.random().toString(36).substr(2, 9),
         type: 'earn',
         points: pointsToAdd,
-        description: 'Bônus Especial de Fidelidade (Manual)',
+        description: t('loyalty.manualBonus'),
         createdAt: new Date().toISOString()
       };
       const updatedHistory = [...(selectedProfileHistory.history || []), newMovement];
@@ -174,11 +176,11 @@ export default function LoyaltyManagement() {
         prevProfiles.map(p => p.id === selectedProfileHistory.id ? updatedProfile : p)
       );
 
-      toast.success(`Concedido ${pointsToAdd} pontos com sucesso!`);
+      toast.success(t('loyalty.pointsGranted', { n: pointsToAdd }));
       setAddPointsValue('50');
     } catch (e) {
       console.error("Erro ao atualizar pontos:", e);
-      toast.error('Erro ao salvar os pontos.');
+      toast.error(t('loyalty.savePointsError'));
     }
   };
 
@@ -186,12 +188,12 @@ export default function LoyaltyManagement() {
     if (!restaurant || !selectedProfileHistory) return;
     const discount = parseInt(couponDiscountValue, 10);
     if (isNaN(discount) || discount <= 0 || discount > 100) {
-      toast.error('Informe um desconto válido (1% a 100%).');
+      toast.error(t('loyalty.invalidDiscount'));
       return;
     }
 
     try {
-      const firstName = selectedProfileHistory.customerName?.split(' ')[0]?.toUpperCase() || 'CLIENTE';
+      const firstName = selectedProfileHistory.customerName?.split(' ')[0]?.toUpperCase() || t('loyalty.clientFallback');
       const safeName = firstName.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z0-9]/g, '');
       const randomNum = Math.floor(100 + Math.random() * 900);
       const finalCode = `VIP-${safeName.slice(0, 6)}-${randomNum}`;
@@ -204,14 +206,14 @@ export default function LoyaltyManagement() {
         minOrderValue: 30,
         isActive: true,
         expiryDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-        description: `Ref: Cliente VIP ${selectedProfileHistory.customerName}`
+        description: t('loyalty.vipCouponDesc', { name: selectedProfileHistory.customerName })
       });
 
       setGeneratedCouponCode(finalCode);
-      toast.success(`Cupom ${finalCode} criado e ativo com sucesso!`);
+      toast.success(t('loyalty.couponCreated', { code: finalCode }));
     } catch (e) {
       console.error("Erro ao gerar cupom:", e);
-      toast.error('Erro ao salvar cupom.');
+      toast.error(t('loyalty.couponError'));
     }
   };
 
@@ -533,16 +535,16 @@ export default function LoyaltyManagement() {
           const totalSpent = customerOrders.reduce((sum, o) => sum + (o.total || 0), 0);
           const averageTicket = totalOrders > 0 ? totalSpent / totalOrders : 0;
 
-          let clientTier = 'Bronze';
+          let clientTier = t('loyalty.tierBronze');
           let tierColor = 'text-amber-700 bg-amber-50 border-amber-200';
           if (totalOrders >= 7) {
-            clientTier = 'VIP Diamante 🏆';
+            clientTier = t('loyalty.tierDiamond');
             tierColor = 'text-purple-700 bg-purple-50 border-purple-200 animate-pulse';
           } else if (totalOrders >= 4) {
-            clientTier = 'Ouro 🌟';
+            clientTier = t('loyalty.tierGold');
             tierColor = 'text-orange-700 bg-orange-50 border-orange-200';
           } else if (totalOrders >= 2) {
-            clientTier = 'Prata';
+            clientTier = t('loyalty.tierSilver');
             tierColor = 'text-slate-700 bg-slate-50 border-slate-200';
           }
 
@@ -565,8 +567,8 @@ export default function LoyaltyManagement() {
             .slice(0, 3);
 
           // Calculate Purchase Frequency detail
-          let frequencyCategory = 'Cliente Novo / Esporádico';
-          let averageDaysValue = 'N/A';
+          let frequencyCategory = t('loyalty.freqNew');
+          let averageDaysValue = t('loyalty.naValue');
           const sortedOrders = [...customerOrders].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           
           if (totalOrders > 1) {
@@ -578,18 +580,18 @@ export default function LoyaltyManagement() {
               const spanMs = orderDates[orderDates.length - 1] - orderDates[0];
               const spanDays = Math.ceil(spanMs / (1000 * 60 * 60 * 24)) || 1;
               const avgIntervalNum = spanDays / (totalOrders - 1);
-              averageDaysValue = `${avgIntervalNum.toFixed(1)} dias`;
+              averageDaysValue = t('loyalty.avgDays', { n: avgIntervalNum.toFixed(1) });
               
               if (avgIntervalNum <= 3) {
-                frequencyCategory = 'Fidelidade Diária 🔥';
+                frequencyCategory = t('loyalty.freqDaily');
               } else if (avgIntervalNum <= 7) {
-                frequencyCategory = 'Frequência Semanal ⚡';
+                frequencyCategory = t('loyalty.freqWeekly');
               } else if (avgIntervalNum <= 15) {
-                frequencyCategory = 'Frequência Quinzenal 📅';
+                frequencyCategory = t('loyalty.freqFortnightly');
               } else if (avgIntervalNum <= 30) {
-                frequencyCategory = 'Frequência Mensal 🛒';
+                frequencyCategory = t('loyalty.freqMonthly');
               } else {
-                frequencyCategory = 'Frequência Ocasional ⌛';
+                frequencyCategory = t('loyalty.freqRare');
               }
             }
           }
@@ -599,12 +601,12 @@ export default function LoyaltyManagement() {
 
           const getStatusText = (status: string) => {
             switch (status) {
-              case 'received': return 'Recebido';
-              case 'preparing': return 'Preparando';
-              case 'ready': return 'Pronto';
-              case 'out-for-delivery': return 'Em Entrega';
-              case 'finished': return 'Finalizado';
-              case 'cancelled': return 'Cancelado';
+              case 'received': return t('orderStatus.stepReceived');
+              case 'preparing': return t('orderStatus.stepPreparing');
+              case 'ready': return t('orderStatus.stepReady');
+              case 'out-for-delivery': return t('orderStatus.stepOutForDelivery');
+              case 'finished': return t('orderStatus.stepFinished');
+              case 'cancelled': return t('orderStatus.etaCancelled');
               default: return status;
             }
           };
@@ -622,11 +624,11 @@ export default function LoyaltyManagement() {
           };
 
           return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto font-sans" role="dialog" aria-modal="true" aria-label="Perfil do cliente">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto font-sans" role="dialog" aria-modal="true" aria-label={t('loyalty.profileAria')}>
               <div className="bg-white w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between text-left">
                   <div>
-                    <h3 className="text-lg font-black text-slate-900 italic uppercase">Ficha & Perfil Completo do Cliente</h3>
+                    <h3 className="text-lg font-black text-slate-900 italic uppercase">{t('loyalty.profileTitle')}</h3>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">{selectedProfileHistory.customerName} &bull; {selectedProfileHistory.customerPhone}</p>
                   </div>
                   <button 
@@ -635,7 +637,7 @@ export default function LoyaltyManagement() {
                       setGeneratedCouponCode('');
                     }}
                     className="p-2 hover:bg-slate-50 rounded-full transition-colors border border-slate-100"
-                    aria-label="Fechar"
+                    aria-label={t('ui.close')}
                   >
                     <Plus size={20} className="rotate-45" />
                   </button>
@@ -652,7 +654,7 @@ export default function LoyaltyManagement() {
                         : "border-transparent text-slate-400 hover:text-slate-600 font-bold"
                     )}
                   >
-                    Resumo do Perfil & Ações
+                    {t('loyalty.tabProfile')}
                   </button>
                   <button
                     onClick={() => setModalActiveTab('orders')}
@@ -663,7 +665,7 @@ export default function LoyaltyManagement() {
                         : "border-transparent text-slate-400 hover:text-slate-600 font-bold"
                     )}
                   >
-                    Histórico de Pedidos ({totalOrders})
+                    {t('loyalty.tabOrders', { n: totalOrders })}
                   </button>
                 </div>
 
@@ -671,18 +673,18 @@ export default function LoyaltyManagement() {
                   {modalActiveTab === 'info' ? (
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1">Fidelidade & Histórico de Pontos</p>
+                        <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1">{t('loyalty.fidelityHistory')}</p>
                         
                         <div className="bg-orange-50 rounded-2xl p-4 border border-orange-100 flex items-center justify-between">
                           <div>
-                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Saldo Atual</p>
+                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">{t('loyalty.currentBalance')}</p>
                             <p className="text-2xl font-black text-slate-900 tracking-tighter">{selectedProfileHistory.pointsBalance || 0} pts</p>
                           </div>
                           <Gift className="text-orange-200" size={32} />
                         </div>
 
                         <div className="space-y-2">
-                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Movimentações Recentes</h4>
+                          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('loyalty.recentMoves')}</h4>
                           <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 no-scrollbar">
                              {selectedProfileHistory.history?.slice().reverse().map((item: { type: string; description: string; createdAt: string; points: number }, i: number) => (
                               <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 bg-slate-50/50">
@@ -695,7 +697,7 @@ export default function LoyaltyManagement() {
                                   </div>
                                   <div className="min-w-0">
                                     <p className="text-xs font-bold text-slate-900 truncate leading-tight">{item.description}</p>
-                                    <p className="text-[9px] font-medium text-slate-450">{new Date(item.createdAt).toLocaleDateString()}</p>
+                                     <p className="text-[9px] font-medium text-slate-450">{new Date(item.createdAt).toLocaleDateString(loc)}</p>
                                   </div>
                                 </div>
                                 <span className={cn(
@@ -707,7 +709,7 @@ export default function LoyaltyManagement() {
                               </div>
                             ))}
                             {(!selectedProfileHistory.history || selectedProfileHistory.history.length === 0) && (
-                              <p className="text-center py-8 text-[10px] font-black text-slate-300 uppercase italic">Nenhuma movimentação</p>
+                              <p className="text-center py-8 text-[10px] font-black text-slate-300 uppercase italic">{t('loyalty.noMoves')}</p>
                             )}
                           </div>
                         </div>
@@ -715,28 +717,28 @@ export default function LoyaltyManagement() {
 
                       <div className="space-y-5 border-t md:border-t-0 md:border-l border-slate-100 pt-4 md:pt-0 md:pl-6">
                         <div>
-                          <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1 mb-3">Padrão de Compra & Recorrência</p>
+                          <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1 mb-3">{t('loyalty.buyPattern')}</p>
                           
                           <div className="grid grid-cols-2 gap-2 mb-3 text-center">
                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col justify-center">
-                              <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">Nível de Frequência</p>
+                              <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">{t('loyalty.freqLevel')}</p>
                               <span className={cn("inline-block text-[9px] font-black px-1.5 py-0.5 rounded border leading-none self-center", tierColor)}>
                                 {clientTier}
                               </span>
                             </div>
                             <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
-                              <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">Total Pedidos</p>
+                              <p className="text-[8px] font-black text-slate-400 uppercase leading-none mb-1">{t('loyalty.totalOrdersLbl')}</p>
                               <p className="text-sm font-black text-slate-800 leading-none mt-1">{totalOrders}x</p>
                             </div>
                           </div>
 
                           <div className="grid grid-cols-2 gap-2 mb-3 text-center animate-fade-in">
                             <div className="bg-orange-50/30 p-2.5 rounded-xl border border-orange-100 flex flex-col justify-center">
-                              <p className="text-[8px] font-black text-orange-600 uppercase leading-none mb-1">Intervalo de Compra</p>
-                              <p className="text-xs font-black text-slate-850 mt-1 leading-none">{averageDaysValue === 'N/A' ? 'N/A' : `A cada ${averageDaysValue}`}</p>
+                              <p className="text-[8px] font-black text-orange-600 uppercase leading-none mb-1">{t('loyalty.buyInterval')}</p>
+                              <p className="text-xs font-black text-slate-850 mt-1 leading-none">{averageDaysValue === t('loyalty.naValue') ? t('loyalty.naValue') : t('loyalty.everyDays', { v: averageDaysValue })}</p>
                             </div>
                             <div className="bg-orange-50/30 p-2.5 rounded-xl border border-orange-100">
-                              <p className="text-[8px] font-black text-orange-600 uppercase leading-none mb-1">Classificação</p>
+                              <p className="text-[8px] font-black text-orange-600 uppercase leading-none mb-1">{t('loyalty.classification')}</p>
                               <p className="text-[9px] font-black text-orange-700 leading-none mt-1">{frequencyCategory}</p>
                             </div>
                           </div>
@@ -744,7 +746,7 @@ export default function LoyaltyManagement() {
                           <div className="bg-slate-50/50 p-3 rounded-2xl border border-slate-100 text-left">
                             <div className="flex items-center gap-1.5 mb-2 text-[9px] font-black text-slate-500 uppercase tracking-wider">
                               <TrendingUp size={11} className="text-orange-500" />
-                              <span>Prato ou Adicional Favorito</span>
+                               <span>{t('loyalty.favDish')}</span>
                             </div>
                             {topProducts.length > 0 ? (
                               <div className="space-y-2">
@@ -752,22 +754,22 @@ export default function LoyaltyManagement() {
                                   <div key={index} className="flex items-center justify-between text-xs">
                                     <span className="font-bold text-slate-700 truncate max-w-[170px]">{p.name}</span>
                                     <span className="text-[9px] font-black bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full uppercase shrink-0">
-                                      {p.count} Pedidos
+                                       {p.count} {t('loyalty.ordersUnit')}
                                     </span>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[9px] font-bold text-slate-400 uppercase italic">Dados de recorrência insuficiente</p>
+                               <p className="text-[9px] font-bold text-slate-400 uppercase italic">{t('loyalty.lowData')}</p>
                             )}
                           </div>
                         </div>
 
                         <div className="space-y-4">
-                          <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1">Ações de Fidelidade de Lançamento</p>
+                          <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1">{t('loyalty.launchActions')}</p>
                           
                           <div className="space-y-1.5">
-                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">Bonificar Pontos Extras (Manual)</label>
+                            <label className="text-[9px] font-black text-slate-500 uppercase tracking-wider block">{t('loyalty.bonusLabel')}</label>
                             <div className="flex gap-2">
                               <input 
                                 type="number" 
@@ -775,19 +777,19 @@ export default function LoyaltyManagement() {
                                 value={addPointsValue}
                                 onChange={e => setAddPointsValue(e.target.value)}
                                 className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-800 w-24 outline-none focus:ring-1 focus:ring-orange-500"
-                                placeholder="Pontos"
+                                placeholder={t('loyalty.pointsPh')}
                               />
                               <button
                                 onClick={handleManualAddPoints}
                                 className="flex-1 bg-slate-900 hover:bg-slate-800 text-white font-black uppercase text-[10px] tracking-widest py-2 rounded-lg transition-all"
                               >
-                                Premiar Pontos
+                                {t('loyalty.awardBtn')}
                               </button>
                             </div>
                           </div>
 
                           <div className="space-y-2 p-3 bg-orange-50/20 rounded-2xl border border-orange-100/50">
-                            <label className="text-[9px] font-black text-orange-600 uppercase tracking-wider block">Cupom Exclusivo de Lançamento</label>
+                            <label className="text-[9px] font-black text-orange-600 uppercase tracking-wider block">{t('loyalty.vipLabel')}</label>
                             
                             <div className="flex gap-2 font-sans">
                               <select
@@ -805,28 +807,33 @@ export default function LoyaltyManagement() {
                                 onClick={handleGenerateVIPCoupon}
                                 className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-black uppercase text-[10px] tracking-widest py-2 rounded-lg transition-all shadow-sm"
                               >
-                                Criar Cupom
+                                {t('loyalty.createCouponBtn')}
                               </button>
                             </div>
 
                             {generatedCouponCode && (
                               <div className="mt-3 bg-white p-2.5 rounded-xl border border-orange-150 space-y-2">
-                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">CUPOM ATIVO NO SISTEMA</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider leading-none">{t('loyalty.activeCoupon')}</p>
                                 <div className="flex items-center justify-between">
                                   <span className="font-mono text-xs font-black bg-slate-100 px-2 py-1 rounded text-slate-800 uppercase tracking-wider">{generatedCouponCode}</span>
-                                  <span className="text-[9px] font-bold text-emerald-600 uppercase">Cupom Ativo!</span>
+                                   <span className="text-[9px] font-bold text-emerald-600 uppercase">{t('loyalty.couponLive')}</span>
                                 </div>
                                 
                                 <a
                                   href={`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(
-                                    `Olá, ${selectedProfileHistory.customerName?.split(' ')[0]}! Aqui é da equipe do ${restaurant.name} 🍳💛. Notamos que você é um de nossos clientes mais frequentes! Como forma de agradecimento, criamos um cupom de desconto exclusivo de ${couponDiscountValue}% na nossa cozinha feito especialmente para você: *${generatedCouponCode}* (Mínimo R$30, válido por 10 dias). Esperamos seu próximo lanche!`
+                                    t('loyalty.vipWaMsg', {
+                                      name: selectedProfileHistory.customerName?.split(' ')[0],
+                                      rest: restaurant.name,
+                                      pct: couponDiscountValue,
+                                      code: generatedCouponCode,
+                                    })
                                   )}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="w-full flex items-center justify-center gap-1.5 py-1.5 mt-1 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-100 rounded-lg transition-all text-[9px] font-black uppercase tracking-wider"
                                 >
-                                  <MessageCircle size={12} />
-                                  Enviar no WhatsApp
+                                   <MessageCircle size={12} />
+                                   {t('loyalty.sendWA')}
                                 </a>
                               </div>
                             )}
@@ -837,7 +844,7 @@ export default function LoyaltyManagement() {
                   ) : (
                     /* PAST ORDERS HISTORIC TAB */
                     <div className="space-y-4 py-2">
-                      <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">Relatório Completo de Transações</p>
+                      <p className="text-[10px] font-black text-slate-450 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">{t('loyalty.fullReport')}</p>
                       
                       <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 no-scrollbar">
                         {newestOrders.map((order) => (
@@ -851,7 +858,7 @@ export default function LoyaltyManagement() {
                               </div>
                               <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold">
                                 <Calendar size={11} />
-                                <span>{new Date(order.createdAt).toLocaleString('pt-BR')}</span>
+                                <span>{new Date(order.createdAt).toLocaleString(loc)}</span>
                               </div>
                             </div>
 
@@ -859,21 +866,21 @@ export default function LoyaltyManagement() {
                             <div className="flex gap-4 mb-2.5 text-[9px] font-bold uppercase tracking-wider text-slate-500">
                               <div className="flex items-center gap-1">
                                 <Smartphone size={10} className="text-slate-400" />
-                                <span>Canal: <strong className="text-slate-700">{order.origin || 'Link Direto'}</strong></span>
+                                <span>{t('loyalty.channelLbl')}: <strong className="text-slate-700">{order.origin || t('loyalty.directLink')}</strong></span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <MapPin size={10} className="text-slate-400" />
-                                <span>Modalidade: <strong className="text-slate-700">{
-                                  order.type === 'dine-in' ? 'Mesa / Local' :
-                                  order.type === 'pickup' ? 'Retirada para Viagem' : 'Entrega a Domicílio'
+                                <span>{t('loyalty.modeLbl')}: <strong className="text-slate-700">{
+                                  order.type === 'dine-in' ? t('loyalty.modeTable') :
+                                  order.type === 'pickup' ? t('loyalty.modePickup') : t('loyalty.modeDelivery')
                                 }</strong></span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <DollarSign size={10} className="text-slate-400" />
-                                <span>Pagamento: <strong className="text-slate-700">{
+                                <span>{t('loyalty.payLbl')}: <strong className="text-slate-700">{
                                   order.paymentMethod === 'pix' ? 'PIX' :
-                                  order.paymentMethod === 'cash' ? 'Dinheiro' :
-                                  order.paymentMethod === 'card-on-delivery' ? 'Cartão na Entrega' : 'Pago no Local'
+                                  order.paymentMethod === 'cash' ? t('checkout.payCash') :
+                                  order.paymentMethod === 'card-on-delivery' ? t('checkout.cardOnDelivery') : t('checkout.onSite')
                                 }</strong></span>
                               </div>
                             </div>
@@ -893,7 +900,7 @@ export default function LoyaltyManagement() {
                                     )}
                                   </div>
                                   <span className="text-[10px] font-mono font-bold text-slate-500 shrink-0">
-                                    {formatCurrency(item.unitPrice || 0)}
+                                    {fmt(item.unitPrice || 0)}
                                   </span>
                                 </div>
                               ))}
@@ -902,10 +909,10 @@ export default function LoyaltyManagement() {
                             {/* Totals Summary */}
                             <div className="flex items-center justify-between mt-2.5 font-sans">
                               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                Valor Total Recebido
+                                {t('loyalty.totalReceived')}
                               </div>
                               <div className="text-sm font-black text-slate-850">
-                                {formatCurrency(order.total || 0)}
+                                {fmt(order.total || 0)}
                               </div>
                             </div>
                           </div>
@@ -914,7 +921,7 @@ export default function LoyaltyManagement() {
                         {newestOrders.length === 0 && (
                           <div className="text-center py-20 text-slate-350 bg-slate-50 rounded-2xl border border-dashed border-slate-100">
                             <Clock size={32} className="mx-auto mb-2 text-slate-300" />
-                            <p className="text-xs font-black uppercase tracking-widest italic text-slate-300">Nenhum Pedido Registrado</p>
+                            <p className="text-xs font-black uppercase tracking-widest italic text-slate-300">{t('loyalty.noOrdersReg')}</p>
                           </div>
                         )}
                       </div>

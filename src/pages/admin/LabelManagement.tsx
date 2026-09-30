@@ -10,6 +10,9 @@ import { ALLERGENS, ALLERGEN_MAP, STORAGE_OPTIONS } from '../../data/allergens';
 import { motion } from 'motion/react';
 import { toast } from 'react-hot-toast';
 import { escapeHtml } from '../../lib/utils';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../lib/i18n';
+import { currencyLocale } from '../../lib/utils';
 
 function generateBatch(): string {
   const date = new Date();
@@ -21,8 +24,18 @@ function generateBatch(): string {
 }
 
 function formatDate(d: Date): string {
-  return d.toLocaleDateString('pt-BR');
+  return d.toLocaleDateString(currencyLocale(i18n.language));
 }
+
+const storageLabel = (value: string | undefined, fallback: string) => {
+  const map: Record<string, string> = {
+    refrigerated: i18n.t('admLabels.stRefrigerated', { defaultValue: 'Refrigerado' }),
+    frozen: i18n.t('admLabels.stFrozen', { defaultValue: 'Congelado' }),
+    dry: i18n.t('admLabels.stDry', { defaultValue: 'Despensa' }),
+    ambient: i18n.t('admLabels.stAmbient', { defaultValue: 'Ambiente' }),
+  };
+  return (value && map[value]) || fallback;
+};
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date);
@@ -32,6 +45,7 @@ function addDays(date: Date, days: number): Date {
 
 export default function LabelManagement() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { currentRestaurant } = useRestaurant();
   const [products, setProducts] = useState<Product[]>([]);
   const [labels, setLabels] = useState<LabelRecord[]>([]);
@@ -86,11 +100,11 @@ export default function LabelManagement() {
         restaurantLogo: currentRestaurant.logo,
       };
       await addDoc(collection(db, 'labels'), record);
-      toast.success('Etiqueta gerada com sucesso!');
+      toast.success(t('admLabels.genOk'));
       setPreviewLabel({ id: 'preview', ...record });
       setBatchNumber(generateBatch());
     } catch {
-      toast.error('Erro ao gerar etiqueta');
+      toast.error(t('admLabels.genError'));
     }
   };
 
@@ -117,16 +131,16 @@ export default function LabelManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-white">Etiquetas</h1>
-            <p className="text-sm text-gray-400">Gere e imprima etiquetas padronizadas para seus produtos</p>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-white">{t('admLabels.title')}</h1>
+            <p className="text-sm text-gray-400">{t('admLabels.subtitle')}</p>
           </div>
         </div>
 
         {/* Tab Switcher */}
         <div className="flex gap-1 bg-zinc-900/50 border border-zinc-800 rounded-xl p-1 w-fit">
           {[
-            { key: 'generate', label: 'Gerar Etiqueta', icon: <FileText size={14} /> },
-            { key: 'history', label: 'Histórico', icon: <History size={14} /> },
+            { key: 'generate', label: t('admLabels.tabGenerate'), icon: <FileText size={14} /> },
+            { key: 'history', label: t('admLabels.tabHistory'), icon: <History size={14} /> },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key as 'generate' | 'history')}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${tab === t.key ? 'bg-[#FFC928] text-black' : 'text-gray-400 hover:text-white'}`}
@@ -139,15 +153,15 @@ export default function LabelManagement() {
             {/* Form */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6 space-y-5">
               <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-                <Package size={14} /> Dados da Etiqueta
+                <Package size={14} /> {t('admLabels.formTitle')}
               </h3>
 
               {/* Product search */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Produto</label>
+                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('admLabels.productLabel')}</label>
                 <div className="relative">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input type="text" placeholder="Buscar produto..." value={searchTerm}
+                  <input type="text" placeholder={t('admLabels.searchPh')} value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFC928]" />
                 </div>
@@ -158,7 +172,7 @@ export default function LabelManagement() {
                         className={`w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-700 transition-colors ${selectedProductId === p.id ? 'bg-zinc-700 text-[#FFC928]' : 'text-gray-300'}`}
                       >{p.name}</button>
                     ))}
-                    {filteredProducts.length === 0 && <p className="px-4 py-3 text-sm text-gray-500">Nenhum produto encontrado</p>}
+                    {filteredProducts.length === 0 && <p className="px-4 py-3 text-sm text-gray-500">{t('admLabels.noProducts')}</p>}
                   </div>
                 )}
                 {selectedProduct && (
@@ -166,8 +180,8 @@ export default function LabelManagement() {
                     {selectedProduct.imageUrl && <img src={selectedProduct.imageUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                     <div>
                       <p className="text-sm font-bold text-white">{selectedProduct.name}</p>
-                      {labelInfo && <p className="text-[10px] text-gray-400">{labelInfo.shelfLifeDays} dias de validade • {STORAGE_OPTIONS.find(s => s.value === labelInfo.storageType)?.label}</p>}
-                      {!labelInfo && <p className="text-[10px] text-[#FFC928]">Configure a validade no cardápio</p>}
+                      {labelInfo && <p className="text-[10px] text-gray-400">{t('admLabels.shelfLife', { n: labelInfo.shelfLifeDays })} • {storageLabel(labelInfo.storageType, '')}</p>}
+                      {!labelInfo && <p className="text-[10px] text-[#FFC928]">{t('admLabels.noShelfLife')}</p>}
                     </div>
                   </div>
                 )}
@@ -176,7 +190,7 @@ export default function LabelManagement() {
               {/* Batch & Operator */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Lote</label>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('admLabels.batchLabel')}</label>
                   <div className="relative">
                     <Barcode size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input type="text" value={batchNumber}
@@ -185,9 +199,9 @@ export default function LabelManagement() {
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Operador</label>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('admLabels.operatorLabel')}</label>
                   <div className="relative">
-                    <input type="text" placeholder="Nome do operador" value={operatorName}
+                    <input type="text" placeholder={t('admLabels.operatorPh')} value={operatorName}
                       onChange={e => setOperatorName(e.target.value)}
                       className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FFC928]" />
                   </div>
@@ -196,7 +210,7 @@ export default function LabelManagement() {
 
               {/* Prep Date */}
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Data de Preparo</label>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('admLabels.prepLabel')}</label>
                 <div className="relative">
                   <CalendarDays size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                   <input type="date" value={prepDate}
@@ -209,14 +223,14 @@ export default function LabelManagement() {
               {selectedProduct && (
                 <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-700/50">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Validade Calculada</span>
+                    <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('admLabels.expiryCalc')}</span>
                     <span className={`text-sm font-black ${expiryDate && expiryDate < new Date() ? 'text-red-400' : 'text-emerald-400'}`}>
                       {expiryDateStr}
                     </span>
                   </div>
                   {expiryDate && (
                     <p className="text-[10px] text-gray-500 mt-1">
-                      {labelInfo?.shelfLifeDays ? `${labelInfo.shelfLifeDays} dias a partir do preparo` : 'Sem dados de validade configurados'}
+                      {labelInfo?.shelfLifeDays ? t('admLabels.expiryDays', { n: labelInfo.shelfLifeDays }) : t('admLabels.noExpiryData')}
                     </p>
                   )}
                 </div>
@@ -225,13 +239,13 @@ export default function LabelManagement() {
               {/* Allergens preview */}
               {selectedAllergens.length > 0 && (
                 <div>
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2 block">Alérgenos</label>
+                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-wider mb-2 block">{t('admLabels.allergensLabel')}</label>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedAllergens.map(key => {
                       const a = ALLERGEN_MAP.get(key);
                       return a ? (
                         <span key={key} className="inline-flex items-center gap-1 bg-red-900/20 text-red-400 text-[10px] font-bold px-2 py-0.5 rounded-lg border border-red-800/30">
-                          {a.icon} {a.label}
+                          {a.icon} {t('allergen.' + key, { defaultValue: a.label })}
                         </span>
                       ) : null;
                     })}
@@ -241,13 +255,13 @@ export default function LabelManagement() {
 
               <button onClick={handleGenerate} disabled={!canGenerate}
                 className="w-full bg-[#FFC928] text-black font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-[#e6b520] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              ><Plus size={16} /> Gerar Etiqueta</button>
+              ><Plus size={16} /> {t('admLabels.generateBtn')}</button>
             </div>
 
             {/* Preview */}
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
               <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-4">
-                <QrCode size={14} /> Visualização
+                <QrCode size={14} /> {t('admLabels.previewTitle')}
               </h3>
               {previewLabel ? (
                 <div className="space-y-4">
@@ -258,38 +272,38 @@ export default function LabelManagement() {
                     </div>
                     <p className="text-lg font-black text-center uppercase">{previewLabel.productName}</p>
                     <div className="text-[10px] space-y-1 mt-2 border-t border-dashed border-gray-200 pt-2">
-                      <div className="flex justify-between"><span className="text-gray-500">Preparo:</span><span className="font-bold">{formatDate(new Date(previewLabel.prepDate))}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Validade:</span><span className="font-bold">{previewLabel.expiryDate ? formatDate(new Date(previewLabel.expiryDate)) : '—'}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Lote:</span><span className="font-bold">{previewLabel.batchNumber}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Operador:</span><span className="font-bold">{previewLabel.operatorName}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{t('admLabels.printPrep')}</span><span className="font-bold">{formatDate(new Date(previewLabel.prepDate))}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{t('admLabels.printExp')}</span><span className="font-bold">{previewLabel.expiryDate ? formatDate(new Date(previewLabel.expiryDate)) : '—'}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{t('admLabels.printBatch')}</span><span className="font-bold">{previewLabel.batchNumber}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">{t('admLabels.printOperator')}</span><span className="font-bold">{previewLabel.operatorName}</span></div>
                     </div>
                     {previewLabel.allergens.length > 0 && (
                       <div className="mt-2 border-t border-dashed border-gray-200 pt-2">
-                        <p className="text-[8px] font-black uppercase text-gray-500 mb-1">Alérgenos</p>
+                        <p className="text-[8px] font-black uppercase text-gray-500 mb-1">{t('admLabels.printAllergens')}</p>
                         <div className="flex flex-wrap gap-1">
                           {previewLabel.allergens.map(key => {
                             const a = ALLERGEN_MAP.get(key);
-                            return a ? <span key={key} className="text-[9px]">{a.icon} {a.label}</span> : null;
+                            return a ? <span key={key} className="text-[9px]">{a.icon} {t('allergen.' + key, { defaultValue: a.label })}</span> : null;
                           })}
                         </div>
                       </div>
                     )}
                     <div className="mt-2 border-t border-dashed border-gray-200 pt-2 text-[7px] text-gray-400 text-center uppercase tracking-wider">
-                      {previewLabel.storageInstructions || STORAGE_OPTIONS.find(s => s.value === previewLabel.storageType)?.label || ''}
+                      {previewLabel.storageInstructions || storageLabel(previewLabel.storageType, '')}
                     </div>
                     <div className="mt-2 pt-2 border-t border-dashed border-gray-200 text-center">
-                      <span className="text-[7px] text-gray-400">Gerado por Meu OVO • {new Date(previewLabel.printedAt).toLocaleString('pt-BR')}</span>
+                      <span className="text-[7px] text-gray-400">{t('admLabels.printFooter', { d: new Date(previewLabel.printedAt).toLocaleString(currencyLocale(i18n.language)) })}</span>
                     </div>
                   </div>
                   <button onClick={handlePrint}
                     className="w-full bg-white/10 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                  ><Printer size={16} /> Imprimir Etiqueta</button>
+                  ><Printer size={16} /> {t('admLabels.printBtn')}</button>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-500">
                   <FileText size={48} className="mb-3 opacity-30" />
-                  <p className="text-sm font-bold">Nenhuma etiqueta gerada</p>
-                  <p className="text-[10px] text-gray-600">Preencha o formulário ao lado e clique em "Gerar Etiqueta"</p>
+                  <p className="text-sm font-bold">{t('admLabels.emptyPreview')}</p>
+                  <p className="text-[10px] text-gray-600">{t('admLabels.emptyPreviewHint')}</p>
                 </div>
               )}
             </div>
@@ -300,10 +314,10 @@ export default function LabelManagement() {
         {tab === 'history' && (
           <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2 mb-4">
-              <History size={14} /> Últimas Etiquetas
+              <History size={14} /> {t('admLabels.historyTitle')}
             </h3>
             {labels.length === 0 ? (
-              <div className="text-center py-12 text-gray-500 text-sm">Nenhuma etiqueta impressa ainda</div>
+              <div className="text-center py-12 text-gray-500 text-sm">{t('admLabels.historyEmpty')}</div>
             ) : (
               <div className="space-y-2 max-h-[500px] overflow-y-auto">
                 {labels.map(label => (
@@ -317,22 +331,22 @@ export default function LabelManagement() {
                         <span className="text-[9px] text-gray-500 font-mono">{label.batchNumber}</span>
                       </div>
                       <div className="flex items-center gap-3 text-[10px] text-gray-500 mt-0.5">
-                        <span>Val: {label.expiryDate ? formatDate(new Date(label.expiryDate)) : '—'}</span>
+                        <span>{t('admLabels.expShort')}: {label.expiryDate ? formatDate(new Date(label.expiryDate)) : '—'}</span>
                         <span>•</span>
                         <span>{label.operatorName}</span>
                         <span>•</span>
-                        <span>{new Date(label.printedAt).toLocaleDateString('pt-BR')}</span>
+                        <span>{new Date(label.printedAt).toLocaleDateString(currencyLocale(i18n.language))}</span>
                       </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       {label.allergens?.slice(0, 3).map(key => {
                         const a = ALLERGEN_MAP.get(key);
-                        return a ? <span key={key} className="text-xs" title={a.label}>{a.icon}</span> : null;
+                        return a ? <span key={key} className="text-xs" title={t('allergen.' + key, { defaultValue: a.label })}>{a.icon}</span> : null;
                       })}
                       {label.allergens?.length > 3 && <span className="text-[9px] text-gray-500">+{label.allergens.length - 3}</span>}
                     </div>
                     <button onClick={() => handleRePrint(label)}
-                      className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-lg transition-colors" title="Reimprimir"
+                      className="bg-zinc-700 hover:bg-zinc-600 text-white p-2 rounded-lg transition-colors" title={t('admLabels.reprintTitle')}
                     ><Printer size={14} /></button>
                   </div>
                 ))}
@@ -346,17 +360,18 @@ export default function LabelManagement() {
 }
 
 function printLabelHTML(label: LabelRecord): string {
+  const T = (k: string, d: string) => i18n.t(`admLabels.${k}`, { defaultValue: d });
   const allergensHtml = (label.allergens || [])
     .map(key => {
       const a = ALLERGEN_MAP.get(key);
-      return a ? `<span style="font-size:10px;margin-right:4px">${a.icon} ${a.label}</span>` : '';
+      return a ? `<span style="font-size:10px;margin-right:4px">${a.icon} ${i18n.t('allergen.' + key, { defaultValue: a.label })}</span>` : '';
     })
     .join('');
 
-  const storageLabel = STORAGE_OPTIONS.find(s => s.value === label.storageType)?.label || '';
+  const storageText = storageLabel(label.storageType, '');
 
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Etiqueta</title>
+<html><head><meta charset="utf-8"><title>${T('printDocTitle', 'Etiqueta')}</title>
 <style>
   @page { margin: 0; size: 100mm 150mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -384,14 +399,14 @@ function printLabelHTML(label: LabelRecord): string {
   </div>
   <div class="product-name">${escapeHtml(label.productName)}</div>
   <div class="info">
-    <div class="info-row"><span class="info-label">Preparo</span><span class="info-value">${formatDate(new Date(label.prepDate))}</span></div>
-    <div class="info-row"><span class="info-label">Validade</span><span class="info-value">${label.expiryDate ? formatDate(new Date(label.expiryDate)) : '—'}</span></div>
-    <div class="info-row"><span class="info-label">Lote</span><span class="info-value">${escapeHtml(label.batchNumber)}</span></div>
-    <div class="info-row"><span class="info-label">Operador</span><span class="info-value">${escapeHtml(label.operatorName)}</span></div>
+    <div class="info-row"><span class="info-label">${T('printPrep', 'Preparo')}</span><span class="info-value">${formatDate(new Date(label.prepDate))}</span></div>
+    <div class="info-row"><span class="info-label">${T('printExp', 'Validade')}</span><span class="info-value">${label.expiryDate ? formatDate(new Date(label.expiryDate)) : '—'}</span></div>
+    <div class="info-row"><span class="info-label">${T('printBatch', 'Lote')}</span><span class="info-value">${escapeHtml(label.batchNumber)}</span></div>
+    <div class="info-row"><span class="info-label">${T('printOperator', 'Operador')}</span><span class="info-value">${escapeHtml(label.operatorName)}</span></div>
   </div>
-  ${allergensHtml ? `<div class="allergens"><div class="allergens-title">Alérgenos</div><div class="allergens-list">${allergensHtml}</div></div>` : ''}
-  <div class="storage">${escapeHtml(label.storageInstructions || storageLabel)}</div>
-  <div class="footer">Gerado por Meu OVO • ${new Date(label.printedAt).toLocaleString('pt-BR')}</div>
+  ${allergensHtml ? `<div class="allergens"><div class="allergens-title">${T('printAllergens', 'Alérgenos')}</div><div class="allergens-list">${allergensHtml}</div></div>` : ''}
+  <div class="storage">${escapeHtml(label.storageInstructions || storageText)}</div>
+  <div class="footer">${T('printFooter', 'Gerado por Meu OVO')} • ${new Date(label.printedAt).toLocaleString(currencyLocale(i18n.language))}</div>
 </div>
 </body></html>`;
 }

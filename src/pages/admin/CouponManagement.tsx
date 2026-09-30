@@ -19,10 +19,14 @@ import { useTheme } from '../../context/ThemeContext';
 import { Button } from '../../components/Button';
 import { Coupon, Order } from '../../types';
 import { toast } from 'react-hot-toast';
-import { cn, formatCurrency } from '../../lib/utils';
+import { cn, formatCurrency, currencyLocale } from '../../lib/utils';
 import { Skeleton } from '../../components/Skeleton';
+import { useTranslation } from 'react-i18next';
 
 export default function CouponManagement() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
+  const loc = currencyLocale(i18n.language);
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const { currentRestaurant: restaurant } = useRestaurant();
@@ -72,12 +76,12 @@ export default function CouponManagement() {
       const code = formData.code.toUpperCase().trim();
       
       if (code.length < 3) {
-        setCodeError('O código deve ter pelo menos 3 caracteres');
+        setCodeError(t('admCoupons.codeShort'));
         return;
       }
 
       if (!/^[A-Z0-9]+$/.test(code)) {
-        setCodeError('Use apenas letras e números');
+        setCodeError(t('admCoupons.codeChars'));
         return;
       }
 
@@ -87,7 +91,7 @@ export default function CouponManagement() {
       );
 
       if (isDuplicate) {
-        setCodeError('Este código já está em uso');
+        setCodeError(t('admCoupons.codeDup'));
         return;
       }
 
@@ -95,7 +99,7 @@ export default function CouponManagement() {
     };
 
     validateCode();
-  }, [formData.code, coupons, editingCoupon]);
+  }, [formData.code, coupons, editingCoupon, t]);
 
   useEffect(() => {
     if (!restaurant) return;
@@ -171,10 +175,10 @@ export default function CouponManagement() {
         isActive: !coupon.isActive,
         updatedAt: serverTimestamp(),
       });
-      toast.success(`Cupom ${coupon.code} ${!coupon.isActive ? 'ativado' : 'desativado'} com sucesso!`);
+      toast.success(!coupon.isActive ? t('admCoupons.toggleOn', { code: coupon.code }) : t('admCoupons.toggleOff', { code: coupon.code }));
     } catch (error) {
       console.error('Error toggling coupon status:', error);
-      toast.error('Erro ao alterar status do cupom');
+      toast.error(t('admCoupons.toggleError'));
     }
   };
 
@@ -218,7 +222,7 @@ export default function CouponManagement() {
     if (!restaurant) return;
 
     if (!formData.code || !formData.value || !formData.expiryDate) {
-      toast.error('Preencha os campos obrigatórios');
+      toast.error(t('admCoupons.fillRequired'));
       return;
     }
 
@@ -251,29 +255,29 @@ export default function CouponManagement() {
     try {
       if (editingCoupon) {
         await updateDoc(doc(db, 'coupons', editingCoupon.id), couponData);
-        toast.success('Cupom atualizado!');
+        toast.success(t('admCoupons.updateOk'));
       } else {
         await addDoc(collection(db, 'coupons'), {
           ...couponData,
           usageCount: 0,
           createdAt: serverTimestamp(),
         });
-        toast.success('Cupom criado!');
+        toast.success(t('admCoupons.createOk'));
       }
       setIsCouponModalOpen(false);
     } catch (error) {
       console.error('Error saving coupon:', error);
-      toast.error('Erro ao salvar cupom');
+      toast.error(t('admCoupons.saveError'));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('Deseja realmente excluir este cupom?')) return;
+    if (!window.confirm(t('admCoupons.deleteConfirm'))) return;
     try {
       await deleteDoc(doc(db, 'coupons', id));
-      toast.success('Cupom excluído!');
+      toast.success(t('admCoupons.deleteOk'));
     } catch (error) {
-      toast.error('Erro ao excluir cupom');
+      toast.error(t('admCoupons.deleteError'));
     }
   };
 
@@ -309,7 +313,7 @@ export default function CouponManagement() {
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setUsageHistory(history);
       } catch (err) {
-        toast.error('Erro ao carregar histórico de uso');
+        toast.error(t('admCoupons.historyError'));
       }
     } finally {
       setLoadingHistory(false);
@@ -324,11 +328,11 @@ export default function CouponManagement() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className={`text-2xl font-black italic uppercase tracking-tighter ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>Cupons de Desconto</h2>
-          <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-sm font-medium`}>Gerencie suas promoções e códigos de desconto.</p>
+          <h2 className={`text-2xl font-black italic uppercase tracking-tighter ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>{t('admCoupons.title')}</h2>
+          <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-sm font-medium`}>{t('admCoupons.subtitle')}</p>
         </div>
         <Button onClick={() => handleOpenModal()} className="h-11 px-6 font-black italic uppercase tracking-widest text-xs">
-          <Plus size={18} className="mr-2" /> NOVO CUPOM
+          <Plus size={18} className="mr-2" /> {t('admCoupons.newBtn')}
         </Button>
       </div>
 
@@ -341,7 +345,7 @@ export default function CouponManagement() {
                 <Search className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} size={18} />
                 <input
                   type="text"
-                  placeholder="Buscar por código..."
+                  placeholder={t('admCoupons.searchPh')}
                   className={`w-full pl-10 pr-4 py-2 ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'} border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-medium`}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -353,11 +357,11 @@ export default function CouponManagement() {
               <table className="w-full">
                 <thead>
                   <tr className={`${isDark ? 'bg-white/5' : 'bg-slate-50/50'}`}>
-                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Código</th>
-                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Desconto</th>
-                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Validade</th>
-                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Uso</th>
-                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Status</th>
+                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.colCode')}</th>
+                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.colDiscount')}</th>
+                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.colExpiry')}</th>
+                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.colUsage')}</th>
+                    <th className={`text-left py-4 px-6 text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.colStatus')}</th>
                     <th className="py-4 px-6"></th>
                   </tr>
                 </thead>
@@ -373,7 +377,7 @@ export default function CouponManagement() {
                       <td colSpan={6} className="py-12 text-center">
                         <div className="flex flex-col items-center gap-2">
                           <Ticket size={40} className={`${isDark ? 'text-white/10' : 'text-slate-200'}`} />
-                          <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase italic`}>Nenhum cupom encontrado</p>
+                          <p className={`text-sm font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase italic`}>{t('admCoupons.emptyTitle')}</p>
                         </div>
                       </td>
                     </tr>
@@ -402,25 +406,25 @@ export default function CouponManagement() {
                           <td className="py-4 px-6">
                             <div className="flex flex-col">
                               <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-700'}`}>
-                                {coupon.type === 'percent' ? `${coupon.value}%` : formatCurrency(coupon.value)}
+                                {coupon.type === 'percent' ? `${coupon.value}%` : fmt(coupon.value)}
                               </span>
                               {coupon.minOrderValue > 0 && (
                                 <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-tighter`}>
-                                  Mín: {formatCurrency(coupon.minOrderValue)}
+                                  {t('admCoupons.minLbl')}: {fmt(coupon.minOrderValue)}
                                 </span>
                               )}
                             </div>
                           </td>
                           <td className="py-4 px-6">
-                            <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium text-sm`}>
-                              <Calendar size={14} className={`${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
-                              {new Date(coupon.expiryDate).toLocaleDateString('pt-BR')}
-                            </div>
+                              <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium text-sm`}>
+                                <Calendar size={14} className={`${isDark ? 'text-slate-500' : 'text-slate-400'}`} />
+                                {new Date(coupon.expiryDate).toLocaleDateString(loc)}
+                              </div>
                           </td>
                           <td className="py-4 px-6">
                             <div className="flex flex-col">
                               <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-700'}`}>
-                                {coupon.usageCount} {coupon.usageLimit ? `/ ${coupon.usageLimit}` : 'usos'}
+                                {coupon.usageCount} {coupon.usageLimit ? `/ ${coupon.usageLimit}` : t('admCoupons.usesUnit')}
                               </span>
                               <div className={`w-20 h-1 ${isDark ? 'bg-white/10' : 'bg-slate-100'} rounded-full mt-1 overflow-hidden`}>
                                 <div 
@@ -438,7 +442,7 @@ export default function CouponManagement() {
                                 handleToggleStatus(coupon);
                               }}
                               className="flex items-center gap-2 focus:outline-none group/toggle text-left"
-                              title={coupon.isActive ? "Clique para desativar" : "Clique para ativar"}
+                              title={coupon.isActive ? t('admCoupons.deactivateTitle') : t('admCoupons.activateTitle')}
                             >
                               <div className={cn(
                                 "w-9 h-5 rounded-full transition-all relative",
@@ -453,7 +457,7 @@ export default function CouponManagement() {
                                 "text-[10px] font-black uppercase tracking-widest transition-colors",
                                 coupon.isActive ? "text-green-500" : "text-slate-400"
                               )}>
-                                {coupon.isActive ? 'Ativo' : 'Inativo'}
+                                {coupon.isActive ? t('admCoupons.activeLbl') : t('admCoupons.inactiveLbl')}
                               </span>
                             </button>
                           </td>
@@ -467,7 +471,7 @@ export default function CouponManagement() {
                                 }}
                                 className={`p-2 ${isDark ? 'hover:bg-white/5' : 'hover:bg-blue-50'} text-slate-400 hover:text-blue-600 rounded-lg transition-colors`}
                                 title="Ver histórico completo"
-                                aria-label="Histórico de uso"
+                                aria-label={t('admCoupons.historyAria')}
                               >
                                 <History size={18} />
                               </button>
@@ -478,7 +482,7 @@ export default function CouponManagement() {
                                   handleOpenModal(coupon);
                                 }}
                                 className={`p-2 ${isDark ? 'hover:bg-white/5' : 'hover:bg-orange-50'} text-slate-400 hover:text-orange-600 rounded-lg transition-colors`}
-                                aria-label="Editar"
+                                aria-label={t('common.edit')}
                               >
                                 <Edit2 size={18} />
                               </button>
@@ -489,7 +493,7 @@ export default function CouponManagement() {
                                   handleDelete(coupon.id);
                                 }}
                                 className={`p-2 ${isDark ? 'hover:bg-white/5' : 'hover:bg-red-50'} text-slate-400 hover:text-red-600 rounded-lg transition-colors`}
-                                aria-label="Excluir"
+                                aria-label={t('common.delete')}
                               >
                                 <Trash2 size={18} />
                               </button>
@@ -512,7 +516,7 @@ export default function CouponManagement() {
               <div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Painel do Cupom</span>
+                    <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest">{t('admCoupons.panelLabel')}</span>
                     <h3 className={`text-xl font-black italic uppercase tracking-tighter mt-1 flex items-center gap-2 ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>
                       <Ticket size={22} className="text-orange-500 animate-pulse" />
                       {selectedCoupon.code}
@@ -536,7 +540,7 @@ export default function CouponManagement() {
                       "text-[9px] font-black uppercase tracking-widest",
                       selectedCoupon.isActive ? "text-green-500" : "text-slate-400"
                     )}>
-                      {selectedCoupon.isActive ? 'Ativo' : 'Inativo'}
+                      {selectedCoupon.isActive ? t('admCoupons.activeLbl') : t('admCoupons.inactiveLbl')}
                     </span>
                   </div>
                 </div>
@@ -545,21 +549,21 @@ export default function CouponManagement() {
               {/* Stats detail indicators */}
               <div className={`grid grid-cols-2 gap-4 p-4 ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-100'} rounded-2xl border`}>
                 <div>
-                  <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>Desconto</span>
+                  <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>{t('admCoupons.discountLbl')}</span>
                   <span className={`text-base font-black ${isDark ? 'text-white' : 'text-slate-800'}`}>
-                    {selectedCoupon.type === 'percent' ? `${selectedCoupon.value}%` : formatCurrency(selectedCoupon.value)}
+                    {selectedCoupon.type === 'percent' ? `${selectedCoupon.value}%` : fmt(selectedCoupon.value)}
                   </span>
                 </div>
                 <div>
-                  <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>Validade</span>
+                  <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>{t('admCoupons.expiryLbl')}</span>
                   <span className={`text-sm font-bold ${isDark ? 'text-white/80' : 'text-slate-600'}`}>
-                    {new Date(selectedCoupon.expiryDate).toLocaleDateString('pt-BR')}
+                    {new Date(selectedCoupon.expiryDate).toLocaleDateString(loc)}
                   </span>
                 </div>
                 <div className={`col-span-2 pt-2 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
                   <div className={`flex justify-between text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest mb-1`}>
-                    <span>Limite de uso</span>
-                    <span>{selectedCoupon.usageCount} {selectedCoupon.usageLimit ? `/ ${selectedCoupon.usageLimit} disponíveis` : 'usos'}</span>
+                    <span>{t('admCoupons.usageLimitLbl')}</span>
+                    <span>{selectedCoupon.usageCount} {selectedCoupon.usageLimit ? `/ ${selectedCoupon.usageLimit} ${t('admCoupons.availableUnit')}` : t('admCoupons.usesUnit')}</span>
                   </div>
                   <div className={`w-full h-2 ${isDark ? 'bg-white/10' : 'bg-slate-100'} rounded-full overflow-hidden`}>
                     <div 
@@ -570,16 +574,16 @@ export default function CouponManagement() {
                 </div>
                 <div className={`col-span-2 pt-2 border-t ${isDark ? 'border-white/10' : 'border-slate-100'} flex justify-between`}>
                   <div>
-                    <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>Pedido Mínimo</span>
-                    <span className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-slate-600'}`}>
-                      {selectedCoupon.minOrderValue > 0 ? formatCurrency(selectedCoupon.minOrderValue) : 'Nenhum'}
-                    </span>
+                      <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>{t('admCoupons.minOrderLbl')}</span>
+                      <span className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-slate-600'}`}>
+                        {selectedCoupon.minOrderValue > 0 ? fmt(selectedCoupon.minOrderValue) : t('admCoupons.noneLbl')}
+                      </span>
                   </div>
                   <div className="text-right">
-                    <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>Economia Total</span>
-                    <span className="text-xs font-black text-green-600 block">
-                      {formatCurrency(selectedUsageHistory.reduce((acc, order) => acc + (order.couponDiscount || 0), 0))}
-                    </span>
+                      <span className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block`}>{t('admCoupons.savedLbl')}</span>
+                      <span className="text-xs font-black text-green-600 block">
+                        {fmt(selectedUsageHistory.reduce((acc, order) => acc + (order.couponDiscount || 0), 0))}
+                      </span>
                   </div>
                 </div>
               </div>
@@ -589,10 +593,10 @@ export default function CouponManagement() {
                 <div className="flex items-center justify-between">
                   <h4 className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest flex items-center gap-1.5 mb-1`}>
                     <History size={13} className="text-blue-500" />
-                    Histórico de Uso
+                    {t('admCoupons.usageHistoryLbl')}
                   </h4>
                   <span className={`text-[9px] font-black ${isDark ? 'bg-blue-500/10' : 'bg-blue-50'} text-blue-600 px-2.5 py-0.5 rounded-full uppercase tracking-widest`}>
-                    {selectedUsageHistory.length} {selectedUsageHistory.length === 1 ? 'uso' : 'usos'}
+                    {selectedUsageHistory.length} {selectedUsageHistory.length === 1 ? t('admCoupons.useOne') : t('admCoupons.useMany')}
                   </span>
                 </div>
 
@@ -604,8 +608,8 @@ export default function CouponManagement() {
                   ) : selectedUsageHistory.length === 0 ? (
                     <div className={`text-center py-10 ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50/50 border-slate-100/20'} rounded-2xl border border-dashed`}>
                       <History size={26} className={`${isDark ? 'text-white/20' : 'text-slate-300'} mx-auto mb-2`} />
-                      <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-tight`}>Nenhum uso registrado</p>
-                      <p className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1 max-w-[200px] mx-auto leading-relaxed`}>Pedidos utilizando este cupom serão listados em tempo real.</p>
+                      <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-tight`}>{t('admCoupons.noUsage')}</p>
+                      <p className={`text-[9px] ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-1 max-w-[200px] mx-auto leading-relaxed`}>{t('admCoupons.noUsageHint')}</p>
                     </div>
                   ) : (
                     selectedUsageHistory.map((order) => (
@@ -615,13 +619,13 @@ export default function CouponManagement() {
                       >
                         <div>
                           <p className={`font-extrabold ${isDark ? 'text-white' : 'text-slate-800'} text-xs`}>{order.customerName}</p>
-                          <p className={`text-[8px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-tighter mt-0.5`}>
-                            {new Date(order.createdAt).toLocaleDateString('pt-BR')} às {new Date(order.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                          </p>
+                            <p className={`text-[8px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-tighter mt-0.5`}>
+                              {new Date(order.createdAt).toLocaleDateString(loc)} {t('admCoupons.atTime')} {new Date(order.createdAt).toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' })}
+                            </p>
                         </div>
                         <div className="text-right">
                           <p className="text-xs font-black text-green-600">
-                            -{formatCurrency(order.couponDiscount || 0)}
+                            -{fmt(order.couponDiscount || 0)}
                           </p>
                         </div>
                       </div>
@@ -633,8 +637,8 @@ export default function CouponManagement() {
           ) : (
             <div className={`${isDark ? 'bg-[#1a1a1a] border-white/10' : 'bg-white border-slate-100'} rounded-3xl border shadow-sm p-8 text-center flex flex-col items-center justify-center min-h-[350px]`}>
               <Ticket size={48} className={`${isDark ? 'text-white/20' : 'text-slate-300'} mb-4 animate-pulse`} />
-              <p className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase italic text-sm`}>Nenhum cupom</p>
-              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-2 max-w-[220px] mx-auto leading-relaxed`}>Crie ou selecione um cupom na lista para visualizar seu histórico e status completos.</p>
+              <p className={`font-bold ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase italic text-sm`}>{t('admCoupons.noCoupon')}</p>
+              <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} mt-2 max-w-[220px] mx-auto leading-relaxed`}>{t('admCoupons.noCouponHint')}</p>
             </div>
           )}
         </div>
@@ -642,19 +646,19 @@ export default function CouponManagement() {
 
       {/* Coupon Modal */}
       {isCouponModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Gerenciar cupom">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={t('admCoupons.dialogAria')}>
           <div className={`${isDark ? 'bg-[#1a1a1a]' : 'bg-white'} w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300`}>
             <div className={`p-8 border-b ${isDark ? 'border-white/5 bg-white/5' : 'border-slate-50 bg-slate-50/30'} flex items-center justify-between`}>
               <div>
                 <h3 className={`text-xl font-black italic uppercase tracking-tighter ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>
-                  {editingCoupon ? 'Editar Cupom' : 'Novo Cupom'}
+                  {editingCoupon ? t('admCoupons.editTitle') : t('admCoupons.newTitle')}
                 </h3>
-                <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-xs font-medium`}>Configure as regras do desconto.</p>
+                <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-xs font-medium`}>{t('admCoupons.formSub')}</p>
               </div>
               <button 
                 onClick={() => setIsCouponModalOpen(false)}
                 className={`p-3 ${isDark ? 'hover:bg-white/10 text-slate-500 hover:text-slate-400' : 'hover:bg-white text-slate-400 hover:text-slate-600'} rounded-2xl transition-all shadow-sm`}
-                aria-label="Fechar"
+                aria-label={t('ui.close')}
               >
                 <X size={20} />
               </button>
@@ -664,10 +668,10 @@ export default function CouponManagement() {
               <div className="space-y-4">
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center px-1">
-                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>Código do Cupom</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest`}>{t('admCoupons.codeLabel')}</label>
                       {formData.code && !codeError && (
                         <span className="flex items-center gap-1 text-[9px] font-black text-green-500 uppercase tracking-widest">
-                          <Check size={10} /> Disponível
+                          <Check size={10} /> {t('admCoupons.available')}
                         </span>
                       )}
                     </div>
@@ -701,7 +705,7 @@ export default function CouponManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>Tipo</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>{t('admCoupons.typeLabel')}</label>
                     <div className={`flex ${isDark ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-100'} p-1.5 rounded-2xl border`}>
                       <button
                         type="button"
@@ -711,7 +715,7 @@ export default function CouponManagement() {
                           formData.type === 'percent' ? `${isDark ? 'bg-[#FFC928] text-[#111]' : 'bg-white text-orange-600 shadow-sm'}` : `${isDark ? 'text-slate-500' : 'text-slate-400'}`
                         )}
                       >
-                        <Percent size={14} /> Percentual
+                        <Percent size={14} /> {t('admCoupons.typePercent')}
                       </button>
                       <button
                         type="button"
@@ -721,13 +725,13 @@ export default function CouponManagement() {
                           formData.type === 'fixed' ? `${isDark ? 'bg-[#FFC928] text-[#111]' : 'bg-white text-orange-600 shadow-sm'}` : `${isDark ? 'text-slate-500' : 'text-slate-400'}`
                         )}
                       >
-                        <DollarSign size={14} /> Fixo
+                        <DollarSign size={14} /> {t('admCoupons.typeFixed')}
                       </button>
                     </div>
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>Valor</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>{t('admCoupons.valueLabel')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -741,7 +745,7 @@ export default function CouponManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>Pedido Mínimo</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>{t('admCoupons.minLabel')}</label>
                     <input
                       type="number"
                       step="0.01"
@@ -753,7 +757,7 @@ export default function CouponManagement() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>Data de Validade</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>{t('admCoupons.expiryLabel')}</label>
                     <div className="relative">
                       <Calendar className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-slate-500' : 'text-slate-400'}`} size={16} />
                       <input
@@ -768,10 +772,10 @@ export default function CouponManagement() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>Limite de Uso (Opcional)</label>
+                      <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1`}>{t('admCoupons.limitLabel')}</label>
                     <input
                       type="number"
-                      placeholder="Ilimitado"
+                      placeholder={t('admCoupons.limitPh')}
                       className={`w-full px-4 h-12 ${isDark ? 'bg-[#111] border-white/10 text-white' : 'bg-slate-50 border-slate-100 text-slate-900'} border rounded-2xl text-sm font-bold focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none`}
                       value={formData.usageLimit}
                       onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
@@ -793,7 +797,7 @@ export default function CouponManagement() {
                       )} />
                     </button>
                     <span className={`text-[10px] font-black ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-widest`}>
-                      Cupom {formData.isActive ? 'Ativo' : 'Inativo'}
+                      {t('admCoupons.statusCoupon', { s: formData.isActive ? t('admCoupons.activeLbl') : t('admCoupons.inactiveLbl') })}
                     </span>
                   </div>
                 </div>
@@ -802,15 +806,15 @@ export default function CouponManagement() {
               {/* Público-Alvo */}
               <div className={`border-t ${isDark ? 'border-white/10' : 'border-slate-100'} pt-6 mt-2`}>
                 <label className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest ml-1 block mb-3`}>
-                  <User size={12} className="inline mr-1" />Público-Alvo
+                  <User size={12} className="inline mr-1" />{t('admCoupons.audienceLabel')}
                 </label>
                 <div className="grid grid-cols-2 gap-2 mb-4">
                   {([
-                    { value: 'all', label: 'Todos os clientes' },
-                    { value: 'new', label: 'Novos clientes' },
-                    { value: 'returning', label: 'Clientes recorrentes' },
-                    { value: 'by_rating', label: 'Por rating' },
-                    { value: 'by_orders', label: 'Por nº de pedidos' },
+                    { value: 'all', label: t('admCoupons.audAll') },
+                    { value: 'new', label: t('admCoupons.audNew') },
+                    { value: 'returning', label: t('admCoupons.audReturning') },
+                    { value: 'by_rating', label: t('admCoupons.audRating') },
+                    { value: 'by_orders', label: t('admCoupons.audOrders') },
                   ] as const).map(opt => (
                     <button
                       key={opt.value}
@@ -831,7 +835,7 @@ export default function CouponManagement() {
                 {formData.targetAudience === 'by_rating' && (
                   <div className={`grid grid-cols-2 gap-3 ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-2xl p-4`}>
                     <div>
-                      <label className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block mb-1`}>Rating mínimo</label>
+                      <label className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block mb-1`}>{t('admCoupons.ratingMin')}</label>
                       <input
                         type="number"
                         min="0"
@@ -844,7 +848,7 @@ export default function CouponManagement() {
                       />
                     </div>
                     <div>
-                      <label className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block mb-1`}>Rating máximo</label>
+                      <label className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block mb-1`}>{t('admCoupons.ratingMax')}</label>
                       <input
                         type="number"
                         min="0"
@@ -862,7 +866,7 @@ export default function CouponManagement() {
                 {(formData.targetAudience === 'returning' || formData.targetAudience === 'by_orders') && (
                   <div className={`${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-2xl p-4`}>
                     <label className={`text-[9px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest block mb-1`}>
-                      {formData.targetAudience === 'returning' ? 'Mínimo de pedidos anteriores' : 'Mínimo de pedidos'}
+                      {formData.targetAudience === 'returning' ? t('admCoupons.ordersMinReturning') : t('admCoupons.ordersMin')}
                     </label>
                     <input
                       type="number"
@@ -883,13 +887,13 @@ export default function CouponManagement() {
                   className="flex-1 h-12 font-black italic uppercase tracking-widest text-xs"
                   onClick={() => setIsCouponModalOpen(false)}
                 >
-                  CANCELAR
+                  {t('common.cancel').toUpperCase()}
                 </Button>
                 <Button 
                   type="submit" 
                   className="flex-1 h-12 font-black italic uppercase tracking-widest text-xs"
                 >
-                  {editingCoupon ? 'ATUALIZAR' : 'CRIAR CUPOM'}
+                  {editingCoupon ? t('admCoupons.updateBtn') : t('admCoupons.createBtn')}
                 </Button>
               </div>
             </form>
@@ -899,20 +903,20 @@ export default function CouponManagement() {
 
       {/* History Modal */}
       {isHistoryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Histórico de uso do cupom">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={t('admCoupons.historyDialogAria')}>
           <div className={`${isDark ? 'bg-[#1a1a1a]' : 'bg-white'} w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300`}>
             <div className={`p-8 border-b ${isDark ? 'border-white/5 bg-white/5' : 'border-slate-50 bg-slate-50/30'} flex items-center justify-between`}>
               <div>
                 <h3 className={`text-xl font-black italic uppercase tracking-tighter flex items-center gap-2 ${isDark ? 'text-[#FFC928]' : 'text-[#111]'}`}>
                   <History size={24} className="text-blue-500" />
-                  Histórico: {historyCoupon?.code}
+                  {t('admCoupons.historyTitle', { code: historyCoupon?.code })}
                 </h3>
-                <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-xs font-medium`}>Veja quem utilizou este cupom e quando.</p>
+                <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} text-xs font-medium`}>{t('admCoupons.historySub')}</p>
               </div>
               <button 
                 onClick={() => setIsHistoryModalOpen(false)}
                 className={`p-3 ${isDark ? 'hover:bg-white/10 text-slate-500 hover:text-slate-400' : 'hover:bg-white text-slate-400 hover:text-slate-600'} rounded-2xl transition-all shadow-sm`}
-                aria-label="Fechar"
+                aria-label={t('ui.close')}
               >
                 <X size={20} />
               </button>
@@ -930,8 +934,8 @@ export default function CouponManagement() {
                   <div className={`w-16 h-16 ${isDark ? 'bg-white/5' : 'bg-slate-50'} rounded-full flex items-center justify-center mx-auto mb-4`}>
                     <History size={32} className={`${isDark ? 'text-white/20' : 'text-slate-200'}`} />
                   </div>
-                  <p className={`${isDark ? 'text-slate-500' : 'text-slate-400'} font-bold uppercase italic text-sm`}>Nenhum uso registrado ainda</p>
-                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-2`}>Apenas pedidos feitos a partir de agora terão histórico detalhado.</p>
+                  <p className={`${isDark ? 'text-slate-500' : 'text-slate-400'} font-bold uppercase italic text-sm`}>{t('admCoupons.historyEmpty')}</p>
+                  <p className={`text-xs ${isDark ? 'text-slate-500' : 'text-slate-400'} mt-2`}>{t('admCoupons.historyEmptyHint')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -952,24 +956,24 @@ export default function CouponManagement() {
 
                        <div className="text-right flex items-center gap-6">
                         <div>
-                          <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest mb-1 flex items-center justify-end gap-1`}>
-                            <Clock size={10} /> Data e Hora
-                          </p>
-                          <p className={`text-sm font-bold ${isDark ? 'text-white/80' : 'text-slate-600'}`}>
-                            {new Date(order.createdAt).toLocaleString('pt-BR', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
+                            <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest mb-1 flex items-center justify-end gap-1`}>
+                              <Clock size={10} /> {t('admCoupons.dateTimeLbl')}
+                            </p>
+                            <p className={`text-sm font-bold ${isDark ? 'text-white/80' : 'text-slate-600'}`}>
+                              {new Date(order.createdAt).toLocaleString(loc, {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </p>
                         </div>
                         <div className="w-24 text-right">
-                          <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest mb-1`}>Desconto</p>
-                          <p className="text-sm font-black text-green-600">
-                            -{formatCurrency(order.couponDiscount || 0)}
-                          </p>
+                            <p className={`text-[10px] font-black ${isDark ? 'text-slate-500' : 'text-slate-400'} uppercase tracking-widest mb-1`}>{t('admCoupons.discountLbl')}</p>
+                            <p className="text-sm font-black text-green-600">
+                              -{fmt(order.couponDiscount || 0)}
+                            </p>
                         </div>
                       </div>
                     </div>
@@ -983,7 +987,7 @@ export default function CouponManagement() {
                 onClick={() => setIsHistoryModalOpen(false)} 
                 className="w-full h-12 font-black italic uppercase tracking-widest text-xs"
               >
-                FECHAR
+                {t('admCoupons.closeBtn')}
               </Button>
             </div>
           </div>

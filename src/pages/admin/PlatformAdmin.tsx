@@ -18,7 +18,7 @@ import {
   ArrowUpRight,
   Monitor
 } from 'lucide-react';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, currencyLocale } from '../../lib/utils';
 import { 
   BarChart, 
   Bar, 
@@ -34,8 +34,11 @@ import {
 } from 'recharts';
 import { CardSkeleton, ChartSkeleton, Skeleton } from '../../components/Skeleton';
 import { motion } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 export default function PlatformAdmin() {
+  const { t, i18n } = useTranslation();
+  const fmt = (v: number) => formatCurrency(v, currencyLocale(i18n.language));
   const [stats, setStats] = useState({
     totalRestaurants: 242,
     totalOrders: 12450,
@@ -112,12 +115,12 @@ export default function PlatformAdmin() {
     <div className="space-y-8 pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-           <h1 className="text-3xl font-black text-brand-black uppercase italic tracking-tighter">Central Meu Ovo</h1>
-           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 italic">Inteligência de Mercado e Gestão Global</p>
+           <h1 className="text-3xl font-black text-brand-black uppercase italic tracking-tighter">{t('admPlatform.title')}</h1>
+           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1 italic">{t('admPlatform.subtitle')}</p>
         </div>
         <div className="flex items-center gap-4">
            <div className="px-4 py-2 bg-brand-egg text-brand-black rounded-xl font-black text-[10px] uppercase tracking-widest border-b-4 border-yellow-600">
-             Relatórios Mensais 2026
+             {t('admPlatform.reportsBadge')}
            </div>
         </div>
       </div>
@@ -125,10 +128,10 @@ export default function PlatformAdmin() {
       {/* Hero Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
          {[
-           { label: "Restaurantes", val: stats.totalRestaurants, icon: <Store className="text-brand-orange" />, change: "+12% este mês" },
-           { label: "Pedidos Totais", val: stats.totalOrders.toLocaleString(), icon: <ClipboardList className="text-blue-500" />, change: "+25% este mês" },
-           { label: "Vendas Geradas", val: formatCurrency(stats.totalSales), icon: <DollarSign className="text-green-500" />, change: "+18% este mês" },
-           { label: "Refeições Doadas", val: stats.totalDonations / 5, icon: <Heart className="text-red-500" />, change: "78% da meta" }
+           { label: t('admPlatform.statRestaurants'), val: stats.totalRestaurants, icon: <Store className="text-brand-orange" />, change: t('admPlatform.change12') },
+           { label: t('admPlatform.statOrders'), val: stats.totalOrders.toLocaleString(currencyLocale(i18n.language)), icon: <ClipboardList className="text-blue-500" />, change: t('admPlatform.change25') },
+           { label: t('admPlatform.statSales'), val: fmt(stats.totalSales), icon: <DollarSign className="text-green-500" />, change: t('admPlatform.change18') },
+           { label: t('admPlatform.statMeals'), val: stats.totalDonations / 5, icon: <Heart className="text-red-500" />, change: t('admPlatform.changeGoal') }
          ].map((stat, i) => (
            <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
               <div className="flex justify-between items-start mb-4">
@@ -149,7 +152,7 @@ export default function PlatformAdmin() {
       <div className="grid lg:grid-cols-3 gap-8">
          <div className="lg:col-span-2 bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
             <div className="flex items-center justify-between mb-8">
-               <h3 className="text-xs font-black text-brand-black uppercase tracking-widest italic">Volume de Vendas (Semanal)</h3>
+               <h3 className="text-xs font-black text-brand-black uppercase tracking-widest italic">{t('admPlatform.salesTitle')}</h3>
                <div className="flex gap-2">
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 rounded-lg">
                      <div className="w-2 h-2 rounded-full bg-brand-egg" />
@@ -189,7 +192,7 @@ export default function PlatformAdmin() {
          </div>
 
          <div className="bg-brand-black p-8 rounded-3xl text-brand-white">
-            <h3 className="text-xs font-black text-brand-egg uppercase tracking-widest mb-8 italic">Top Categorias</h3>
+            <h3 className="text-xs font-black text-brand-egg uppercase tracking-widest mb-8 italic">{t('admPlatform.topCats')}</h3>
             <div className="space-y-6">
                {categoriesData.map((cat, i) => (
                  <div key={i} className="space-y-2">
@@ -208,8 +211,8 @@ export default function PlatformAdmin() {
                ))}
             </div>
             <div className="mt-12 p-6 bg-slate-900 rounded-2xl border border-slate-800">
-               <p className="text-[10px] font-black text-slate-500 uppercase mb-2">Insight do Dia</p>
-               <p className="text-sm font-bold leading-relaxed italic">Pedidos de Hambúrguer cresceram 14% na Zona Sul de São Paulo após às 22h.</p>
+               <p className="text-[10px] font-black text-slate-500 uppercase mb-2">{t('admPlatform.insightTitle')}</p>
+               <p className="text-sm font-bold leading-relaxed italic">{t('admPlatform.insightText')}</p>
             </div>
          </div>
       </div>
@@ -221,11 +224,11 @@ export default function PlatformAdmin() {
                <div className="p-2 bg-brand-egg rounded-xl text-brand-black">
                   <TrendingUp size={20} />
                </div>
-               <h4 className="text-[10px] font-black uppercase tracking-widest">Inteligência B2B</h4>
+               <h4 className="text-[10px] font-black uppercase tracking-widest">{t('admPlatform.b2bTitle')}</h4>
             </div>
-            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">Distribuidores</p>
-            <p className="text-slate-500 text-xs font-bold leading-relaxed mb-6">Oportunidade de venda de embalagens biodegradáveis para 45 restaurantes em expansão.</p>
-            <button className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:tracking-[0.2em] transition-all">Ver Relatório B2B →</button>
+            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">{t('admPlatform.b2bHead')}</p>
+            <p className="text-slate-500 text-xs font-bold leading-relaxed mb-6">{t('admPlatform.b2bDesc')}</p>
+            <button className="text-[9px] font-black uppercase tracking-widest text-brand-orange hover:tracking-[0.2em] transition-all">{t('admPlatform.b2bCta')}</button>
          </div>
 
          <div className="bg-brand-gray p-6 rounded-3xl border border-slate-200">
@@ -235,13 +238,13 @@ export default function PlatformAdmin() {
                </div>
                <h4 className="text-[10px] font-black uppercase tracking-widest">Ads Performance</h4>
             </div>
-            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">Espaços B2B</p>
+            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">{t('admPlatform.adsHead')}</p>
             <div className="flex items-center justify-between text-xs font-bold">
-               <span className="text-slate-400 uppercase">Leads Gerados</span>
+               <span className="text-slate-400 uppercase">{t('admPlatform.adsLeads')}</span>
                <span className="text-brand-black">1.240</span>
             </div>
             <div className="flex items-center justify-between text-xs font-bold mt-2">
-               <span className="text-slate-400 uppercase">CTR Médio</span>
+               <span className="text-slate-400 uppercase">{t('admPlatform.adsCtr')}</span>
                <span className="text-brand-black">2.4%</span>
             </div>
          </div>
@@ -253,8 +256,8 @@ export default function PlatformAdmin() {
                </div>
                <h4 className="text-[10px] font-black uppercase tracking-widest text-brand-black">Audience View</h4>
             </div>
-            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">Padrões de Consumo</p>
-            <p className="text-brand-black/70 text-[11px] font-bold">Consumidores entre 25-35 anos preferem pagamento via PIX (78%) e fazem pedidos 2.5x por semana através de links do Instagram.</p>
+            <p className="text-lg font-black text-brand-black tracking-tight mb-4 uppercase italic">{t('admPlatform.audHead')}</p>
+            <p className="text-brand-black/70 text-[11px] font-bold">{t('admPlatform.audDesc')}</p>
          </div>
       </div>
     </div>

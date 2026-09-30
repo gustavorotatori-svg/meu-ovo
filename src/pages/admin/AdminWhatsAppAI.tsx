@@ -6,14 +6,8 @@ import { db } from '../../lib/firebase';
 import { WhatsAppConversation } from '../../types/whatsapp';
 import AdminLayout from './AdminLayout';
 import SEO from '../../components/SEO';
-
-const STATE_LABELS: Record<string, string> = {
-  greeting: 'Saudação',
-  browsing: 'Navegando',
-  ordering: 'Pedindo',
-  confirming: 'Confirmando',
-  completed: 'Concluído',
-};
+import { useTranslation } from 'react-i18next';
+import { currencyLocale } from '../../lib/utils';
 
 const STATE_COLORS: Record<string, string> = {
   greeting: 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20',
@@ -24,6 +18,17 @@ const STATE_COLORS: Record<string, string> = {
 };
 
 export default function AdminWhatsAppAI() {
+  const { t, i18n } = useTranslation();
+  const stateLabel = (s: string) => {
+    const map: Record<string, string> = {
+      greeting: t('admWaAI.stGreeting'),
+      browsing: t('admWaAI.stBrowsing'),
+      ordering: t('admWaAI.stOrdering'),
+      confirming: t('admWaAI.stConfirming'),
+      completed: t('admWaAI.stCompleted'),
+    };
+    return map[s] || s;
+  };
   const [conversations, setConversations] = useState<WhatsAppConversation[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,7 +76,7 @@ export default function AdminWhatsAppAI() {
   const formatTime = (ts: string | Timestamp | undefined) => {
     if (!ts) return '';
     const d = (ts instanceof Timestamp) ? ts.toDate() : new Date(ts as string);
-    return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString(currencyLocale(i18n.language), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   };
 
   const lastMessage = (c: WhatsAppConversation) => {
@@ -82,12 +87,12 @@ export default function AdminWhatsAppAI() {
 
   return (
     <AdminLayout>
-      <SEO title="WhatsApp AI - Admin" description="Monitoramento de conversas WhatsApp com IA" />
+      <SEO title={t('admWaAI.seoTitle')} description={t('admWaAI.seoDesc')} />
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight text-white">WhatsApp AI</h1>
-            <p className="text-sm text-gray-400">Monitoramento de conversas com Dona Ova</p>
+            <h1 className="text-2xl font-black uppercase tracking-tight text-white">{t('admWaAI.title')}</h1>
+            <p className="text-sm text-gray-400">{t('admWaAI.subtitle')}</p>
           </div>
         </div>
 
@@ -95,44 +100,44 @@ export default function AdminWhatsAppAI() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"><MessageSquare size={16} className="text-[#FFC928]" /></div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Total</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{t('admWaAI.statTotal')}</span>
             </div>
             <p className="text-2xl font-black text-white">{conversations.length}</p>
-            <p className="text-[10px] text-gray-500 mt-1">conversas no total</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('admWaAI.statTotalSub')}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"><Clock size={16} className="text-blue-400" /></div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Hoje</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{t('admWaAI.statToday')}</span>
             </div>
             <p className="text-2xl font-black text-white">{activeToday}</p>
-            <p className="text-[10px] text-gray-500 mt-1">ativas hoje</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('admWaAI.statTodaySub')}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"><Bot size={16} className="text-orange-400" /></div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Pendentes</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{t('admWaAI.statPending')}</span>
             </div>
             <p className="text-2xl font-black text-white">{pending}</p>
-            <p className="text-[10px] text-gray-500 mt-1">aguardando conclusão</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('admWaAI.statPendingSub')}</p>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-5 hover:border-zinc-700 transition-colors">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center"><CheckCircle2 size={16} className="text-emerald-400" /></div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">Concluídas</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-500">{t('admWaAI.statDone')}</span>
             </div>
             <p className="text-2xl font-black text-white">{completed}</p>
-            <p className="text-[10px] text-gray-500 mt-1">com pedido fechado</p>
+            <p className="text-[10px] text-gray-500 mt-1">{t('admWaAI.statDoneSub')}</p>
           </motion.div>
         </div>
 
         <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
-              <MessageSquare size={14} /> Conversas Recentes
+              <MessageSquare size={14} /> {t('admWaAI.recentTitle')}
             </h3>
           </div>
 
@@ -147,8 +152,8 @@ export default function AdminWhatsAppAI() {
               <div className="w-16 h-16 bg-zinc-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <MessageSquare size={24} className="text-gray-600" />
               </div>
-              <p className="text-gray-500 text-sm font-bold">Nenhuma conversa ainda</p>
-              <p className="text-gray-600 text-[10px] mt-1">As conversas aparecerão aqui quando clientes interagirem com a Dona Ova</p>
+              <p className="text-gray-500 text-sm font-bold">{t('admWaAI.emptyTitle')}</p>
+              <p className="text-gray-600 text-[10px] mt-1">{t('admWaAI.emptyDesc')}</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -162,7 +167,7 @@ export default function AdminWhatsAppAI() {
                       <div className="flex items-center gap-2 mb-0.5">
                         <span className="text-sm font-bold text-white truncate">{conv.customerName || conv.customerPhone}</span>
                         <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border ${STATE_COLORS[conv.state] || 'text-gray-400 bg-gray-400/10 border-gray-400/20'}`}>
-                          {STATE_LABELS[conv.state] || conv.state}
+                          {stateLabel(conv.state)}
                         </span>
                       </div>
                       <p className="text-[11px] text-gray-500 truncate">{lastMessage(conv)}</p>
@@ -181,12 +186,12 @@ export default function AdminWhatsAppAI() {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t border-zinc-800">
                         <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
                           {conv.messages?.length === 0 ? (
-                            <p className="text-gray-600 text-xs text-center py-4">Nenhuma mensagem registrada</p>
+                            <p className="text-gray-600 text-xs text-center py-4">{t('admWaAI.noMessages')}</p>
                           ) : (
                             conv.messages?.map((msg, i) => (
                               <div key={i} className={`flex ${msg.role === 'customer' ? 'justify-start' : 'justify-end'}`}>
                                 <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 ${msg.role === 'customer' ? 'bg-zinc-800 border border-zinc-700' : 'bg-[#FFC928]/10 border border-[#FFC928]/20'}`}>
-                                  <p className="text-[10px] font-black text-gray-500 mb-1 uppercase tracking-widest">{msg.role === 'customer' ? 'Cliente' : msg.role === 'assistant' ? 'Dona Ova' : 'Sistema'}</p>
+                                   <p className="text-[10px] font-black text-gray-500 mb-1 uppercase tracking-widest">{msg.role === 'customer' ? t('admWaAI.roleCustomer') : msg.role === 'assistant' ? t('admWaAI.roleAssistant') : t('admWaAI.roleSystem')}</p>
                                   <p className="text-xs text-gray-300 whitespace-pre-wrap">{msg.text}</p>
                                   <p className="text-[9px] text-gray-600 mt-1">{formatTime(msg.timestamp)}</p>
                                 </div>
@@ -196,7 +201,7 @@ export default function AdminWhatsAppAI() {
                         </div>
                         {conv.cart && conv.cart.length > 0 && (
                           <div className="border-t border-zinc-800 p-4 bg-zinc-800/20">
-                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">🛒 Carrinho</p>
+                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">🛒 {t('admWaAI.cartTitle')}</p>
                             <div className="space-y-1.5">
                               {conv.cart.map((item, i) => (
                                 <div key={i} className="flex items-center justify-between text-xs text-gray-400">
@@ -209,9 +214,9 @@ export default function AdminWhatsAppAI() {
                         )}
                         {conv.orderId && (
                           <div className="border-t border-zinc-800 p-4 bg-zinc-800/20 flex items-center justify-between">
-                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Pedido #{conv.orderId.slice(0, 8)}</span>
+                            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('admWaAI.orderLabel')} #{conv.orderId.slice(0, 8)}</span>
                             <a href={`/admin/pedidos`} className="text-[10px] font-black text-[#FFC928] flex items-center gap-1 hover:opacity-80">
-                              Ver pedido <ExternalLink size={10} />
+                              {t('admWaAI.viewOrder')} <ExternalLink size={10} />
                             </a>
                           </div>
                         )}
@@ -230,13 +235,12 @@ export default function AdminWhatsAppAI() {
               <Bot size={18} className="text-[#FFC928]" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-white mb-1">Dona Ova — IA do WhatsApp</h3>
+              <h3 className="text-sm font-black text-white mb-1">{t('admWaAI.aboutTitle')}</h3>
               <p className="text-[11px] text-gray-400 leading-relaxed">
-                A Dona Ova atende seus clientes automaticamente pelo WhatsApp, tira dúvidas do cardápio, 
-                anota pedidos e confirma antes de enviar para a cozinha. As conversas aparecem em tempo real aqui.
+                {t('admWaAI.aboutDesc')}
               </p>
               <p className="text-[10px] text-gray-500 mt-2">
-                Para conectar, configure o provedor WhatsApp nas Configurações da loja.
+                {t('admWaAI.aboutHint')}
               </p>
             </div>
           </div>

@@ -22,6 +22,7 @@ import { auth } from '../../lib/firebase-auth';
 import { signOut } from 'firebase/auth';
 import { cn } from '../../lib/utils';
 import { Button } from '../../components/Button';
+import { useTranslation } from 'react-i18next';
 
 // Internal dashboard pages
 import Overview from './Overview';
@@ -34,20 +35,21 @@ import PlatformAdmin from './PlatformAdmin';
 import FiscalAudit from './FiscalAudit';
 
 export default function AdminDashboard() {
+  const { t } = useTranslation();
   const { currentRestaurant: restaurant } = useRestaurant();
   const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { label: 'Visão Geral', path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, exact: true },
-    { label: 'Pedidos', path: '/admin/dashboard/orders', icon: <ClipboardList size={20} /> },
-    { label: 'Cozinha', path: '/admin/dashboard/kitchen', icon: <Flame size={20} /> },
-    { label: 'Garçom', path: '/admin/dashboard/waiter', icon: <Users size={20} /> },
-    { label: 'Cardápio', path: '/admin/dashboard/menu', icon: <UtensilsCrossed size={20} /> },
-    { label: 'Auditoria Fiscal', path: '/admin/dashboard/fiscal', icon: <Shield size={20} /> },
-    { label: 'Central Meu Ovo', path: '/admin/dashboard/platform', icon: <ShieldAlert size={20} /> },
-    { label: 'Configurações', path: '/admin/dashboard/settings', icon: <Settings size={20} /> },
+    { label: t('admDash.navOverview'), path: '/admin/dashboard', icon: <LayoutDashboard size={20} />, exact: true },
+    { label: t('nav.orders'), path: '/admin/dashboard/orders', icon: <ClipboardList size={20} /> },
+    { label: t('nav.kitchen'), path: '/admin/dashboard/kitchen', icon: <Flame size={20} /> },
+    { label: t('nav.waiter'), path: '/admin/dashboard/waiter', icon: <Users size={20} /> },
+    { label: t('nav.menu'), path: '/admin/dashboard/menu', icon: <UtensilsCrossed size={20} /> },
+    { label: t('admDash.navFiscal'), path: '/admin/dashboard/fiscal', icon: <Shield size={20} /> },
+    { label: t('admDash.navCentral'), path: '/admin/dashboard/platform', icon: <ShieldAlert size={20} /> },
+    { label: t('nav.settings'), path: '/admin/dashboard/settings', icon: <Settings size={20} /> },
   ];
 
   const handleLogout = async () => {
@@ -107,7 +109,7 @@ export default function AdminDashboard() {
 
           <div className="p-4 border-t border-slate-100">
              <div className="p-3 bg-slate-50 rounded-lg mb-4 border border-slate-200">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Link no Ar</p>
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{t('admDash.liveLink')}</p>
                 <div className="flex items-center justify-between gap-2 overflow-hidden">
                   <p className="text-xs font-mono font-medium text-slate-600 truncate uppercase">
                     m/{restaurant?.slug}
@@ -127,7 +129,7 @@ export default function AdminDashboard() {
                 className="flex items-center gap-3 w-full px-3 py-2 text-slate-500 text-sm font-semibold hover:text-red-600 transition-colors"
               >
                 <LogOut size={18} />
-                Sair do Painel
+                {t('admDash.logout')}
               </button>
           </div>
         </div>
@@ -149,7 +151,7 @@ export default function AdminDashboard() {
                <div className="flex items-center gap-1.5">
                  <div className={cn("w-1.5 h-1.5 rounded-full", restaurant?.isDeliveryOpen ? "bg-green-500 animate-pulse" : "bg-red-500")} />
                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                   {restaurant?.isDeliveryOpen ? 'Delivery Online' : 'Delivery Fechado'}
+                    {restaurant?.isDeliveryOpen ? t('admDash.deliveryOn') : t('admDash.deliveryOff')}
                  </p>
                </div>
              </div>

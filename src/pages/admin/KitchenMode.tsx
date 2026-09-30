@@ -5,12 +5,18 @@ import { Order } from '../../types';
 import { ChefHat, Clock, CheckCircle2, Play, AlertCircle, Volume2, VolumeX, Smartphone, MapPin, Store, Maximize2, Minimize2, BookOpen, X } from 'lucide-react';
 import BackButton from '../../components/BackButton';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '../../lib/utils';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { cn, currencyLocale } from '../../lib/utils';
+import { format, type Locale } from 'date-fns';
+import { ptBR, enUS, es } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+
+const dateFnsLocales: Record<string, Locale> = { 'pt-BR': ptBR, 'en-US': enUS, 'es-ES': es };
 
 export default function KitchenMode() {
+  const { t, i18n } = useTranslation();
+  const loc = currencyLocale(i18n.language);
+  const dateLocale = dateFnsLocales[loc] || ptBR;
   const { currentRestaurant, orders, updateOrderStatus, recipeSheets, products } = useRestaurant();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -48,7 +54,7 @@ export default function KitchenMode() {
       const hasNew = orders.some(o => o.status === 'received');
       if (hasNew && soundEnabled && audioRef.current) {
         audioRef.current.play().catch(e => console.error('Audio play failed:', e));
-        toast('🍳 Novo pedido na cozinha!', {
+        toast(t('admKitchenMode.newOrderToast'), {
           style: {
             borderRadius: '1rem',
             background: '#FFC928',
@@ -71,9 +77,9 @@ export default function KitchenMode() {
 
   const getStatusConfig = (status: Order['status']) => {
     switch (status) {
-      case 'received': return { label: 'Novo', color: 'bg-blue-500', icon: <AlertCircle size={14} /> };
-      case 'preparing': return { label: 'Preparando', color: 'bg-orange-500', icon: <Play size={14} /> };
-      case 'ready': return { label: 'Pronto', color: 'bg-green-500', icon: <CheckCircle2 size={14} /> };
+      case 'received': return { label: t('admKitchenMode.stNew'), color: 'bg-blue-500', icon: <AlertCircle size={14} /> };
+      case 'preparing': return { label: t('admKitchenMode.stPreparing'), color: 'bg-orange-500', icon: <Play size={14} /> };
+      case 'ready': return { label: t('admKitchenMode.stReady'), color: 'bg-green-500', icon: <CheckCircle2 size={14} /> };
       default: return { label: status, color: 'bg-gray-500', icon: null };
     }
   };
@@ -120,8 +126,8 @@ export default function KitchenMode() {
               <ChefHat size={32} strokeWidth={2.5} />
             </div>
             <div className="min-w-0">
-              <h1 className="text-2xl font-black uppercase tracking-tighter italic truncate">Cozinha {currentRestaurant?.name || 'MEU OVO'}</h1>
-              <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.2em]">KDS - Monitor de Produção</p>
+              <h1 className="text-2xl font-black uppercase tracking-tighter italic truncate">{t('admKitchenMode.title', { name: currentRestaurant?.name || 'MEU OVO' })}</h1>
+              <p className="text-[10px] font-black opacity-50 uppercase tracking-[0.2em]">{t('admKitchenMode.subtitle')}</p>
             </div>
           </div>
 
@@ -138,7 +144,7 @@ export default function KitchenMode() {
                     : 'opacity-50 hover:opacity-100'
                 )}
               >
-                {f === 'all' ? 'Tudo' : f === 'delivery' ? 'Delivery' : 'Salão'}
+                {f === 'all' ? t('admKitchenMode.filterAll') : f === 'delivery' ? t('admKitchenMode.filterDelivery') : t('admKitchenMode.filterDineIn')}
               </button>
             ))}
           </div>
@@ -147,7 +153,7 @@ export default function KitchenMode() {
             <button
               onClick={toggleFullscreen}
               className={cn("p-3 rounded-xl transition-all", isDark ? 'bg-white/5 hover:bg-white/10' : 'bg-gray-100 hover:bg-gray-200')}
-              aria-label="Alternar tamanho da tela"
+              aria-label={t('admKitchenMode.fullscreenAria')}
             >
               {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
             </button>
@@ -157,7 +163,7 @@ export default function KitchenMode() {
                 "p-3 rounded-xl transition-all",
                 soundEnabled ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
               )}
-              aria-label="Alternar som"
+              aria-label={t('admKitchenMode.soundAria')}
             >
               {soundEnabled ? <Volume2 size={24} /> : <VolumeX size={24} />}
             </button>
@@ -199,10 +205,10 @@ export default function KitchenMode() {
                           </div>
                         </div>
                         <h3 className="font-black text-lg leading-tight truncate">{order.customerName}</h3>
-                        <div className="flex items-center gap-2 text-[10px] font-black opacity-50 uppercase tracking-widest mt-1">
-                          {getOrderTypeIcon(order.type)}
-                          {order.type === 'dine-in' ? `Mesa ${order.tableNumber}` : 'Delivery'}
-                        </div>
+                          <div className="flex items-center gap-2 text-[10px] font-black opacity-50 uppercase tracking-widest mt-1">
+                            {getOrderTypeIcon(order.type)}
+                            {order.type === 'dine-in' ? t('admKitchenMode.tableOf', { n: order.tableNumber }) : t('admKitchenMode.deliveryLbl')}
+                          </div>
                       </div>
                       <div className={cn(
                         "p-3 rounded-2xl flex flex-col items-center justify-center min-w-[60px] ml-4 transition-colors ring-4",
@@ -235,7 +241,7 @@ export default function KitchenMode() {
                                 {itemRecipe && <BookOpen size={12} className="text-[#FFC928] shrink-0" />}
                               </div>
                               {itemRecipe?.prepTime && (
-                                <p className="text-[9px] text-gray-400 font-bold mt-0.5">⏱ ~{itemRecipe.prepTime}min de preparo</p>
+                                <p className="text-[9px] text-gray-400 font-bold mt-0.5">⏱ ~{itemRecipe.prepTime}{t('admKitchenMode.minShort')} {t('admKitchenMode.prepOf')}</p>
                               )}
                               {item.additionals && item.additionals.length > 0 && (
                                 <p className="text-[10px] text-orange-500 font-black uppercase mt-0.5 leading-none">
@@ -244,7 +250,7 @@ export default function KitchenMode() {
                               )}
                               {item.observations && (
                                 <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase italic leading-tight">
-                                  "Obs: {item.observations}"
+                                  "{t('admKitchenMode.obsPrefix')}: {item.observations}"
                                 </div>
                               )}
                             </div>
@@ -260,8 +266,8 @@ export default function KitchenMode() {
                           onClick={() => updateOrderStatus(order.id, 'preparing')}
                           className="col-span-2 w-full py-4 bg-blue-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 hover:bg-blue-600 transition-all uppercase tracking-widest text-xs shadow-lg shadow-blue-500/20"
                         >
-                          <Play size={18} fill="currentColor" />
-                          Começar Preparo
+                           <Play size={18} fill="currentColor" />
+                           {t('admKitchenMode.startPrep')}
                         </button>
                       )}
                       {order.status === 'preparing' && (
@@ -270,14 +276,14 @@ export default function KitchenMode() {
                             onClick={() => updateOrderStatus(order.id, 'received')}
                             className="py-4 bg-white/5 text-xs font-black rounded-2xl opacity-50 hover:opacity-100 transition-all border border-white/10 uppercase"
                           >
-                            Voltar
+                             {t('common.back')}
                           </button>
                           <button
                             onClick={() => updateOrderStatus(order.id, 'ready')}
                             className="py-4 bg-green-500 text-white font-black rounded-2xl flex items-center justify-center gap-2 hover:bg-green-600 transition-all uppercase tracking-widest text-xs shadow-lg shadow-green-500/20"
                           >
-                            <CheckCircle2 size={18} />
-                            Pronto
+                             <CheckCircle2 size={18} />
+                             {t('admKitchenMode.readyBtn')}
                           </button>
                         </>
                       )}
@@ -286,7 +292,7 @@ export default function KitchenMode() {
                           onClick={() => updateOrderStatus(order.id, 'out-for-delivery')}
                           className="col-span-2 w-full py-4 bg-[#FFC928] text-[#111] font-black rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-all uppercase tracking-widest text-xs shadow-lg shadow-yellow-500/10"
                         >
-                          {order.type === 'delivery' ? 'Enviar p/ Entrega' : 'Chamar Cliente'}
+                           {order.type === 'delivery' ? t('admKitchenMode.sendDelivery') : t('admKitchenMode.callCustomer')}
                         </button>
                       )}
                     </div>
@@ -310,8 +316,8 @@ export default function KitchenMode() {
             {activeOrders.length === 0 && (
               <div className="col-span-full h-96 flex flex-col items-center justify-center text-center opacity-30 select-none">
                 <ChefHat size={120} className="mb-6 animate-bounce text-gray-500" strokeWidth={1} />
-                <h2 className="text-4xl font-black italic uppercase tracking-tighter">Cozinha Limpa!</h2>
-                <p className="font-black uppercase tracking-widest text-xs mt-2">Nenhum pedido pendente no momento.</p>
+                <h2 className="text-4xl font-black italic uppercase tracking-tighter">{t('admKitchenMode.emptyTitle')}</h2>
+                <p className="font-black uppercase tracking-widest text-xs mt-2">{t('admKitchenMode.emptyDesc')}</p>
               </div>
             )}
           </div>
@@ -321,14 +327,14 @@ export default function KitchenMode() {
       {/* Footer Info */}
       <footer className={cn("p-3 px-6 flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em]", isDark ? 'bg-[#111] text-white/50 border-t border-white/5' : 'bg-white text-gray-400 border-t')}>
         <div className="flex gap-4">
-          <span>Pedidos Ativos: {activeOrders.length}</span>
+          <span>{t('admKitchenMode.activeOrders', { n: activeOrders.length })}</span>
           <span>•</span>
-          <span>Pátio: {orders.filter(o => o.status === 'received').length}</span>
+          <span>{t('admKitchenMode.yardOrders', { n: orders.filter(o => o.status === 'received').length })}</span>
           <span>•</span>
-          <span>Fogo: {orders.filter(o => o.status === 'preparing').length}</span>
+          <span>{t('admKitchenMode.fireOrders', { n: orders.filter(o => o.status === 'preparing').length })}</span>
         </div>
         <div className="hidden sm:block">
-          {format(new Date(), "eeee, d 'de' MMMM • HH:mm", { locale: ptBR })}
+          {format(new Date(), t('admKitchenMode.dateFmt'), { locale: dateLocale })}
         </div>
       </footer>
 
@@ -361,11 +367,11 @@ export default function KitchenMode() {
                     <h3 className="text-xl font-black uppercase tracking-tight">{selectedItem.productName}</h3>
                     <div className="flex items-center gap-3 mt-1">
                       <span className="text-[10px] font-black text-[#FFC928] bg-[#FFC928]/10 px-2 py-0.5 rounded-full">
-                        Qtd: {selectedItem.quantity}
+                        {t('admKitchenMode.qtyLabel')}: {selectedItem.quantity}
                       </span>
                       {prepTime && (
                         <span className="text-[10px] font-black text-gray-400">
-                          ⏱ ~{prepTime}min
+                          ⏱ ~{prepTime}{t('admKitchenMode.minShort')}
                         </span>
                       )}
                     </div>
@@ -377,7 +383,7 @@ export default function KitchenMode() {
 
                 {recipe.ingredients.length > 0 && (
                   <div className="mb-5">
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Ingredientes</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t('admKitchenMode.ingredientsTitle')}</h4>
                     <div className="grid grid-cols-2 gap-2">
                       {recipe.ingredients.map((ing, i) => (
                         <div key={i} className={cn("flex items-center justify-between p-2.5 rounded-xl text-sm", isDark ? 'bg-white/5' : 'bg-gray-50')}>
@@ -391,7 +397,7 @@ export default function KitchenMode() {
 
                 {recipe.preparationMode && (
                   <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">Modo de Preparo</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">{t('admKitchenMode.prepTitle')}</h4>
                     <div className={cn("p-4 rounded-xl text-sm leading-relaxed whitespace-pre-wrap", isDark ? 'bg-white/5 text-gray-300' : 'bg-amber-50 text-gray-700')}>
                       {recipe.preparationMode}
                     </div>
@@ -400,13 +406,13 @@ export default function KitchenMode() {
 
                 {selectedItem.observations && (
                   <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-[10px] font-black text-red-500 uppercase mb-1">Observação do Cliente</p>
+                    <p className="text-[10px] font-black text-red-500 uppercase mb-1">{t('admKitchenMode.customerObs')}</p>
                     <p className="text-sm font-semibold text-red-400">{selectedItem.observations}</p>
                   </div>
                 )}
 
                 {!recipe.preparationMode && recipe.ingredients.length === 0 && (
-                  <p className="text-center text-gray-400 text-sm py-4">Nenhuma ficha técnica cadastrada para este produto.</p>
+                  <p className="text-center text-gray-400 text-sm py-4">{t('admKitchenMode.noSheet')}</p>
                 )}
               </motion.div>
             </motion.div>

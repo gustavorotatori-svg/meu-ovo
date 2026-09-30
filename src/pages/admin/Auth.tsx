@@ -9,8 +9,11 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfi
 import { doc, setDoc } from 'firebase/firestore';
 import { toast } from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { getFirebaseErrorMessage } from '../../lib/utils';
 
 export default function AdminAuth() {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [wantToParticipate, setWantToParticipate] = useState(true);
@@ -29,13 +32,12 @@ export default function AdminAuth() {
   };
 
   const handleForgotPassword = async () => {
-    if (!formData.email.trim()) { toast.error('Digite seu e-mail primeiro'); return; }
+    if (!formData.email.trim()) { toast.error(t('login.forgotEmailFirst')); return; }
     try {
       await sendPasswordResetEmail(auth, formData.email);
-      toast.success('E-mail de recuperação enviado!');
+      toast.success(t('login.resetSent'));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao enviar e-mail de recuperação';
-      toast.error(msg);
+      toast.error(getFirebaseErrorMessage(err));
     }
   };
 
@@ -46,14 +48,14 @@ export default function AdminAuth() {
     try {
       if (isLogin) {
         const { user } = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-        toast.success('Bem-vindo de volta!');
+        toast.success(t('login.welcomeBack'));
         navigate('/admin');
       } else {
-        if (!lgpdConsent) { toast.error('Você precisa aceitar os termos de privacidade'); setLoading(false); return; }
-        if (formData.password.length < 6) { toast.error('A senha deve ter no mínimo 6 caracteres'); setLoading(false); return; }
-        if (!/[A-Za-z]/.test(formData.password)) { toast.error('A senha deve conter pelo menos uma letra'); setLoading(false); return; }
-        if (!/[0-9]/.test(formData.password)) { toast.error('A senha deve conter pelo menos um número'); setLoading(false); return; }
-        if (!formData.email.includes('@')) { toast.error('Digite um e-mail válido'); setLoading(false); return; }
+        if (!lgpdConsent) { toast.error(t('login.lgpdRequired')); setLoading(false); return; }
+        if (formData.password.length < 6) { toast.error(t('login.passwordMinError')); setLoading(false); return; }
+        if (!/[A-Za-z]/.test(formData.password)) { toast.error(t('admAuth.passLetter')); setLoading(false); return; }
+        if (!/[0-9]/.test(formData.password)) { toast.error(t('admAuth.passNumber')); setLoading(false); return; }
+        if (!formData.email.includes('@')) { toast.error(t('login.emailInvalidShort')); setLoading(false); return; }
         const { user } = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
         await updateProfile(user, { displayName: formData.name });
 
@@ -66,12 +68,11 @@ export default function AdminAuth() {
           onboardingComplete: false,
         });
 
-        toast.success('Conta criada! Agora complete o cadastro do seu restaurante.');
+        toast.success(t('admAuth.accountReady'));
         navigate('/install-app');
       }
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Erro ao autenticar';
-      toast.error(msg);
+      toast.error(getFirebaseErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -86,8 +87,8 @@ export default function AdminAuth() {
       <div className="bg-white w-full max-w-md rounded-xl shadow-2xl shadow-slate-200 border border-slate-200 overflow-hidden relative z-10">
         <div className="bg-brand-black px-8 py-10 text-center relative flex flex-col items-center">
           <Logo size="lg" variant="white" className="mb-4" />
-          <h2 className="text-xl font-black text-brand-white uppercase tracking-tight italic leading-tight">{isLogin ? 'Painel Administrativo' : 'Crie sua conta Meu Ovo'}</h2>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-3 italic">Aqui é comida de verdade. Não foodzinho.</p>
+          <h2 className="text-xl font-black text-brand-white uppercase tracking-tight italic leading-tight">{isLogin ? t('admAuth.titleLogin') : t('admAuth.titleSignup')}</h2>
+          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-3 italic">{t('admAuth.tagline')}</p>
           
           <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-brand-egg to-brand-orange" />
         </div>
@@ -96,7 +97,7 @@ export default function AdminAuth() {
           {!isLogin && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Seu Nome</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('admAuth.nameLabel')}</label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
@@ -106,12 +107,12 @@ export default function AdminAuth() {
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                    placeholder="João"
+                    placeholder={t('admAuth.namePlaceholder')}
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Restaurante</label>
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('admAuth.restLabel')}</label>
                 <div className="relative">
                   <Store className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
                   <input
@@ -121,7 +122,7 @@ export default function AdminAuth() {
                     value={formData.restaurantName}
                     onChange={handleChange}
                     className="w-full pl-9 pr-4 py-2 border border-slate-200 bg-white text-slate-900 rounded-md text-sm focus:ring-1 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all placeholder:text-slate-400"
-                    placeholder="Nome"
+                    placeholder={t('admAuth.restPlaceholder')}
                   />
                 </div>
               </div>
@@ -129,7 +130,7 @@ export default function AdminAuth() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">E-mail Corporativo</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('admAuth.emailLabel')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
@@ -145,7 +146,7 @@ export default function AdminAuth() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Senha de Acesso</label>
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">{t('admAuth.passLabel')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
               <input
@@ -174,16 +175,16 @@ export default function AdminAuth() {
               <label htmlFor="participate-ovos-de-ouro" className="flex flex-col cursor-pointer select-none">
                 <span className="text-[11px] font-black text-amber-950 uppercase tracking-tight flex items-center gap-1 leading-none">
                   <Trophy size={13} className="text-amber-600 fill-amber-300" />
-                  Prêmio Ovos de Ouro {new Date().getFullYear()}
+                  {t('admAuth.ovosTitle', { year: new Date().getFullYear() })}
                 </span>
                 <span className="text-[9px] text-amber-800 font-extrabold mt-0.5">
-                  Quero concorrer no campeonato anual oficial!
+                  {t('admAuth.ovosWant')}
                 </span>
               </label>
             </div>
             
             <p className="text-[9px] text-amber-700 leading-relaxed font-semibold">
-              Garantia de Confidencialidade: Suas avaliações individuais acumuladas serão invisíveis para clientes e concorrentes, visíveis somente para o próprio estabelecimento e para a equipe Meu Ovo. Publicaremos apenas os 3 primeiros colocados generais em 15 de Dezembro. Austeridade e imparcialidade total.
+              {t('admAuth.ovosGuarantee')}
             </p>
           </div>
           )}
@@ -194,7 +195,7 @@ export default function AdminAuth() {
               onClick={handleForgotPassword}
               className="text-[10px] font-bold text-slate-400 hover:text-orange-600 transition-colors block"
             >
-              Esqueci minha senha
+              {t('login.forgotPassword')}
             </button>
           )}
 
@@ -209,11 +210,11 @@ export default function AdminAuth() {
                 />
                 <div>
                   <span className="text-[10px] font-black text-slate-700 block leading-tight">
-                    Aceito os termos de privacidade
+                    {t('admAuth.acceptTerms')}
                   </span>
                   <span className="text-[8px] text-slate-500 font-medium mt-0.5 block leading-relaxed">
-                    Autorizo o tratamento dos meus dados conforme a LGPD.{' '}
-                    <Link to="/privacidade" className="text-orange-600 font-bold underline">Ver Política</Link>
+                    {t('admAuth.acceptDesc')}{' '}
+                    <Link to="/privacidade" className="text-orange-600 font-bold underline">{t('admAuth.viewPolicy')}</Link>
                   </span>
                 </div>
               </label>
@@ -221,24 +222,24 @@ export default function AdminAuth() {
           )}
 
           <Button type="submit" className="w-full h-11 text-xs font-black uppercase tracking-[0.2em]" isLoading={loading}>
-            {isLogin ? 'Entrar no Sistema' : 'Ativar Conta Grátis'}
+            {isLogin ? t('admAuth.submitLogin') : t('admAuth.submitSignup')}
           </Button>
 
           <div className="pt-4 border-t border-slate-50 text-center">
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tight">
-              {isLogin ? 'Ainda não tem acesso?' : 'Já possui cadastro?'}
+              {isLogin ? t('admAuth.noAccess') : t('admAuth.hasAccount')}
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-orange-600 font-extrabold ml-1.5 hover:text-orange-700 transition-colors"
               >
-                {isLogin ? 'Criar Conta' : 'Fazer Login'}
+                {isLogin ? t('admAuth.createAccount') : t('admAuth.doLogin')}
               </button>
             </p>
           </div>
         </form>
         <div className="px-8 pb-6">
-          <BackButton to="/" label="Voltar ao início" />
+          <BackButton to="/" label={t('admAuth.backHome')} />
         </div>
       </div>
     </div>
