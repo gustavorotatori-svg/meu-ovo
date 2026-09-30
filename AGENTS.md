@@ -267,7 +267,17 @@ Nesta versão, a doação é incluída no **total do pedido** (não via Mercado 
 - i18n.ts é CRLF — scans com `[\\uFFFD\\u0000-\\u001F]` marcam todas as linhas por causa do `\r` (ruído); validar com `node -e` por substrings.
 
 ### Sessão (09/09/2026) — Fase C i18n: OrderStatusPage + InstallAppPage (pt/en/es)
-- Commits: `0938d1a` (push OK, auto-deploy Vercel ~2,5 min).
+
+### Sessão (23/09/2026) — i18n transacional completa (login, busca, pedidos, tracking, conquistas, menu /m, cadastro, componentes)
+- Commits: `7e23084` (22 arquivos, +2270/−635). Deploy verificado ao vivo (chunks novos servem chaves, PT hardcoded removido).
+- 4 chaves quebradas corrigidas: `cart.removedSuccess` (criada pt/en/es), `checkout.name`→`common.name`, `order.phone`→`common.phone` (nova), `common.error` (nova pt/en/es). Renderizavam o nome da chave cru na UI.
+- Novos namespaces pt/en/es: `login` (55), `market` (66), `history` (24), `track` (46), `achieve` (~60), `display` (~105), `allergen` (14), `ui`, `tour`, `vote`, `signup`, `err` (14), `notFound`, `common.phone`, `common.error`, `cart.removedSuccess`.
+- Dados traduzidos no nível do serviço (cobre toasts + páginas): achievements/milestones (`achievementService`, `streakService`), erros Firebase (`translateFirebaseError` via `err.*`), `AuthContext` profile error.
+- Moeda/datas locale-aware em Marketplace, History, Tracking, MenuDisplay (`fmt` + `currencyLocale`); plural PT/EN/ES (item/itens, restaurante(s)).
+- `t` adicionado aos deps de `useCallback`/`useEffect` onde usado (Login, Marketplace, MenuDisplay).
+- Auditoria de cobertura: 496→912 chaves usadas, 0 faltando em en/es.
+- tsc 0 erros; build OK.
+- Pendente: páginas de marketing (ForRestaurants, About, Blog, SocialImpact, OvosDeOuroInfo, Privacy, Terms) e admin/plataforma seguem PT-only.- Commits: `0938d1a` (push OK, auto-deploy Vercel ~2,5 min).
 - `OrderStatusPage`: 91 usos `t('orderStatus.*')` — toasts (rating/confirmação/caixinha/social), steps, ETA ({{min}}/{{max}}, dateLocale), estados (cancelado/agendado/pagamento em confirmação), pagamento PIX/cartão/vale, caixinha + causa social, progresso, resumo da comanda, avaliação, repetir pedido, botões WhatsApp (waTrack/waHelp com {{id}}), datas via `date-fns` locale (pt-BR/en-US/es-ES). `fmt()` substitui `R$ X.toFixed(2)`.
 - `InstallAppPage`: `getInstructions(t, platform, browser)` com ~55 chaves `installApp.*` (branches iOS/Samsung/Android-Chrome/Chrome-desk/Edge/Firefox/Brave/Opera/generic) + telas (installNow/installing/manualConfirm/manualToast/skip/afterInstallHint/success).
 - i18n.ts: +688 linhas, 0 U+FFFD, encoding UTF-8 íntegro (validado com node não-PowerShell). `npx tsc --noEmit` 0 erros; `npm run build` OK (50s).
