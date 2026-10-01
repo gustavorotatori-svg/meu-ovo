@@ -55,35 +55,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const NAV_ITEMS = [
     { to: '/admin', label: t('nav.dashboard'), icon: <LayoutDashboard size={18} /> },
-    { to: '/admin/caixa', label: 'Caixa', icon: <Wallet size={18} /> },
-    { to: '/admin/estoque', label: 'Estoque', icon: <Boxes size={18} /> },
-    { to: '/admin/ficha-tecnica', label: 'Ficha Técnica', icon: <ClipboardList size={18} /> },
-    { to: '/admin/financeiro', label: 'Financeiro', icon: <Calculator size={18} /> },
+    { to: '/admin/caixa', label: t('nav.cashier'), icon: <Wallet size={18} /> },
+    { to: '/admin/estoque', label: t('nav.stock'), icon: <Boxes size={18} /> },
+    { to: '/admin/ficha-tecnica', label: t('nav.recipeSheets'), icon: <ClipboardList size={18} /> },
+    { to: '/admin/financeiro', label: t('nav.financial'), icon: <Calculator size={18} /> },
     { to: '/admin/pedidos', label: t('nav.orders'), icon: <ShoppingBag size={18} /> },
     { to: '/admin/cardapio', label: t('nav.menu'), icon: <Package size={18} /> },
-    { to: '/admin/etiquetas', label: 'Etiquetas', icon: <Sticker size={18} /> },
-    { to: '/admin/cupons', label: 'Cupons', icon: <Ticket size={18} /> },
-    { to: '/admin/fidelidade', label: 'Fidelidade', icon: <Gift size={18} /> },
-    { to: '/admin/mesas', label: 'Mesas & QR Codes', icon: <QrCode size={18} /> },
+    { to: '/admin/etiquetas', label: t('nav.labels'), icon: <Sticker size={18} /> },
+    { to: '/admin/cupons', label: t('nav.coupons'), icon: <Ticket size={18} /> },
+    { to: '/admin/fidelidade', label: t('nav.loyalty'), icon: <Gift size={18} /> },
+    { to: '/admin/mesas', label: t('nav.tables'), icon: <QrCode size={18} /> },
     { to: '/admin/garcom', label: t('nav.waiter'), icon: <UtensilsCrossed size={18} /> },
     { to: '/admin/cozinha', label: t('nav.kitchen'), icon: <ChefHat size={18} /> },
-    { to: '/admin/delivery', label: 'Delivery', icon: <Truck size={18} /> },
-    { to: '/admin/analytics', label: 'Analytics', icon: <BarChart2 size={18} /> },
+    { to: '/admin/delivery', label: t('nav.delivery'), icon: <Truck size={18} /> },
+    { to: '/admin/analytics', label: t('nav.analytics'), icon: <BarChart2 size={18} /> },
     { to: '/admin/relatorios', label: t('nav.reports'), icon: <FileText size={18} /> },
-    { to: '/admin/flash-deals', label: 'Flash Deals ⚡', icon: <Zap size={18} /> },
-    { to: '/admin/ovos-de-ouro', label: 'Ovos de Ouro 🏆', icon: <Trophy size={18} /> },
-    { to: '/admin/whatsapp-ai', label: 'WhatsApp AI', icon: <MessageSquare size={18} /> },
+    { to: '/admin/flash-deals', label: t('nav.flash'), icon: <Zap size={18} /> },
+    { to: '/admin/ovos-de-ouro', label: t('nav.ovos'), icon: <Trophy size={18} /> },
+    { to: '/admin/whatsapp-ai', label: t('nav.waAI'), icon: <MessageSquare size={18} /> },
     { to: '/admin/configuracoes', label: t('nav.settings'), icon: <Settings size={18} /> },
   ];
 
   const BOTTOM_NAV_ITEMS = [
-    { to: '/admin', label: 'Painel', icon: <LayoutDashboard size={20} /> },
-    { to: '/admin/pedidos', label: 'Pedidos', icon: <ShoppingBag size={20} /> },
-    { to: '/admin/cardapio', label: 'Cardápio', icon: <Package size={20} /> },
-    { to: '/admin/garcom', label: 'Garçom', icon: <UtensilsCrossed size={20} /> },
+    { to: '/admin', label: t('nav.panel'), icon: <LayoutDashboard size={20} /> },
+    { to: '/admin/pedidos', label: t('nav.orders'), icon: <ShoppingBag size={20} /> },
+    { to: '/admin/cardapio', label: t('nav.menu'), icon: <Package size={20} /> },
+    { to: '/admin/garcom', label: t('nav.waiter'), icon: <UtensilsCrossed size={20} /> },
     { 
       isAction: true,
-      label: 'Mais', 
+      label: t('nav.more'), 
       icon: sidebarOpen ? <X size={20} /> : <Menu size={20} />, 
       onClick: () => setSidebarOpen(!sidebarOpen) 
     },
@@ -169,25 +169,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="hidden lg:flex w-full items-center gap-2 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl hover:bg-[#1a1a1a] transition-colors"
           >
             <ChevronRight className={`transition-transform duration-300 ${isCollapsed ? '' : 'rotate-180'}`} size={16} />
-            {!isCollapsed && <span>Recolher menu</span>}
+            {!isCollapsed && <span>{t('nav.collapseMenu')}</span>}
           </button>
           
           <button
             onClick={() => navigate(`/r/${currentRestaurant?.slug}`)}
-            title="Ver cardápio público"
+            title={t('nav.publicMenuTitle')}
             className="w-full flex items-center gap-2 text-gray-400 hover:text-white text-sm px-4 py-2 rounded-xl hover:bg-[#1a1a1a] transition-colors"
           >
             <ExternalLink size={16} className="shrink-0" />
-            {!isCollapsed && <span>Cardápio público</span>}
+            {!isCollapsed && <span>{t('nav.publicMenu')}</span>}
           </button>
           
           <button
             onClick={() => navigate('/')}
-            title="Sair do painel"
+            title={t('nav.exitPanel')}
             className="w-full flex items-center gap-2 text-gray-500 hover:text-gray-300 text-sm px-4 py-2 rounded-xl hover:bg-[#1a1a1a] transition-colors"
           >
             <ChevronRight size={16} className="shrink-0" />
-            {!isCollapsed && <span>Sair</span>}
+            {!isCollapsed && <span>{t('nav.exit')}</span>}
           </button>
         </div>
       </aside>
@@ -200,7 +200,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className={`transition-colors border-b ${isDark ? 'bg-[#111111] border-[#2a2a2a]' : 'bg-white border-gray-100'} px-4 py-4 flex items-center gap-4 lg:px-6 sticky top-0 z-30`}>
-          <button className="lg:hidden p-2 hover:bg-gray-100 rounded-xl" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label={sidebarOpen ? "Fechar menu" : "Abrir menu"}>
+          <button className="lg:hidden p-2 hover:bg-gray-100 rounded-xl" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label={sidebarOpen ? t('nav.closeMenu') : t('nav.openMenu')}>
             {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
           <div className="flex-1">
