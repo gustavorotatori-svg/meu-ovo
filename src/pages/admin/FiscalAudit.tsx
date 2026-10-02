@@ -21,8 +21,10 @@ import {
   BookOpen
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { cn, sanitizeCSVCell } from '../../lib/utils';
+import { cn, sanitizeCSVCell, formatCurrency, currencyLocale } from '../../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../lib/i18n';
 
 interface MockLog {
   id: string;
@@ -101,6 +103,7 @@ const DEFAULT_MOCK_LOGS: MockLog[] = [
 ];
 
 export default function FiscalAudit() {
+  const { t } = useTranslation();
   const { currentRestaurant: restaurant } = useRestaurant();
   const [validationLogs, setValidationLogs] = useState<MockLog[]>([]);
   const [logFilter, setLogFilter] = useState<'all' | 'valid' | 'invalid'>('all');
@@ -131,7 +134,7 @@ export default function FiscalAudit() {
   };
 
   const clearHistory = () => {
-    if (window.confirm("Deseja realmente apagar o histórico de auditoria fiscal? Esta ação é irreversível.")) {
+    if (window.confirm(t('fiscal.confirmClear'))) {
       saveLogs([]);
       setExpandedLogId(null);
       toast.success("Histórico de Auditoria Fiscal limpo!");
@@ -191,37 +194,23 @@ export default function FiscalAudit() {
 
     const updated = [newLog, ...validationLogs];
     saveLogs(updated);
-    toast.success(type === 'success' ? "Simulação: Nota Fiscal Válida registrada!" : "Simulação: Rejeição SEFAZ registrada com erros.");
+    toast.success(type === 'success' ? t('fiscal.toastSimulacaoValido') : t('fiscal.toastSimulacaoInvalido'));
   };
 
   const copyToClipboard = (text: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     navigator.clipboard.writeText(text);
-    toast.success("Chave de acesso copiada!");
+    toast.success(t('fiscal.toastChaveCopiada'));
   };
 
   const exportCSV = () => {
     if (validationLogs.length === 0) {
-      toast.error("Nenhum log disponível para exportação.");
+      toast.error(t('fiscal.toastNoLogs'));
       return;
     }
 
     try {
-      const headers = [
-        "ID",
-        "Data/Hora de Auditoria",
-        "Compativel Sefaz 4.00 (Status)",
-        "Erros Criticos",
-        "Advertencias/Avisos",
-        "Modelo Fiscal",
-        "Serie",
-        "Numero Nota",
-        "Valor Total da Nota (RS)",
-        "Ambiente Sefaz",
-        "CNPJ Emitente",
-        "CNPJ Destinatario",
-        "Chave de Acesso"
-      ];
+      const headers = t('fiscal.csvHeaders', { returnObjects: true }) as string[];
 
       const csvRows = [headers.join(";")];
 
@@ -229,17 +218,17 @@ export default function FiscalAudit() {
         const row = [
           log.id,
           new Date(log.timestamp).toLocaleString('pt-BR'),
-          log.isValid ? "COMPATIVEL" : "REJEITADO / INCONSISTENTE",
+          log.isValid ? t('fiscal.csvCompativel') : t('fiscal.csvRejeitado'),
           log.errorsCount || 0,
           log.warningsCount || 0,
           log.metadata?.modelo || "N/A",
           log.metadata?.serie || "N/A",
           log.metadata?.numeroNota || "N/A",
           (log.metadata?.valorTotalNota || 0).toFixed(2),
-          log.metadata?.ambiente || "Homologacao",
+          log.metadata?.ambiente || t('fiscal.csvHomologacao'),
           log.metadata?.cnpjEmitente || "N/A",
           log.metadata?.cnpjDestinatario || "N/A",
-          log.metadata?.chaveAcesso || "Gerada Dinamicamente"
+          log.metadata?.chaveAcesso || t('fiscal.csvGeradaDinamicamente')
         ];
 
         const escaped = row.map(val => sanitizeCSVCell(String(val)));
@@ -257,9 +246,9 @@ export default function FiscalAudit() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      toast.success("Histórico fiscal exportado com sucesso (Excel-ready CSV)!");
+      toast.success(t('fiscal.toastExportOk'));
     } catch {
-      toast.error("Falha ao exportar log do histórico fiscal.");
+      toast.error(t('fiscal.toastExportFail'));
     }
   };
 
@@ -293,11 +282,11 @@ export default function FiscalAudit() {
               <Shield size={20} className="stroke-[2.5]" />
             </div>
             <h1 className="text-2xl font-black italic uppercase tracking-tighter text-slate-900">
-              AUDITORIA & CONFORMIDADE FISCAL
+              {t('fiscal.title')}
             </h1>
           </div>
           <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-            Audite XMLs, acompanhe rejeições de tags SEFAZ e emita relatórios contábeis automatizados.
+            {t('fiscal.subtitle')}
           </p>
         </div>
 
@@ -307,7 +296,7 @@ export default function FiscalAudit() {
             onClick={exportCSV}
             className="flex items-center gap-1.5 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-350 px-3.5 py-2 rounded-xl uppercase tracking-wider transition-all"
           >
-            <FileSpreadsheet size={13} className="text-emerald-600 shrink-0" /> Exportar Relatório CSV
+            <FileSpreadsheet size={13} className="text-emerald-600 shrink-0" /> {t('fiscal.exportCsv')}
           </button>
 
           <button
@@ -315,7 +304,7 @@ export default function FiscalAudit() {
             onClick={clearHistory}
             className="flex items-center gap-1.5 text-[10px] font-black text-red-650 bg-red-50 border border-red-150 hover:bg-red-100 px-3.5 py-2 rounded-xl uppercase tracking-wider transition-all"
           >
-            <Trash2 size={13} className="text-red-500 shrink-0" /> Limpar Registros
+            <Trash2 size={13} className="text-red-500 shrink-0" /> {t('fiscal.clearRecords')}
           </button>
         </div>
       </div>
@@ -328,7 +317,7 @@ export default function FiscalAudit() {
             <Shield size={50} className="stroke-[1]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Taxa de Conformidade</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('fiscal.complianceRate')}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black italic text-slate-900 tracking-tighter">
                 {complianceRate.toFixed(1)}%
@@ -340,7 +329,7 @@ export default function FiscalAudit() {
                 complianceRate >= 90 ? "bg-green-500" : complianceRate >= 70 ? "bg-amber-500" : "bg-red-500"
               )} />
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
-                {complianceRate >= 90 ? "Status Excelência SEFAZ" : "Exige Correções Fiscal"}
+                {complianceRate >= 90 ? t('fiscal.complianceExcellent') : t('fiscal.complianceNeedsFix')}
               </p>
             </div>
           </div>
@@ -352,14 +341,14 @@ export default function FiscalAudit() {
             <ArrowUpRight size={50} className="stroke-[1]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">Soma Notas Conformes</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">{t('fiscal.totalConform')}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black italic text-slate-900 tracking-tighter">
                 R$ {totalRevenue.toFixed(2)}
               </span>
             </div>
             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
-              Valores transacionados com XML validado
+              {t('fiscal.totalConformHint')}
             </p>
           </div>
         </div>
@@ -370,7 +359,7 @@ export default function FiscalAudit() {
             <Check size={50} className="stroke-[1]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Xmls Autorizados</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t('fiscal.authorizedXmls')}</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-black italic text-emerald-700 tracking-tighter">
                 {validNotesCount}
@@ -378,7 +367,7 @@ export default function FiscalAudit() {
               <span className="text-xs font-bold text-slate-400 font-sans">/ {totalNotes}</span>
             </div>
             <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide">
-              Sem inconsistências encontradas
+              {t('fiscal.authorizedHint')}
             </p>
           </div>
         </div>
@@ -389,7 +378,7 @@ export default function FiscalAudit() {
             <AlertTriangle size={50} className="stroke-[1]" />
           </div>
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">Xmls Rejeitados</p>
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-sans">{t('fiscal.rejectedXmls')}</p>
             <div className="flex items-baseline gap-1">
               <span className={cn(
                 "text-3xl font-black italic tracking-tighter",
@@ -397,10 +386,10 @@ export default function FiscalAudit() {
               )}>
                 {totalNotes - validNotesCount}
               </span>
-              <span className="text-xs font-bold text-slate-400 font-sans">rejeitadas</span>
+              <span className="text-xs font-bold text-slate-400 font-sans">{t('fiscal.rejected')}</span>
             </div>
             <p className="text-[9px] font-bold text-red-600/85 uppercase tracking-wide">
-              {(totalNotes - validNotesCount) > 0 ? "REJEIÇÃO DE SCHEMA OU DADOS" : "Contabilidade em dia"}
+              {(totalNotes - validNotesCount) > 0 ? t('fiscal.rejectedAlert') : t('fiscal.accountingOk')}
             </p>
           </div>
         </div>
@@ -410,10 +399,10 @@ export default function FiscalAudit() {
       <div className="bg-slate-900 text-slate-50 p-4 rounded-2xl border border-slate-950 flex flex-col md:flex-row md:items-center justify-between gap-4 font-sans shadow-md">
         <div className="space-y-1">
           <div className="flex items-center gap-1 text-[11px] font-black text-orange-450 uppercase tracking-widest">
-            <Sparkles size={12} className="text-orange-400" /> Ambiente Simulado & Automação de Audit
+            <Sparkles size={12} className="text-orange-400" /> {t('fiscal.simulatedEnv')}
           </div>
           <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
-            Como estamos em ambiente de desenvolvimento, utilize este painel para registrar e forçar testes do validador.
+            {t('fiscal.simulatedEnvHint')}
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -422,22 +411,22 @@ export default function FiscalAudit() {
             onClick={() => simulateNewLog('success')}
             className="flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all text-white border border-emerald-500Cursor shadow-sm cursor-pointer"
           >
-            <Play size={10} className="fill-white" /> Simular XML Válido
+            <Play size={10} className="fill-white" /> {t('fiscal.simulateValid')}
           </button>
           <button
             type="button"
             onClick={() => simulateNewLog('failure')}
             className="flex items-center gap-1 px-3 py-1.5 bg-red-650 hover:bg-red-700 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all text-white border border-red-550 shadow-sm cursor-pointer"
           >
-            <AlertTriangle size={10} /> Simular Inconsistências
+            <AlertTriangle size={10} /> {t('fiscal.simulateInvalid')}
           </button>
           <button
             type="button"
             onClick={() => saveLogs(DEFAULT_MOCK_LOGS)}
             className="flex items-center gap-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all text-slate-300 border border-slate-700 shadow-sm cursor-pointer"
-            title="Resetar dados aos mockups iniciais"
+            title={t('fiscal.resetMockupsTitle')}
           >
-            <RotateCcw size={10} /> Resetar Mockups
+            <RotateCcw size={10} /> {t('fiscal.resetMockups')}
           </button>
         </div>
       </div>
@@ -451,7 +440,7 @@ export default function FiscalAudit() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Buscar por número NF-e, código de acesso chave, CNPJ emitente ou trecho XML..."
+              placeholder={t('fiscal.searchPlaceholder')}
               value={logSearch}
               onChange={e => setLogSearch(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 text-xs font-semibold text-slate-805 outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all placeholder:text-slate-400"
@@ -470,7 +459,7 @@ export default function FiscalAudit() {
                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
               )}
             >
-              Todos ({validationLogs.length})
+              {t('fiscal.filterAll')} ({validationLogs.length})
             </button>
             <button
               type="button"
@@ -482,7 +471,7 @@ export default function FiscalAudit() {
                    : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-50"
               )}
             >
-              XMLs Válidos ({validationLogs.filter(l => l.isValid).length})
+              {t('fiscal.filterValid')} ({validationLogs.filter(l => l.isValid).length})
             </button>
             <button
               type="button"
@@ -494,7 +483,7 @@ export default function FiscalAudit() {
                    : "bg-white text-red-650 border-red-150 hover:bg-red-50"
               )}
             >
-              XMLs Rejeitados ({validationLogs.filter(l => !l.isValid).length})
+              {t('fiscal.filterInvalid')} ({validationLogs.filter(l => !l.isValid).length})
             </button>
           </div>
         </div>
@@ -505,10 +494,10 @@ export default function FiscalAudit() {
             <div className="text-center py-12 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
               <Shield size={36} className="text-slate-300 mx-auto mb-2" />
               <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">
-                Nenhum registro de auditoria correspondente encontrado
+                {t('fiscal.emptyTitle')}
               </p>
               <p className="text-[9px] text-slate-400 font-semibold tracking-wide uppercase mt-1">
-                Utilize os botões do simulador acima ou emita uma nota na tela de configurações para registrar dados.
+                {t('fiscal.emptyHint')}
               </p>
             </div>
           ) : (
@@ -543,24 +532,24 @@ export default function FiscalAudit() {
                               "text-[8px] font-black uppercase px-2 py-0.5 rounded tracking-widest leading-none shrink-0",
                               log.isValid ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
                             )}>
-                              {log.isValid ? "CONFORME SEFAZ 4.00" : "REJEITADO"}
+                              {log.isValid ? t('fiscal.conformeSefaz') : t('fiscal.rejeitado')}
                             </span>
                             <span className={cn(
                               "text-[8px] font-black uppercase px-1.5 py-0.5 rounded leading-none shrink-0 tracking-widest",
                               log.metadata?.ambiente === 'Producao' ? "bg-red-100/60 text-red-700" : "bg-blue-100/60 text-blue-800"
                             )}>
-                              {log.metadata?.ambiente || "Homologação"}
+                              {log.metadata?.ambiente || t('fiscal.homologacao')}
                             </span>
                             
                             <p className="text-xs font-bold text-slate-805 leading-none">
-                              {log.metadata?.numeroNota ? `Nota Fiscal nº ${log.metadata.numeroNota}` : 'Nota sem Número (Erro IDE)'}
-                              {log.metadata?.modelo && ` (Versão Mod ${log.metadata.modelo})`}
+                              {log.metadata?.numeroNota ? t('fiscal.notaFiscalNum', { num: log.metadata.numeroNota }) : t('fiscal.notaSemNumero')}
+                              {log.metadata?.modelo && ` ${t('fiscal.versaoMod', { model: log.metadata.modelo })}`}
                             </p>
                           </div>
 
                           <div className="flex items-center gap-2 flex-wrap text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-none mt-1 shrink-0">
                             <span className="flex items-center gap-1 text-slate-400">
-                              <Clock size={11} /> {new Date(log.timestamp).toLocaleDateString('pt-BR')} às {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                              <Clock size={11} /> {new Date(log.timestamp).toLocaleDateString(currencyLocale(i18n.language))} {t('fiscal.as')} {new Date(log.timestamp).toLocaleTimeString(currencyLocale(i18n.language))}
                             </span>
                             {log.metadata?.valorTotalNota ? (
                               <span className="text-slate-600 font-black">
@@ -569,12 +558,12 @@ export default function FiscalAudit() {
                             ) : null}
                             {log.errorsCount > 0 && (
                               <span className="text-red-650 font-black flex items-center gap-0.5">
-                                &bull; <AlertTriangle size={10} /> {log.errorsCount} Erros estruturais
+                                &bull; <AlertTriangle size={10} /> {t('fiscal.errosEstruturais', { count: log.errorsCount })}
                               </span>
                             )}
                             {log.warningsCount > 0 && (
                               <span className="text-amber-600 font-black">
-                                &bull; {log.warningsCount} Avisos
+                                &bull; {t('fiscal.avisos', { count: log.warningsCount })}
                               </span>
                             )}
                           </div>
@@ -586,15 +575,15 @@ export default function FiscalAudit() {
                         <button
                           type="button"
                           onClick={(e) => deleteSingleLog(log.id, e)}
-                          title="Remover este registro de auditoria"
+                          title={t('fiscal.removerRegistro')}
                           className="p-1 px-1.5 hover:text-red-650 text-slate-400 hover:bg-red-50 rounded-lg transition-all shrink-0 cursor-pointer"
-                          aria-label="Excluir"
+                          aria-label={t('fiscal.excluir')}
                         >
                           <Trash2 size={13} />
                         </button>
 
                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-0.5 whitespace-nowrap bg-slate-100/80 px-2.5 py-1 rounded-lg">
-                          {isExpanded ? "Fechar detalhes" : "Ver auditoria"}
+                          {isExpanded ? t('fiscal.fecharDetalhes') : t('fiscal.verAuditoria')}
                           {isExpanded ? <ChevronUp size={11} className="stroke-[2.5]" /> : <ChevronDown size={11} className="stroke-[2.5]" />}
                         </span>
                       </div>
@@ -613,16 +602,16 @@ export default function FiscalAudit() {
                           {/* Metadata values Grid */}
                           <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4 bg-white/50 text-xs">
                             <div className="space-y-1">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">Chave de Acesso XML</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">{t('fiscal.chaveAcessoXml')}</span>
                               <div className="font-mono text-[10px] bg-slate-100 font-bold border border-slate-150 px-2 py-1.5 rounded-lg text-slate-600 flex items-center justify-between gap-1 select-all">
-                                <span className="truncate">{log.metadata?.chaveAcesso || 'Ausente no IDE'}</span>
+                                <span className="truncate">{log.metadata?.chaveAcesso || t('fiscal.ausenteNoIde')}</span>
                                 {log.metadata?.chaveAcesso && (
                                   <button
                                     type="button"
                                     onClick={() => copyToClipboard(log.metadata?.chaveAcesso || '')}
                                     className="p-0.5 bg-white border border-slate-200 rounded text-slate-500 hover:text-orange-550 transition-colors shrink-0"
-                                    title="Copiar Chave de Acesso"
-                                    aria-label="Copiar"
+                                    title={t('fiscal.copiarChave')}
+                                    aria-label={t('fiscal.copiar')}
                                   >
                                     <Copy size={11} />
                                   </button>
@@ -631,26 +620,26 @@ export default function FiscalAudit() {
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">CNPJ Emitente</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">{t('fiscal.cnpjEmitente')}</span>
                               <span className="font-mono text-slate-700 font-bold text-[11px]">
-                                {log.metadata?.cnpjEmitente || "Não Declarado"}
+                                {log.metadata?.cnpjEmitente || t('fiscal.naoDeclarado')}
                               </span>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">CNPJ Destinatário / Identificador</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">{t('fiscal.cnpjDestinatario')}</span>
                               <span className="font-mono text-slate-700 font-semibold text-[11px]">
-                                {log.metadata?.cnpjDestinatario || "Ausente / Consumidor Final"}
+                                {log.metadata?.cnpjDestinatario || t('fiscal.ausenteConsumidor')}
                               </span>
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">Validação SEFAZ status</span>
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">{t('fiscal.validacaoSefaz')}</span>
                               <span className={cn(
                                 "text-[9px] font-black uppercase px-2 py-0.5 rounded inline-block leading-none mt-0.5",
                                 log.isValid ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-800"
                               )}>
-                                {log.isValid ? "Layout Validado" : "Rejeitado pela SEFAZ"}
+                                {log.isValid ? t('fiscal.layoutValidado') : t('fiscal.rejeitadoSefaz')}
                               </span>
                             </div>
                           </div>
@@ -660,7 +649,7 @@ export default function FiscalAudit() {
                             {/* Validation issues lists */}
                             <div className="md:col-span-4 space-y-3">
                               <div className="space-y-1">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Diagnóstico Contábil</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('fiscal.diagnosticoContabil')}</span>
                                 <div className={cn(
                                   "p-3 rounded-xl border space-y-2",
                                   log.isValid 
@@ -671,12 +660,12 @@ export default function FiscalAudit() {
                                     <Shield size={14} className={cn("shrink-0 mt-0.5", log.isValid ? "text-emerald-600" : "text-red-505")} />
                                     <div>
                                       <p className="font-bold uppercase tracking-wide text-[9px] leading-tight">
-                                        {log.isValid ? "Conformidade Confirmada" : "Critérios Violados"}
+                                        {log.isValid ? t('fiscal.conformidadeConfirmada') : t('fiscal.criteriosViolados')}
                                       </p>
                                       <p className="text-[10px] text-slate-600/90 leading-relaxed font-medium mt-0.5">
                                         {log.isValid 
-                                          ? "O arquivo XML obedece estritamente às obrigações acessórias do Layout 4.00 da Nota Fiscal Eletrônica Nacional. O cálculo do dígito verificador confere matematicamente." 
-                                          : `XML contém ${log.errorsCount} rejeição(ões) crítica(s) de schema exigidas pela NT 2020.006. O documento não pode ser enviado para a SEFAZ estadual.`}
+                                          ? t('fiscal.diagnosticoValido')
+                                          : t('fiscal.diagnosticoInvalido', { count: log.errorsCount })}
                                       </p>
                                     </div>
                                   </div>
@@ -685,22 +674,22 @@ export default function FiscalAudit() {
 
                               {/* Rule details list */}
                               <div className="bg-white p-3 rounded-xl border border-slate-205 space-y-1.5">
-                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">DADOS RESUMIDOS DA TRANSAÇÃO</span>
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">{t('fiscal.dadosResumidos')}</span>
                                 <div className="space-y-1 text-[10px] font-bold text-slate-650 uppercase">
                                   <div className="flex justify-between border-b border-slate-100 pb-1">
-                                    <span>Modelo Fiscal:</span>
-                                    <span className="text-slate-800 font-mono">{log.metadata?.modelo || "Simulado"}</span>
+                                    <span>{t('fiscal.modeloFiscal')}:</span>
+                                    <span className="text-slate-800 font-mono">{log.metadata?.modelo || t('fiscal.simulado')}</span>
                                   </div>
                                   <div className="flex justify-between border-b border-slate-100 pb-1">
-                                    <span>Série / Número:</span>
+                                    <span>{t('fiscal.serieNumero')}:</span>
                                     <span className="text-slate-800 font-mono">{log.metadata?.serie || "1"} / {log.metadata?.numeroNota || "--"}</span>
                                   </div>
                                   <div className="flex justify-between border-b border-slate-100 pb-1">
-                                    <span>Valor Bruto:</span>
+                                    <span>{t('fiscal.valorBruto')}:</span>
                                     <span className="text-slate-805 font-mono">R$ {(log.metadata?.valorTotalNota || 0).toFixed(2)}</span>
                                   </div>
                                   <div className="flex justify-between">
-                                    <span>Protocolo Local:</span>
+                                    <span>{t('fiscal.protocoloLocal')}:</span>
                                     <span className="text-slate-500 font-mono text-[9px]">{log.id}</span>
                                   </div>
                                 </div>
@@ -710,7 +699,7 @@ export default function FiscalAudit() {
                             {/* Raw XML Preview snippet (10 lines with syntax highlights styling) */}
                             <div className="md:col-span-8 space-y-1">
                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">
-                                Trecho do Documento XML Transmitido (Representação Auditoria)
+                                {t('fiscal.trechoXml')}
                               </span>
                               <div className="relative rounded-xl overflow-hidden border border-slate-950 font-mono text-[10px]">
                                 <pre className="p-4 bg-slate-950 text-slate-100 leading-relaxed overflow-x-auto whitespace-pre select-all max-h-56">
@@ -734,25 +723,25 @@ export default function FiscalAudit() {
       <div className="bg-white border border-slate-200 p-6 rounded-3xl shadow-xs text-left">
         <div className="flex items-center gap-1.5 mb-3 text-slate-900 border-b border-slate-100 pb-2.5">
           <BookOpen size={16} className="text-orange-550" />
-          <h2 className="text-xs font-black uppercase tracking-wider leading-none">Documentações de Apoio ao Auditor</h2>
+          <h2 className="text-xs font-black uppercase tracking-wider leading-none">{t('fiscal.docsApoio')}</h2>
         </div>
         <div className="grid sm:grid-cols-3 gap-6 text-[11px] leading-relaxed text-slate-505 font-medium">
           <div className="space-y-1">
-            <h4 className="font-bold text-slate-705 uppercase tracking-wide">Layout SEFAZ 4.00</h4>
+            <h4 className="font-bold text-slate-705 uppercase tracking-wide">{t('fiscal.layoutSefaz')}</h4>
             <p className="text-slate-500">
-              A partir de 2018, todo o ecossistema brasileiro exige o Layout 4.00. Este auditor assegura conformidade prévia evitando penalidades corporativas (rejeições de lote).
+              {t('fiscal.layoutSefazHint')}
             </p>
           </div>
           <div className="space-y-1">
-            <h4 className="font-bold text-slate-750 uppercase tracking-wide">Dígito Verificador (Calculado)</h4>
+            <h4 className="font-bold text-slate-750 uppercase tracking-wide">{t('fiscal.digitoVerificador')}</h4>
             <p className="text-slate-500">
-              A chave de acesso com 44 dígitos contém um dígito verificador matemático ao final do bloco de dados baseado no algoritmo do Módulo 11 nacional.
+              {t('fiscal.digitoVerificadorHint')}
             </p>
           </div>
           <div className="space-y-1">
-            <h4 className="font-bold text-slate-750 uppercase tracking-wide">Exportando Relatórios</h4>
+            <h4 className="font-bold text-slate-750 uppercase tracking-wide">{t('fiscal.exportandoRelatorios')}</h4>
             <p className="text-slate-500">
-              Os arquivos CSV utilizam codificação UTF-8 com sinalizador de byte order mark (BOM) e delimitador de ponto e vírgula, permitindo importação imediata em softwares contábeis e planilhas.
+              {t('fiscal.exportandoRelatoriosHint')}
             </p>
           </div>
         </div>

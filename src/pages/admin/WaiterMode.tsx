@@ -19,10 +19,14 @@ import { Skeleton } from '../../components/Skeleton';
 import AdminLayout from './AdminLayout';
 import { motion, AnimatePresence } from 'motion/react';
 import { QRCodeSVG } from 'qrcode.react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../../lib/i18n';
+import { currencyLocale } from '../../lib/utils';
 
 type TabType = 'tables' | 'new-order' | 'qr-codes';
 
 export default function WaiterMode() {
+  const { t } = useTranslation();
   const { currentRestaurant: restaurant, tables, updateTable, updateOrderStatus } = useRestaurant();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -109,9 +113,9 @@ export default function WaiterMode() {
         active: false,
         status: 'occupied'
       });
-      toast.success(`Mesa ${table.number} marcada como ocupada! 🔴`);
+      toast.success(t('waiter.toastMesaOcupada', { number: table.number }));
     } catch (e) {
-      toast.error('Erro ao marcar mesa como ocupada');
+      toast.error(t('waiter.toastMesaOcupadaFail'));
     }
   };
 
@@ -127,19 +131,19 @@ export default function WaiterMode() {
         status: 'free',
         currentOrderId: ''
       });
-      toast.success(`Mesa ${table.number} liberada com sucesso! 🟢`);
+      toast.success(t('waiter.toastMesaLivre', { number: table.number }));
     } catch (e) {
-      toast.error('Erro ao liberar mesa');
+      toast.error(t('waiter.toastMesaLivreFail'));
     }
   };
 
   const handleSendOrder = async () => {
     if (!selectedTable) {
-      toast.error('Selecione uma mesa');
+      toast.error(t('waiter.toastSelecioneMesa'));
       return;
     }
     if (cart.length === 0) {
-      toast.error('Adicione itens ao pedido');
+      toast.error(t('waiter.toastAdicioneItens'));
       return;
     }
 
@@ -181,13 +185,13 @@ export default function WaiterMode() {
         });
       }
 
-      toast.success('Pedido enviado para a cozinha! 🍳');
+      toast.success(t('waiter.toastPedidoEnviado'));
       setCart([]);
       setCustomerCount(2); // Reset customer count to default
       setActiveTab('tables');
     } catch (e) {
       console.error(e);
-      toast.error('Erro ao enviar pedido');
+      toast.error(t('waiter.toastPedidoFail'));
     }
   };
 
@@ -224,7 +228,7 @@ export default function WaiterMode() {
             )}
           >
             <Users size={18} />
-            Mesas Ativas
+            {t('waiter.activeTables')}
           </button>
           <button 
             onClick={() => { setActiveTab('new-order'); if (!selectedTable) setSelectedTable('1'); }}
@@ -234,7 +238,7 @@ export default function WaiterMode() {
             )}
           >
             <Plus size={18} />
-            Novo Pedido
+            {t('waiter.newOrder')}
           </button>
           <button 
             onClick={() => setActiveTab('qr-codes')}
@@ -244,7 +248,7 @@ export default function WaiterMode() {
             )}
           >
             <QrIcon size={18} />
-            QR Codes
+            {t('waiter.qrCodes')}
           </button>
         </div>
 
@@ -254,23 +258,23 @@ export default function WaiterMode() {
             {/* Real-time Table Stat Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-start justify-center">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Total de Mesas</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{t('waiter.totalTables')}</span>
                 <span className="text-2xl font-black text-[#111]">{tables.length}</span>
               </div>
               <div className="bg-white p-6 rounded-3xl border border-red-100 bg-red-50/10 shadow-sm flex flex-col items-start justify-center">
-                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-2">Mesas Ocupadas</span>
+                <span className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none mb-2">{t('waiter.occupiedTables')}</span>
                 <span className="text-2xl font-black text-[#111]">
                   {tables.filter(t => t.status === 'occupied' || getTableOrders(t).length > 0).length}
                 </span>
               </div>
               <div className="bg-white p-6 rounded-3xl border border-green-100 bg-green-50/10 shadow-sm flex flex-col items-start justify-center">
-                <span className="text-[10px] font-black text-green-600 uppercase tracking-widest leading-none mb-2">Mesas Livres</span>
+                <span className="text-[10px] font-black text-green-600 uppercase tracking-widest leading-none mb-2">{t('waiter.freeTables')}</span>
                 <span className="text-2xl font-black text-[#111]">
                   {tables.filter(t => t.status !== 'occupied' && getTableOrders(t).length === 0).length}
                 </span>
               </div>
               <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col items-start justify-center w-full">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Taxa de Ocupação</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{t('waiter.occupancyRate')}</span>
                 <div className="flex items-center gap-2 w-full mt-1">
                   <span className="text-xl font-black text-[#111]">
                     {Math.round((tables.filter(t => t.status === 'occupied' || getTableOrders(t).length > 0).length / (tables.length || 1)) * 100)}%
@@ -315,8 +319,8 @@ export default function WaiterMode() {
                           <button 
                             onClick={() => setViewingTableOrders(table.number)}
                             className="p-2 bg-white rounded-xl text-slate-400 hover:text-[#111] shadow-sm transition-all"
-                            title="Ver pedidos desta mesa"
-                            aria-label="Visualizar"
+                            title={t('waiter.viewOrders')}
+                            aria-label={t('waiter.visualizar')}
                           >
                             <Eye size={16} />
                           </button>
@@ -333,9 +337,9 @@ export default function WaiterMode() {
                             "text-xs px-2.5 py-1 rounded-lg font-black uppercase tracking-wider shadow-sm transition-all",
                             isOccupied ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"
                           )}
-                          title={isOccupied ? "Liberar mesa e concluir pedidos" : "Marcar mesa como ocupada"}
+                          title={isOccupied ? t('waiter.freeTableHint') : t('waiter.occupyHint')}
                         >
-                          {isOccupied ? "Liberar" : "Ocupar"}
+                          {isOccupied ? t('waiter.liberar') : t('waiter.ocupar')}
                         </button>
                       </div>
                     </div>
@@ -345,46 +349,46 @@ export default function WaiterMode() {
                         <div className="space-y-1">
                           <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-                            Mesa Ocupada
+                            {t('waiter.mesaOcupada')}
                           </p>
                           {table.lastCustomerCount && (
-                            <p className="text-[10px] font-bold text-gray-400">Pessoas: {table.lastCustomerCount}</p>
+                            <p className="text-[10px] font-bold text-gray-400">{t('waiter.pessoas', { count: table.lastCustomerCount })}</p>
                           )}
                           {tableOrders.length > 0 ? (
                             <>
-                              <p className="text-sm font-black text-[#111]">{totalItems} itens lançados ({tableOrders.length} ped.)</p>
+                              <p className="text-sm font-black text-[#111]">{t('waiter.itensLancados', { items: totalItems, orders: tableOrders.length })}</p>
                               <p className="text-xs font-bold text-brand-orange">{formatCurrency(totalValue)}</p>
                             </>
                           ) : (
-                            <p className="text-xs font-bold text-slate-400 italic">Sem itens lançados ainda</p>
+                            <p className="text-xs font-bold text-slate-400 italic">{t('waiter.semItens')}</p>
                           )}
                           <button 
                             onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
                             className="w-full mt-3 bg-white border border-slate-100 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#111] hover:bg-slate-50 transition-all"
                           >
-                            + Adicionar Itens
+                            {t('waiter.adicionarItens')}
                           </button>
                         </div>
                       ) : (
                         <div className="space-y-1">
                           <p className="text-[10px] font-black text-green-500 uppercase tracking-widest flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                            Mesa Livre
+                            {t('waiter.mesaLivre')}
                           </p>
-                          <p className="text-sm font-black text-slate-300">Nenhum pedido</p>
+                          <p className="text-sm font-black text-slate-300">{t('waiter.nenhumPedido')}</p>
                           
                           <div className="grid grid-cols-2 gap-2 mt-3">
                             <button 
                               onClick={() => { setSelectedTable(table.number); setActiveTab('new-order'); }}
                               className="bg-brand-black text-white py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all text-center"
                             >
-                              Abrir / Pedido
+                              {t('waiter.abrirPedido')}
                             </button>
                             <button 
                               onClick={() => handleOccupyTable(table)}
                               className="bg-slate-50 border border-slate-200/60 text-slate-500 py-2 px-1 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-slate-100 transition-all text-center"
                             >
-                              Reservar
+                              {t('waiter.reservar')}
                             </button>
                           </div>
                         </div>
@@ -410,7 +414,7 @@ export default function WaiterMode() {
             {/* Table Selector (mini) with real-time customer count tracking */}
             <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex-1">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Mesa Selecionada</p>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">{t('waiter.mesaSelecionada')}</p>
                 <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
                   {tables.map(t => {
                     const activeOrdersForTable = getTableOrders(t);
@@ -439,7 +443,7 @@ export default function WaiterMode() {
               </div>
 
               <div className="w-full md:w-56 shrink-0">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Número de Clientes (Mesa)</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">{t('waiter.numClientes')}</label>
                 <div className="flex items-center bg-slate-50 rounded-2xl p-1 border border-slate-100">
                   <button 
                     type="button"
@@ -449,7 +453,7 @@ export default function WaiterMode() {
                     -
                   </button>
                   <span className="flex-grow text-center font-black text-sm text-[#111]">
-                    {customerCount} {customerCount === 1 ? 'cliente' : 'clientes'}
+                    {customerCount} {customerCount === 1 ? t('waiter.cliente') : t('waiter.clientes')}
                   </span>
                   <button 
                     type="button"
@@ -470,7 +474,7 @@ export default function WaiterMode() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                   <input 
                     type="text" 
-                    placeholder="Buscar produto..."
+                    placeholder={t('waiter.buscarProduto')}
                     className="w-full bg-white border border-slate-100 h-14 pl-12 pr-4 rounded-2xl font-bold outline-none focus:ring-2 focus:ring-[#FFC928] transition-all"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -485,7 +489,7 @@ export default function WaiterMode() {
                       activeCategory === 'all' ? "bg-[#FFC928] text-brand-black shadow-lg shadow-yellow-100" : "bg-white text-slate-400 hover:bg-slate-50"
                     )}
                   >
-                    Todos
+                    {t('waiter.todos')}
                   </button>
                   {categories.map(cat => (
                     <button 
@@ -539,7 +543,7 @@ export default function WaiterMode() {
                 <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sticky top-24">
                   <h3 className="font-black text-sm uppercase tracking-widest mb-6 flex items-center gap-2">
                     <ShoppingCart size={18} />
-                    Pedido - Mesa {selectedTable}
+                    {t('waiter.pedidoMesa', { table: selectedTable })}
                   </h3>
                   
                   <div className="space-y-4 max-h-[400px] overflow-y-auto no-scrollbar mb-6">
@@ -559,14 +563,14 @@ export default function WaiterMode() {
                     {cart.length === 0 && (
                       <div className="text-center py-10 opacity-30">
                         <ShoppingCart size={32} className="mx-auto mb-2" />
-                        <p className="text-[10px] font-black uppercase tracking-widest">Carrinho Vazio</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest">{t('waiter.carrinhoVazio')}</p>
                       </div>
                     )}
                   </div>
 
                   <div className="border-t border-slate-50 pt-6 space-y-4">
                     <div className="flex justify-between items-end">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('waiter.total')}</span>
                       <span className="text-2xl font-display font-black text-brand-orange">
                         {formatCurrency(cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0))}
                       </span>
@@ -576,7 +580,7 @@ export default function WaiterMode() {
                       disabled={cart.length === 0}
                       className="w-full bg-brand-black text-white h-14 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 disabled:opacity-30 transition-all flex items-center justify-center gap-2"
                     >
-                      Lançar Pedido <ChevronRight size={18} />
+                      {t('waiter.lancarPedido')} <ChevronRight size={18} />
                     </button>
                   </div>
                 </div>
@@ -590,11 +594,11 @@ export default function WaiterMode() {
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h3 className="font-black text-xl text-[#111] uppercase tracking-tight">QR Codes das Mesas</h3>
-                <p className="text-xs font-bold text-slate-400 mt-1">Gere e baixe os códigos para as mesas do seu restaurante.</p>
+                <h3 className="font-black text-xl text-[#111] uppercase tracking-tight">{t('waiter.qrCodesMesas')}</h3>
+                <p className="text-xs font-bold text-slate-400 mt-1">{t('waiter.qrCodesHint')}</p>
               </div>
               <Button onClick={() => setShowQrModal(tables[0] || null)} className="bg-brand-egg text-brand-black hover:bg-yellow-400">
-                Imprimir Todos
+                {t('waiter.imprimirTodos')}
               </Button>
             </div>
 
@@ -606,20 +610,20 @@ export default function WaiterMode() {
                       {table.number}
                     </div>
                     <div>
-                      <p className="text-sm font-black text-[#111]">Mesa {table.number}</p>
+                      <p className="text-sm font-black text-[#111]">{t('waiter.mesa', { number: table.number })}</p>
                       <button 
                         onClick={() => setShowQrModal(table)}
                         className="text-[10px] font-black text-[#FFC928] uppercase tracking-widest hover:underline mt-1"
                       >
-                        Visualizar QR Code
+                        {t('waiter.visualizarQr')}
                       </button>
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setShowQrModal(table)} className="p-3 bg-white rounded-xl text-slate-400 hover:text-[#111] transition-all shadow-sm" aria-label="Exibir QR Code">
+                    <button onClick={() => setShowQrModal(table)} className="p-3 bg-white rounded-xl text-slate-400 hover:text-[#111] transition-all shadow-sm" aria-label={t('waiter.exibirQr')}>
                       <QrIcon size={18} />
                     </button>
-                    <button onClick={() => window.print()} className="p-3 bg-white rounded-xl text-slate-400 hover:text-brand-orange transition-all shadow-sm" aria-label="Imprimir">
+                    <button onClick={() => window.print()} className="p-3 bg-white rounded-xl text-slate-400 hover:text-brand-orange transition-all shadow-sm" aria-label={t('waiter.imprimir')}>
                       <Printer size={18} />
                     </button>
                   </div>
@@ -656,8 +660,8 @@ export default function WaiterMode() {
                 <X size={20} />
               </button>
 
-              <h3 className="font-display font-black text-3xl mb-2 text-[#111]">Mesa {showQrModal.number}</h3>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-10">Escaneie para pedir</p>
+              <h3 className="font-display font-black text-3xl mb-2 text-[#111]">{t('waiter.mesa', { number: showQrModal.number })}</h3>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-10">{t('waiter.escaneieParaPedir')}</p>
               
               <div className="w-64 h-64 bg-slate-50 rounded-[40px] mx-auto mb-10 p-8 flex items-center justify-center relative">
                 <QRCodeSVG 
@@ -673,10 +677,10 @@ export default function WaiterMode() {
                   onClick={() => window.print()}
                   className="flex items-center justify-center gap-2 bg-[#111111] text-white font-black py-4 rounded-2xl hover:bg-[#222] transition-all shadow-xl shadow-black/10"
                 >
-                  <Printer size={18} /> Imprimir
+                  <Printer size={18} /> {t('waiter.imprimir')}
                 </button>
                 <button className="flex items-center justify-center gap-2 bg-slate-100 text-slate-500 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all">
-                  <Share2 size={18} /> Compartilhar
+                  <Share2 size={18} /> {t('waiter.compartilhar')}
                 </button>
               </div>
               
@@ -714,8 +718,8 @@ export default function WaiterMode() {
               </button>
 
               <div className="mt-8 mb-8">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">Pedidos Ativos</p>
-                <h3 className="font-display font-black text-3xl text-[#111]">Mesa {viewingTableOrders}</h3>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-2">{t('waiter.pedidosAtivos')}</p>
+                <h3 className="font-display font-black text-3xl text-[#111]">{t('waiter.mesa', { number: viewingTableOrders })}</h3>
               </div>
 
               <div className="space-y-6">
@@ -723,7 +727,7 @@ export default function WaiterMode() {
                   <div key={order.id} className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <p className="text-xs font-black text-[#111]">PEDIDO #{order.id.slice(-4).toUpperCase()}</p>
+                        <p className="text-xs font-black text-[#111]">{t('waiter.pedidoCurto', { id: order.id.slice(-4).toUpperCase() })}</p>
                         <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-1">
                           <Clock size={10} />
                           {new Date(order.createdAt).toLocaleTimeString()}
