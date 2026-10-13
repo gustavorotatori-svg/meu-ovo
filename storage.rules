@@ -6,15 +6,23 @@ service firebase.storage {
       allow read: if true;
     }
 
-    // Writes restricted to the restaurant OWNER (path segment ownerUid)
-    // paths: restaurants/{restaurantId}/{ownerUid}/products|categories/...
-    match /restaurants/{restaurantId}/{ownerUid}/{allPaths=**} {
-      allow write: if request.auth != null
-        && request.auth.uid == ownerUid
-        && request.resource.size < 5 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null
-        && request.auth.uid == ownerUid;
+    // ─── ESCRITA: BLOQUEADA NO CLIENT ───────────────────────────────────────
+    // A versao anterior permitia escrita com:
+    //     allow write: if request.auth.uid == ownerUid
+    // onde `ownerUid` era um SEGMENTO DO PATH controlado pelo cliente. Como o
+    // proprio cliente escrevia o proprio uid no caminho, a condicao era sempre
+    // verdadeira: qualquer usuario autenticado escrevia em qualquer
+    // restaurante. Pior, a regra nao checava ownerId no Firestore.
+    //
+    // Hoje o app NAO usa Firebase Storage para upload (as imagens dos produtos
+    // sao salvas como base64 no Firestore e src/services/storageService.ts nao
+    // tem nenhum chamador). Negar a escrita encerra o vetor sem quebrar nada.
+    //
+    // Para reabilitar upload no futuro, faca-lo por um endpoint autenticado
+    // (/api/upload) usando o Admin SDK, que valida
+    // restaurants/{id}.ownerId == request.auth.uid, e NAO pela regra do Storage.
+    match /restaurants/{restaurantId}/{allPaths=**} {
+      allow write: if false;
     }
 
     // Deny all other paths
