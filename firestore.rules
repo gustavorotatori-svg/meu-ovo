@@ -21,6 +21,60 @@ service cloud.firestore {
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
 
+    // ─── INTEGRIDADE DE PREÇO DO PEDIDO (defesa em profundidade) ──────────────
+    // O pedido é montado no cliente e o `total` vinha sem conferência: um
+    // cliente podia enviar total: 0 e o restaurante veria isso no painel.
+    // Aqui amarramos o total declarado à soma dos itens enviados.
+    //
+    // LIMITES CONHECIDOS (importante): isto NÃO confere os preços contra o
+    // catálogo de produtos — a regra só tem 10 acessos get() por request, o
+    // que é insuficiente para carrinhos maiores. Um cliente ainda pode
+    // declarar unitPrice baixo de propósito. Fechar isso de verdade exige
+    // criar o pedido via API (Admin SDK), que valida preço/cupom/fidelidade.
+    function orderItemUnitPrice(item) {
+      return 'unitPrice' in item ? item.unitPrice
+           : ('price' in item ? item.price : 0);
+    }
+
+    function orderTotalsAreConsistent() {
+      if (!('items' in incoming()) || !(incoming().items is list)) { return false; }
+      let items = incoming().items;
+      if (items.size() == 0 || items.size() > 40) { return false; }
+
+      let subtotal = 0;
+      for (let i = 0; i < items.size(); i++) {
+        let it = items[i];
+        if (!('quantity' in it) || !(it.quantity is number) || it.quantity <= 0) { return false; }
+        let unit = orderItemUnitPrice(it);
+        if (!(unit is number) || unit < 0) { return false; }
+        subtotal += unit * it.quantity;
+      }
+
+      let reward = 'rewardDiscount' in incoming() ? incoming().rewardDiscount : 0;
+      let coupon = 'couponDiscount' in incoming() ? incoming().couponDiscount : 0;
+      if (!(reward is number) || !(coupon is number)) { return false; }
+      if (reward < 0 || coupon < 0) { return false; }
+      // Desconto maior que o próprio carrinho não é legítimo.
+      if (reward + coupon > subtotal) { return false; }
+
+      let fee = 'deliveryFee' in incoming() ? incoming().deliveryFee : 0;
+      let tip = 'tip' in incoming() ? incoming().tip : 0;
+      let caixinha = 'meuOvoCaixinha' in incoming() ? incoming().meuOvoCaixinha : 0;
+      let donation = 'donationAmount' in incoming() ? incoming().donationAmount : 0;
+      if (!(fee is number) || !(tip is number) || !(caixinha is number) || !(donation is number)) { return false; }
+      if (fee < 0 || tip < 0 || caixinha < 0 || donation < 0) { return false; }
+
+      let expected = subtotal - reward - coupon + fee + tip + caixinha + donation;
+      if (expected < 0) { expected = 0; }
+
+      let declared = incoming().total;
+      if (!(declared is number) || declared < 0) { return false; }
+      // Tolerância de 5 centavos para ruído de ponto flutuante nas somas
+      // (ex.: (100 * 33.33) / 100). Ainda é ordens de grandeza abaixo do
+      // Fraude que estamos bloqueando.
+      return declared >= expected - 0.05 && declared <= expected + 0.05;
+    }
+
     // Default deny
     match /{document=**} { allow read, write: if false; }
 
@@ -126,7 +180,8 @@ service cloud.firestore {
         && incoming().items is list && incoming().items.size() > 0
         && (incoming().userId == request.auth.uid
             || !('userId' in incoming()))
-        && incoming().createdAt is string;
+        && incoming().createdAt is string
+        && orderTotalsAreConsistent();
       allow update: if (
         isOwnerOrAdmin(existing().restaurantId)
         && incoming().diff(existing()).affectedKeys().hasOnly([

@@ -394,6 +394,10 @@ export default function CheckoutPage() {
       donationAmount: donationAmount > 0 ? donationAmount : undefined,
       couponCode: appliedCoupon?.code,
       couponDiscount: appliedCoupon ? discountValue : undefined,
+      // A regra de Firestore confere total = soma(itens) - descontos + taxas.
+      // Sem declarar o desconto de fidelidade aqui, um pedido com reward (e
+      // sem cupom) seria considerado inconsistente e negativado pela regra.
+      rewardDiscount: !appliedCoupon && selectedReward ? discountValue : undefined,
       total: total,
       tip: tipAmount > 0 ? tipAmount : undefined,
       tipPercent: tipPercent > 0 ? tipPercent : undefined,
