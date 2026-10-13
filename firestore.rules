@@ -77,8 +77,37 @@ service cloud.firestore {
 
     // ─── TABLES ──────────────────────────────────────────────────────────────
     match /tables/{tableId} {
+      // Leitura pública: necessária ao fluxo de QR Code (o guest precisa saber
+      // que a mesa existe para pedir). NOTA: regras do Firestore não fazem
+      // redação por campo, então currentOrderId/lastCustomerCount ficam
+      // visíveis aqui — para eliminá-los seria preciso mover esses campos
+      // para uma subcoleção de escrita restrita.
       allow read: if true;
-      allow create, update, delete: if isOwnerOrAdmin(incoming().restaurantId);
+
+      allow create: if isOwnerOrAdmin(incoming().restaurantId)
+        && incoming().restaurantId is string
+        && incoming().number is number;
+
+      // Update: dono/admin precisa preservar o restaurantId. Usar incoming()
+      // aqui permitiria a um dono de restaurante A "sequestrar" uma mesa do
+      // restaurante B, bastando escrever restaurantId = A no documento.
+      allow update: if (
+        isOwnerOrAdmin(existing().restaurantId)
+        && incoming().restaurantId == existing().restaurantId
+      ) || (
+        // Guest dine-in logado (CheckoutPage): marca a mesa como ocupada ao
+        // pedir pelo QR. Nao pode alterar mais nada nem trocar o dono da mesa.
+        // Exige login de proposito: permitir anonimos daria a qualquer
+        // visitante o poder de marcar todas as mesas como ocupadas.
+        isSignedIn()
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'currentOrderId'])
+        && incoming().status == 'occupied'
+        && incoming().restaurantId == existing().restaurantId
+      );
+
+      // delete usava incoming(), que não existe no delete — a regra era
+      // inalcançável (ninguém conseguia deletar). Baseia-se em existing().
+      allow delete: if isOwnerOrAdmin(existing().restaurantId);
     }
 
     // ─── ORDERS ──────────────────────────────────────────────────────────────
