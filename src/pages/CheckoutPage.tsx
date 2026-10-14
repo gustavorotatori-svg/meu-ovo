@@ -21,6 +21,7 @@ import { updateStreak } from '../services/streakService';
 import { awardPlatformPoints } from '../services/platformLoyaltyService';
 import { checkAndAwardAchievements, getAllAchievements } from '../services/achievementService';
 import { trackEvent } from '../lib/analytics';
+import { createOrder } from '../services/orderService';
 
 type OrderType = 'dine-in' | 'delivery' | 'pickup';
 type PaymentMethod = 'pix' | 'cash' | 'card-on-delivery' | 'on-site' | 'credit' | 'debit' | 'voucher';
@@ -107,6 +108,8 @@ export default function CheckoutPage() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderId, setOrderId] = useState('');
+// Total oficial devolvido pelo servidor. Enquanto for null, usa o calculo local.
+const [serverTotal, setServerTotal] = useState<number | null>(null);
 
   // Coupon state
   const [couponInput, setCouponInput] = useState('');
@@ -289,7 +292,9 @@ export default function CheckoutPage() {
   };
 
   const deliveryFee = getDeliveryFee(restaurant);
-  const total = Math.max(0, subtotal + deliveryFee + tipAmount + caixinhaAmount + donationAmount - discountValue);
+  const totalCalculado = Math.max(0, subtotal + deliveryFee + tipAmount + caixinhaAmount + donationAmount - discountValue);
+// Depois do envio, o valor oficial é o que o servidor calculou com o preço real.
+const total = serverTotal ?? totalCalculado;
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -374,48 +379,41 @@ export default function CheckoutPage() {
       };
     });
 
-    const order: Order = {
-      id,
-      restaurantId: restaurant.id,
-      userId: user?.id,
-      customerName: name,
-      customerPhone: phone.replace(/\D/g, ''),
-      type: orderType,
-      tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
-      deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
-      paymentMethod,
-      paymentStatus: 'pending',
-      changeFor: paymentMethod === 'cash' && changeFor ? Number(changeFor) : undefined,
-      status: 'received',
-      items: orderItems,
-      subtotal,
-      deliveryFee,
-      meuOvoCaixinha: caixinhaAmount > 0 ? caixinhaAmount : undefined,
-      donationAmount: donationAmount > 0 ? donationAmount : undefined,
-      couponCode: appliedCoupon?.code,
-      couponDiscount: appliedCoupon ? discountValue : undefined,
-      // A regra de Firestore confere total = soma(itens) - descontos + taxas.
-      // Sem declarar o desconto de fidelidade aqui, um pedido com reward (e
-      // sem cupom) seria considerado inconsistente e negativado pela regra.
-      rewardDiscount: !appliedCoupon && selectedReward ? discountValue : undefined,
-      total: total,
-      tip: tipAmount > 0 ? tipAmount : undefined,
-      tipPercent: tipPercent > 0 ? tipPercent : undefined,
-      scheduledAt: scheduledAt || undefined,
-      observations: observations || undefined,
-      createdAt: new Date().toISOString(),
-      origin: 'marketplace',
-    };
-
     try {
-      await addOrder(order);
+      // Preço, cupom e pontos são decididos no servidor. Gravar direto no
+      // Firestore deixaria o total sob controle do navegador.
+      const created = await createOrder({
+        restaurantId: restaurant.id,
+        type: orderType,
+        customerName: name,
+        customerPhone: phone,
+        deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+        neighborhood: selectedNeighborhood || undefined,
+        tableNumber: orderType === 'dine-in' ? tableNumber : undefined,
+        observations: observations || undefined,
+        tip: tipAmount,
+        meuOvoCaixinha: caixinhaAmount,
+        donationAmount,
+        deliveryFee,
+        items: orderItems.map((i) => ({
+          productId: i.productId,
+          quantity: i.quantity,
+        })),
+        couponCode: appliedCoupon?.code,
+        rewardId: selectedReward?.id,
+        customerId: user?.id,
+        paymentMethod,
+      });
+      // O servidor recalculou com o preço real. A partir daqui a UI usa o
+      // valor oficial, para a tela e o WhatsApp baterem com o que foi cobrado.
+      setServerTotal(created.total);
+      setOrderId(created.id);
     } catch (err) {
-      console.error('[Checkout] Failed to save order:', err);
-      toast.error(t('checkout.errorSavingOrder'));
+      console.error('[Checkout] Failed to create order:', err);
+      toast.error(err instanceof Error ? err.message : t('checkout.errorSavingOrder'));
       setSubmitting(false);
       return;
     }
-    setOrderId(id);
 
     trackEvent('purchase', {
       value: total,
@@ -451,23 +449,8 @@ export default function CheckoutPage() {
       console.error('[Checkout] Failed to increment flash deal soldUnits:', err);
     }
 
-    // Update loyalty profile if reward was used
-    if (selectedReward && loyaltyProfile) {
-      try {
-        await updateDoc(doc(db, 'loyalty_profiles', loyaltyProfile.id), {
-          pointsBalance: increment(-selectedReward.pointsRequired),
-          history: arrayUnion({
-            type: 'redeem',
-            points: selectedReward.pointsRequired,
-            description: `Resgate: ${selectedReward.description}`,
-            createdAt: new Date().toISOString()
-          })
-        });
-      } catch (err) {
-        console.error('Error redeeming points:', err);
-        toast.error(t('checkout.errorPointsDeduct'));
-      }
-    }
+    // O resgate de pontos ja foi conferido e debitado pelo servidor em
+    // /api/orders. Debitar aqui de novo descontaria em dobro.
 
     // Mark table as occupied for dine-in orders
     if (orderType === 'dine-in' && tableNumber) {
@@ -481,7 +464,7 @@ export default function CheckoutPage() {
         if (!tablesSnap.empty) {
           await updateDoc(doc(db, 'tables', tablesSnap.docs[0].id), {
             status: 'occupied',
-            currentOrderId: id,
+            currentOrderId: orderId,
           });
         }
       } catch (err) {
@@ -489,17 +472,7 @@ export default function CheckoutPage() {
       }
     }
 
-    // Increment coupon usage if applied
-    if (appliedCoupon) {
-      try {
-        await updateDoc(doc(db, 'coupons', appliedCoupon.id), {
-          usageCount: increment(1)
-        });
-      } catch (err) {
-        console.error('Error incrementing coupon usage:', err);
-        toast.error(t('checkout.errorCouponUsage'));
-      }
-    }
+    // O uso do cupom ja foi incrementado pelo servidor em /api/orders.
 
     // Build WhatsApp message
     const typePt = { 'dine-in': t('checkout.waTypeDineIn'), 'delivery': t('checkout.waTypeDelivery'), 'pickup': t('checkout.waTypePickup') };

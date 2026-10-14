@@ -8,7 +8,7 @@ dotenv.config();
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { handleWebhook } from '../src/lib/whatsappWebhook.ts';
 
@@ -205,6 +205,13 @@ function sanitizeString(input: unknown, maxLen = MAX_STRING_LEN): string {
   if (typeof input !== 'string') return '';
   return input.trim().slice(0, maxLen);
 }
+// Usado para ids que viram nome de documento/coleção: nao aceita '.', '/'
+// nem string vazia, senao o cliente apontaria para outro documento.
+function sanitizeId(input: unknown, maxLen = 64): string | null {
+  if (typeof input !== 'string') return null;
+  const v = input.trim().slice(0, maxLen);
+  return v && !v.includes('/') && !v.includes('.') ? v : null;
+}
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 function isAllowedMimeType(mt: string): boolean {
   return ALLOWED_MIME_TYPES.includes(mt);
@@ -382,6 +389,294 @@ app.get("/api/blog/news", async (req, res) => {
   } catch (error) {
     console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// CRIAÇÃO DE PEDIDO AUTORITATIVA
+// ═══════════════════════════════════════════════════════════════════════
+// O pedido NÃO pode ser escrito direto pelo cliente: se o `total` e os
+// `unitPrice` viessem do navegador, um pedido de total 0 seria aceito e o
+// restaurante veria isso no painel e no WhatsApp. Aqui o servidor:
+//   - lê o preço real de cada produto no catálogo (ignora o que o cliente mandou)
+//   - confere o cupom contra a coleção coupons
+//   - confere e debita o saldo de fidelidade
+//   - recalcula o total e grava com o Admin SDK
+//
+// Guest checkout continua funcionando (o app não exige login), porque preço
+// autoritativo é outra coisa que autenticação.
+
+type IncomingItem = {
+  productId?: unknown;
+  quantity?: unknown;
+  selectedOptions?: unknown;
+};
+
+function normalizePhone(v: unknown): string {
+  return typeof v === 'string' ? v.replace(/\D/g, '') : '';
+}
+
+function toNumber(v: unknown): number {
+  const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+// Rate limit simples por IP (o endpoint é público por causa do guest checkout).
+const orderHits = new Map<string, number[]>();
+const ORDER_WINDOW_MS = 60_000;
+const ORDER_MAX_PER_WINDOW = 12;
+
+function orderRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const hits = (orderHits.get(ip) || []).filter((t) => now - t < ORDER_WINDOW_MS);
+  hits.push(now);
+  orderHits.set(ip, hits);
+  if (orderHits.size > 5000) orderHits.clear(); // evita crescimento sem limite
+  return hits.length > ORDER_MAX_PER_WINDOW;
+}
+
+app.post('/api/orders', async (req, res) => {
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ error: 'Service unavailable' });
+  }
+
+  const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown').split(',')[0].trim();
+  if (orderRateLimited(ip)) {
+    return res.status(429).json({ error: 'too_many_orders', message: 'Muitos pedidos seguidos. Tente de novo em instantes.' });
+  }
+
+  try {
+    const body = req.body || {};
+    const restaurantIdClean = sanitizeId(body.restaurantId, 64);
+    const customerName = sanitizeString(body.customerName, 100);
+    const customerPhone = normalizePhone(body.customerPhone);
+    const type = ['delivery', 'pickup', 'table', 'dine-in'].includes(String(body.type)) ? String(body.type) : 'pickup';
+    const paymentMethod = ['pix', 'cash', 'card-on-delivery', 'on-site', 'credit', 'debit', 'voucher']
+      .includes(String(body.paymentMethod)) ? String(body.paymentMethod) : 'pix';
+
+    if (!restaurantIdClean) return res.status(400).json({ error: 'restaurantId invalido' });
+    if (!customerName) return res.status(400).json({ error: 'nome obrigatorio' });
+    if (customerPhone.length < 8 && customerPhone !== 'N/A') {
+      return res.status(400).json({ error: 'telefone invalido' });
+    }
+
+    const rawItems = Array.isArray(body.items) ? (body.items as IncomingItem[]) : [];
+    if (rawItems.length === 0 || rawItems.length > 40) {
+      return res.status(400).json({ error: 'carrinho invalido' });
+    }
+
+    const db = adminDb();
+
+    // ── Restaurante ────────────────────────────────────────────────────────
+    const restSnap = await db.collection('restaurants').doc(restaurantIdClean).get();
+    if (!restSnap.exists) return res.status(404).json({ error: 'restaurante nao encontrado' });
+    const restaurant = restSnap.data() || {};
+
+    // ── Preço real: busca cada produto no catálogo ─────────────────────────
+    const ids = [...new Set(rawItems
+      .map((i) => sanitizeId(i.productId, 64))
+      .filter((x): x is string => !!x))];
+    if (ids.length !== rawItems.length) {
+      return res.status(400).json({ error: 'item invalido' });
+    }
+
+    const prodSnaps = await Promise.all(ids.map((id) => db.collection('products').doc(id).get()));
+    const priceById = new Map<string, number>();
+    for (let i = 0; i < ids.length; i++) {
+      const s = prodSnaps[i];
+      if (!s.exists) return res.status(400).json({ error: 'produto inexistente' });
+      const p = s.data() || {};
+      if (p.restaurantId !== restaurantIdClean) {
+        return res.status(400).json({ error: 'produto de outro restaurante' });
+      }
+      if (p.isActive === false || p.isAvailable === false) {
+        return res.status(400).json({ error: 'produto indisponivel' });
+      }
+      // Mesmo criterio do client: promocao tem precedencia.
+      const unit = p.onPromotion && p.promotionPrice ? toNumber(p.promotionPrice) : toNumber(p.price);
+      if (unit <= 0) return res.status(400).json({ error: 'produto sem preco valido' });
+      priceById.set(ids[i], unit);
+    }
+
+    // ── Monta os itens com preço do servidor ───────────────────────────────
+    const items: Record<string, unknown>[] = [];
+    let subtotal = 0;
+    for (const raw of rawItems) {
+      const pid = sanitizeId(raw.productId, 64)!;
+      const qty = Math.floor(toNumber(raw.quantity));
+      if (qty < 1 || qty > 99) return res.status(400).json({ error: 'quantidade invalida' });
+      const unit = priceById.get(pid)!;
+      const total = unit * qty;
+      subtotal += total;
+      const prod = (prodSnaps[ids.indexOf(pid)].data() || {}) as Record<string, unknown>;
+      const options = Array.isArray(raw.selectedOptions)
+        ? (raw.selectedOptions as Record<string, unknown>[])
+            .slice(0, 20)
+            .map((o) => ({
+              optionId: sanitizeId(o.optionId, 64) || '',
+              name: sanitizeString(o.name, 80),
+              price: toNumber(o.price),
+            }))
+        : [];
+      items.push({
+        productId: pid,
+        productName: String(prod.name || 'Item'),
+        quantity: qty,
+        unitPrice: unit,
+        additionals: options,
+        observations: sanitizeString((raw as Record<string, unknown>).observations, 200),
+        total,
+      });
+    }
+    if (subtotal <= 0) return res.status(400).json({ error: 'carrinho zerado' });
+
+    // ── Cupom: confere na coleção, nao confia no cliente ───────────────────
+    let couponDiscount = 0;
+    let appliedCoupon: Record<string, unknown> | null = null;
+    const couponCode = sanitizeString(body.couponCode, 20).toUpperCase();
+    if (couponCode) {
+      const cSnap = await db.collection('coupons').where('code', '==', couponCode).limit(1).get();
+      if (cSnap.empty) return res.status(400).json({ error: 'cupom nao encontrado' });
+      const c = cSnap.docs[0].data() as Record<string, unknown>;
+      if (c.restaurantId !== restaurantIdClean || c.isActive !== true) {
+        return res.status(400).json({ error: 'cupom invalido' });
+      }
+      const used = toNumber(c.usageCount);
+      const limit = c.usageLimit == null ? Infinity : toNumber(c.usageLimit);
+      if (used >= limit) return res.status(400).json({ error: 'cupom esgotado' });
+      const minOrder = toNumber(c.minOrderValue);
+      if (subtotal < minOrder) return res.status(400).json({ error: 'cupom exige valor minimo' });
+
+      couponDiscount = c.type === 'percent' ? (subtotal * toNumber(c.value)) / 100 : toNumber(c.value);
+      if (couponDiscount > subtotal) couponDiscount = subtotal;
+      if (couponDiscount < 0) couponDiscount = 0;
+      appliedCoupon = { id: cSnap.docs[0].id, code: couponCode, discount: couponDiscount };
+    }
+
+    // ── Fidelidade: confere saldo e debita ────────────────────────────────
+    let rewardDiscount = 0;
+    let appliedReward: Record<string, unknown> | null = null;
+    const rewardId = sanitizeId(body.rewardId, 64);
+    const customerId = sanitizeId(body.customerId, 64);
+    if (rewardId) {
+      const rulesSnap = await db.collection('loyalty_rules').where('restaurantId', '==', restaurantIdClean).get();
+      const rule = rulesSnap.docs.map((d) => d.data() as Record<string, unknown>)
+        .find((r) => r.id === rewardId || r.description === rewardId);
+      if (!rule) return res.status(400).json({ error: 'recompensa invalida' });
+
+const required = toNumber(rule.pointsRequired);
+
+      // O app identifica o perfil por customerId (logado) ou customerPhone.
+      const loyaltyCol = db.collection('loyalty_profiles');
+      let profSnap = customerId
+        ? await loyaltyCol.where('restaurantId', '==', restaurantIdClean).where('customerId', '==', customerId).limit(1).get()
+        : null;
+      if ((!profSnap || profSnap.empty) && customerPhone && customerPhone !== 'N/A') {
+        profSnap = await loyaltyCol.where('restaurantId', '==', restaurantIdClean).where('customerPhone', '==', customerPhone).limit(1).get();
+      }
+
+      let balance = profSnap && !profSnap.empty
+        ? toNumber((profSnap.docs[0].data() as Record<string, unknown>).pointsBalance)
+        : 0;
+      if (balance < required) {
+        return res.status(400).json({ error: 'pontos insuficientes', balance, required });
+      }
+
+      if (rule.type === 'discount_percent') {
+        rewardDiscount = (subtotal * toNumber(rule.value)) / 100;
+      } else if (rule.type === 'free_product') {
+        const pSnap = await db.collection('products').doc(sanitizeId(rule.value, 64)!).get();
+        if (!pSnap.exists) return res.status(400).json({ error: 'recompensa invalida' });
+        rewardDiscount = toNumber((pSnap.data() as Record<string, unknown>).price);
+        // Da o produto de graça zerando o preco do item.
+        for (const it of items) {
+          if (it.productId === sanitizeId(rule.value, 64)) it.unitPrice = 0;
+        }
+        const newSubtotal = items.reduce((s, it) => s + (it.unitPrice as number) * (it.quantity as number), 0);
+        subtotal = newSubtotal;
+      }
+      if (rewardDiscount > subtotal) rewardDiscount = subtotal;
+      if (rewardDiscount < 0) rewardDiscount = 0;
+      appliedReward = { id: rewardId, pointsRequired: required, pointsDebited: required };
+
+      // Debita saldo (Admin SDK: regra do cliente nao pode ser usada aqui).
+      if (profSnap && !profSnap.empty) {
+        const profRef = profSnap.docs[0].ref;
+        await profRef.set(
+          {
+            pointsBalance: balance - required,
+            history: FieldValue.arrayUnion({
+              type: 'redeem',
+              points: -required,
+              description: `Resgate: ${String(rule.description || '')}`,
+              createdAt: new Date().toISOString(),
+            }),
+          },
+          { merge: true }
+        );
+      }
+    }
+
+    // ── Taxas e total ─────────────────────────────────────────────────────
+    const deliveryFee = toNumber(body.deliveryFee);
+    const tip = toNumber(body.tip);
+    const caixinha = toNumber(body.meuOvoCaixinha);
+    const donationAmount = toNumber(body.donationAmount);
+
+    const total = Math.max(0, subtotal - rewardDiscount - couponDiscount) + deliveryFee + tip + caixinha + donationAmount;
+
+    // ── Grava com Admin SDK (regras do cliente nao se aplicam) ─────────────
+    const uid = (req as express.Request & { auth?: { uid: string } }).auth?.uid || null;
+    const orderRef = db.collection('orders').doc();
+    await orderRef.set({
+      restaurantId: restaurantIdClean,
+      userId: uid || undefined,
+      customerName,
+      customerPhone: customerPhone || 'N/A',
+      type,
+      address: type === 'delivery' ? sanitizeString(body.deliveryAddress, 200) : null,
+      neighborhood: type === 'delivery' ? sanitizeString(body.neighborhood, 80) : null,
+      tableNumber: body.tableNumber != null ? String(body.tableNumber).slice(0, 20) : null,
+      items,
+      subtotal,
+      deliveryFee,
+      tip,
+      meuOvoCaixinha: caixinha,
+      donationAmount,
+      rewardDiscount,
+      couponDiscount,
+      discountAmount: rewardDiscount + couponDiscount,
+      appliedReward,
+      appliedCoupon,
+      couponCode: appliedCoupon ? couponCode : undefined,
+      total,
+      status: 'received',
+      paymentMethod,
+      paymentStatus: 'pending',
+      observations: sanitizeString(body.observations, 300),
+      createdAt: new Date().toISOString(),
+      createdBy: 'api',
+    });
+
+    // Incrementa uso do cupom (contador do servidor, nao do cliente).
+    if (appliedCoupon) {
+      await db.collection('coupons').doc(appliedCoupon.id as string).set(
+        { usageCount: FieldValue.increment(1) },
+        { merge: true }
+      );
+    }
+
+    res.status(201).json({
+      id: orderRef.id,
+      total,
+      subtotal,
+      rewardDiscount,
+      couponDiscount,
+      deliveryFee,
+    });
+  } catch (error: any) {
+    console.error('[Orders] Error:', error);
+    res.status(500).json({ error: 'Internal error' });
   }
 });
 

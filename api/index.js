@@ -8,7 +8,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
 // src/lib/whatsappAI.ts
@@ -492,6 +492,11 @@ function sanitizeString(input, maxLen = MAX_STRING_LEN) {
   if (typeof input !== "string") return "";
   return input.trim().slice(0, maxLen);
 }
+function sanitizeId(input, maxLen = 64) {
+  if (typeof input !== "string") return null;
+  const v = input.trim().slice(0, maxLen);
+  return v && !v.includes("/") && !v.includes(".") ? v : null;
+}
 var ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"];
 function isAllowedMimeType(mt) {
   return ALLOWED_MIME_TYPES.includes(mt);
@@ -654,6 +659,222 @@ app.get("/api/blog/news", async (req, res) => {
   } catch (error) {
     console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
+  }
+});
+function normalizePhone(v) {
+  return typeof v === "string" ? v.replace(/\D/g, "") : "";
+}
+function toNumber(v) {
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? ""));
+  return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+var orderHits = /* @__PURE__ */ new Map();
+var ORDER_WINDOW_MS = 6e4;
+var ORDER_MAX_PER_WINDOW = 12;
+function orderRateLimited(ip) {
+  const now = Date.now();
+  const hits = (orderHits.get(ip) || []).filter((t) => now - t < ORDER_WINDOW_MS);
+  hits.push(now);
+  orderHits.set(ip, hits);
+  if (orderHits.size > 5e3) orderHits.clear();
+  return hits.length > ORDER_MAX_PER_WINDOW;
+}
+app.post("/api/orders", async (req, res) => {
+  if (!firebaseAdminInitialized) {
+    return res.status(503).json({ error: "Service unavailable" });
+  }
+  const ip = String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown").split(",")[0].trim();
+  if (orderRateLimited(ip)) {
+    return res.status(429).json({ error: "too_many_orders", message: "Muitos pedidos seguidos. Tente de novo em instantes." });
+  }
+  try {
+    const body = req.body || {};
+    const restaurantIdClean = sanitizeId(body.restaurantId, 64);
+    const customerName = sanitizeString(body.customerName, 100);
+    const customerPhone = normalizePhone(body.customerPhone);
+    const type = ["delivery", "pickup", "table", "dine-in"].includes(String(body.type)) ? String(body.type) : "pickup";
+    const paymentMethod = ["pix", "cash", "card-on-delivery", "on-site", "credit", "debit", "voucher"].includes(String(body.paymentMethod)) ? String(body.paymentMethod) : "pix";
+    if (!restaurantIdClean) return res.status(400).json({ error: "restaurantId invalido" });
+    if (!customerName) return res.status(400).json({ error: "nome obrigatorio" });
+    if (customerPhone.length < 8 && customerPhone !== "N/A") {
+      return res.status(400).json({ error: "telefone invalido" });
+    }
+    const rawItems = Array.isArray(body.items) ? body.items : [];
+    if (rawItems.length === 0 || rawItems.length > 40) {
+      return res.status(400).json({ error: "carrinho invalido" });
+    }
+    const db = adminDb();
+    const restSnap = await db.collection("restaurants").doc(restaurantIdClean).get();
+    if (!restSnap.exists) return res.status(404).json({ error: "restaurante nao encontrado" });
+    const restaurant = restSnap.data() || {};
+    const ids = [...new Set(rawItems.map((i) => sanitizeId(i.productId, 64)).filter((x) => !!x))];
+    if (ids.length !== rawItems.length) {
+      return res.status(400).json({ error: "item invalido" });
+    }
+    const prodSnaps = await Promise.all(ids.map((id) => db.collection("products").doc(id).get()));
+    const priceById = /* @__PURE__ */ new Map();
+    for (let i = 0; i < ids.length; i++) {
+      const s = prodSnaps[i];
+      if (!s.exists) return res.status(400).json({ error: "produto inexistente" });
+      const p = s.data() || {};
+      if (p.restaurantId !== restaurantIdClean) {
+        return res.status(400).json({ error: "produto de outro restaurante" });
+      }
+      if (p.isActive === false || p.isAvailable === false) {
+        return res.status(400).json({ error: "produto indisponivel" });
+      }
+      const unit = p.onPromotion && p.promotionPrice ? toNumber(p.promotionPrice) : toNumber(p.price);
+      if (unit <= 0) return res.status(400).json({ error: "produto sem preco valido" });
+      priceById.set(ids[i], unit);
+    }
+    const items = [];
+    let subtotal = 0;
+    for (const raw of rawItems) {
+      const pid = sanitizeId(raw.productId, 64);
+      const qty = Math.floor(toNumber(raw.quantity));
+      if (qty < 1 || qty > 99) return res.status(400).json({ error: "quantidade invalida" });
+      const unit = priceById.get(pid);
+      const total2 = unit * qty;
+      subtotal += total2;
+      const prod = prodSnaps[ids.indexOf(pid)].data() || {};
+      const options = Array.isArray(raw.selectedOptions) ? raw.selectedOptions.slice(0, 20).map((o) => ({
+        optionId: sanitizeId(o.optionId, 64) || "",
+        name: sanitizeString(o.name, 80),
+        price: toNumber(o.price)
+      })) : [];
+      items.push({
+        productId: pid,
+        productName: String(prod.name || "Item"),
+        quantity: qty,
+        unitPrice: unit,
+        additionals: options,
+        observations: sanitizeString(raw.observations, 200),
+        total: total2
+      });
+    }
+    if (subtotal <= 0) return res.status(400).json({ error: "carrinho zerado" });
+    let couponDiscount = 0;
+    let appliedCoupon = null;
+    const couponCode = sanitizeString(body.couponCode, 20).toUpperCase();
+    if (couponCode) {
+      const cSnap = await db.collection("coupons").where("code", "==", couponCode).limit(1).get();
+      if (cSnap.empty) return res.status(400).json({ error: "cupom nao encontrado" });
+      const c = cSnap.docs[0].data();
+      if (c.restaurantId !== restaurantIdClean || c.isActive !== true) {
+        return res.status(400).json({ error: "cupom invalido" });
+      }
+      const used = toNumber(c.usageCount);
+      const limit = c.usageLimit == null ? Infinity : toNumber(c.usageLimit);
+      if (used >= limit) return res.status(400).json({ error: "cupom esgotado" });
+      const minOrder = toNumber(c.minOrderValue);
+      if (subtotal < minOrder) return res.status(400).json({ error: "cupom exige valor minimo" });
+      couponDiscount = c.type === "percent" ? subtotal * toNumber(c.value) / 100 : toNumber(c.value);
+      if (couponDiscount > subtotal) couponDiscount = subtotal;
+      if (couponDiscount < 0) couponDiscount = 0;
+      appliedCoupon = { id: cSnap.docs[0].id, code: couponCode, discount: couponDiscount };
+    }
+    let rewardDiscount = 0;
+    let appliedReward = null;
+    const rewardId = sanitizeId(body.rewardId, 64);
+    const customerId = sanitizeId(body.customerId, 64);
+    if (rewardId) {
+      const rulesSnap = await db.collection("loyalty_rules").where("restaurantId", "==", restaurantIdClean).get();
+      const rule = rulesSnap.docs.map((d) => d.data()).find((r) => r.id === rewardId || r.description === rewardId);
+      if (!rule) return res.status(400).json({ error: "recompensa invalida" });
+      const required = toNumber(rule.pointsRequired);
+      const loyaltyCol = db.collection("loyalty_profiles");
+      let profSnap = customerId ? await loyaltyCol.where("restaurantId", "==", restaurantIdClean).where("customerId", "==", customerId).limit(1).get() : null;
+      if ((!profSnap || profSnap.empty) && customerPhone && customerPhone !== "N/A") {
+        profSnap = await loyaltyCol.where("restaurantId", "==", restaurantIdClean).where("customerPhone", "==", customerPhone).limit(1).get();
+      }
+      let balance = profSnap && !profSnap.empty ? toNumber(profSnap.docs[0].data().pointsBalance) : 0;
+      if (balance < required) {
+        return res.status(400).json({ error: "pontos insuficientes", balance, required });
+      }
+      if (rule.type === "discount_percent") {
+        rewardDiscount = subtotal * toNumber(rule.value) / 100;
+      } else if (rule.type === "free_product") {
+        const pSnap = await db.collection("products").doc(sanitizeId(rule.value, 64)).get();
+        if (!pSnap.exists) return res.status(400).json({ error: "recompensa invalida" });
+        rewardDiscount = toNumber(pSnap.data().price);
+        for (const it of items) {
+          if (it.productId === sanitizeId(rule.value, 64)) it.unitPrice = 0;
+        }
+        const newSubtotal = items.reduce((s, it) => s + it.unitPrice * it.quantity, 0);
+        subtotal = newSubtotal;
+      }
+      if (rewardDiscount > subtotal) rewardDiscount = subtotal;
+      if (rewardDiscount < 0) rewardDiscount = 0;
+      appliedReward = { id: rewardId, pointsRequired: required, pointsDebited: required };
+      if (profSnap && !profSnap.empty) {
+        const profRef = profSnap.docs[0].ref;
+        await profRef.set(
+          {
+            pointsBalance: balance - required,
+            history: FieldValue.arrayUnion({
+              type: "redeem",
+              points: -required,
+              description: `Resgate: ${String(rule.description || "")}`,
+              createdAt: (/* @__PURE__ */ new Date()).toISOString()
+            })
+          },
+          { merge: true }
+        );
+      }
+    }
+    const deliveryFee = toNumber(body.deliveryFee);
+    const tip = toNumber(body.tip);
+    const caixinha = toNumber(body.meuOvoCaixinha);
+    const donationAmount = toNumber(body.donationAmount);
+    const total = Math.max(0, subtotal - rewardDiscount - couponDiscount) + deliveryFee + tip + caixinha + donationAmount;
+    const uid = req.auth?.uid || null;
+    const orderRef = db.collection("orders").doc();
+    await orderRef.set({
+      restaurantId: restaurantIdClean,
+      userId: uid || void 0,
+      customerName,
+      customerPhone: customerPhone || "N/A",
+      type,
+      address: type === "delivery" ? sanitizeString(body.deliveryAddress, 200) : null,
+      neighborhood: type === "delivery" ? sanitizeString(body.neighborhood, 80) : null,
+      tableNumber: body.tableNumber != null ? String(body.tableNumber).slice(0, 20) : null,
+      items,
+      subtotal,
+      deliveryFee,
+      tip,
+      meuOvoCaixinha: caixinha,
+      donationAmount,
+      rewardDiscount,
+      couponDiscount,
+      discountAmount: rewardDiscount + couponDiscount,
+      appliedReward,
+      appliedCoupon,
+      couponCode: appliedCoupon ? couponCode : void 0,
+      total,
+      status: "received",
+      paymentMethod,
+      paymentStatus: "pending",
+      observations: sanitizeString(body.observations, 300),
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      createdBy: "api"
+    });
+    if (appliedCoupon) {
+      await db.collection("coupons").doc(appliedCoupon.id).set(
+        { usageCount: FieldValue.increment(1) },
+        { merge: true }
+      );
+    }
+    res.status(201).json({
+      id: orderRef.id,
+      total,
+      subtotal,
+      rewardDiscount,
+      couponDiscount,
+      deliveryFee
+    });
+  } catch (error) {
+    console.error("[Orders] Error:", error);
+    res.status(500).json({ error: "Internal error" });
   }
 });
 app.post("/api/newsletter/subscribe", async (req, res) => {

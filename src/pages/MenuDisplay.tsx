@@ -37,6 +37,7 @@ import { Button } from '../components/Button';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'motion/react';
 import { Skeleton } from '../components/Skeleton';
+import { createOrder } from '../services/orderService';
 
 enum OperationType {
   CREATE = 'create',
@@ -358,78 +359,48 @@ export default function MenuDisplay() {
     }
 
     try {
-      const orderData = {
-        restaurantId: restaurant?.id,
+      // O preço é calculado no servidor a partir do catálogo. Se gravássemos
+      // direto no Firestore, o total viria do navegador.
+      const created = await createOrder({
+        restaurantId: restaurant!.id,
         type: orderType,
         customerName: formData.name,
         customerPhone: formData.phone,
-        address: orderType === 'delivery' ? formData.address : null,
-        neighborhood: orderType === 'delivery' ? formData.neighborhood : null,
-        tableNumber: orderType === 'table' ? formData.tableNumber : null,
-        items: cart,
-        total: finalTotal,
+        deliveryAddress: orderType === 'delivery' ? formData.address : undefined,
+        neighborhood: orderType === 'delivery' ? formData.neighborhood : undefined,
+        tableNumber: orderType === 'table' ? formData.tableNumber : undefined,
+        items: cart.map((c) => ({
+          productId: c.productId,
+          quantity: c.quantity,
+          selectedOptions: c.selectedOptions,
+        })),
         deliveryFee,
-        rewardDiscount,
-        couponDiscount,
-        discountAmount: rewardDiscount + couponDiscount, // for backward compatibility
         donationAmount,
-        status: 'received',
+        couponCode: appliedCoupon?.code,
+        rewardId: appliedReward?.id,
+        customerId: getAuth().currentUser?.uid || undefined,
         paymentMethod: formData.paymentMethod,
-        paymentStatus: 'pending',
-        appliedReward: appliedReward ? { id: appliedReward.id, pointsRequired: appliedReward.pointsRequired } : null,
-        appliedCoupon: appliedCoupon ? { id: appliedCoupon.id, code: appliedCoupon.code, discount: couponDiscount } : null,
-        createdAt: new Date().toISOString(),
-      };
+      });
 
-      const docRef = await addDoc(collection(db, 'orders'), orderData).catch(e => handleFirestoreError(e, OperationType.CREATE, 'orders'));
-
-      // If coupon used, increment usage count
-      if (appliedCoupon) {
-        await updateDoc(doc(db, 'coupons', appliedCoupon.id), {
-          usageCount: (appliedCoupon.usageCount || 0) + 1
-        });
-      }
-
-      // Loyalty Point Redemption (handled here, accumulation moved to AdminOrders)
-      if (restaurant?.loyaltySettings?.enabled && (appliedReward || loyaltyProfile)) {
-        const ptsRef = collection(db, 'loyalty_profiles');
-        
-        if (loyaltyProfile) {
-          // Update existing profile (only redemption here)
-          if (appliedReward) {
-            const newPoints = loyaltyProfile.pointsBalance - appliedReward.pointsRequired;
-            await updateDoc(doc(db, 'loyalty_profiles', loyaltyProfile.id), {
-              pointsBalance: newPoints,
-              customerName: formData.name,
-              history: arrayUnion({ 
-                type: 'redeem', 
-                points: appliedReward.pointsRequired, 
-                description: `Resgate: ${appliedReward.description}`, 
-                orderId: docRef.id, 
-                createdAt: new Date().toISOString() 
-              })
-            }).catch(e => handleFirestoreError(e, OperationType.UPDATE, `loyalty_profiles/${loyaltyProfile.id}`));
-          } else {
-            // Just update name if needed
-            await updateDoc(doc(db, 'loyalty_profiles', loyaltyProfile.id), {
-              customerName: formData.name
-            });
-          }
-        } else if (!loyaltyProfile) {
-          // Create empty profile just to have it ready for points accumulation later
-          // if it doesn't exist yet (by phone)
-          const q = query(ptsRef, where('restaurantId', '==', restaurant.id), where('customerId', '==', getAuth().currentUser?.uid || ''), where('customerPhone', '==', formData.phone));
-          const snapshot = await getDocs(q);
-          if (snapshot.empty) {
-            await addDoc(ptsRef, {
-              restaurantId: restaurant.id,
-              customerPhone: formData.phone,
-              customerName: formData.name,
-              customerId: getAuth().currentUser?.uid || '',
-              pointsBalance: 0,
-              history: []
-            });
-          }
+      // Cupom e fidelidade ja foram validados e debitados pelo servidor.
+      // Aqui so criamos o perfil vazio, se ainda nao existir, para o
+      // acummulo de pontos (que acontece em AdminOrders).
+      if (restaurant?.loyaltySettings?.enabled && !loyaltyProfile) {
+        const q = query(
+          collection(db, 'loyalty_profiles'),
+          where('restaurantId', '==', restaurant.id),
+          where('customerPhone', '==', formData.phone)
+        );
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          await addDoc(collection(db, 'loyalty_profiles'), {
+            restaurantId: restaurant.id,
+            customerPhone: formData.phone,
+            customerName: formData.name,
+            customerId: getAuth().currentUser?.uid || '',
+            pointsBalance: 0,
+            history: [],
+          });
         }
       }
 
@@ -453,7 +424,7 @@ export default function MenuDisplay() {
       // Delay to show toast before redirect
       setTimeout(() => {
         window.open(whatsappUrl, '_blank');
-        window.location.href = `/m/${slug}/order/${docRef.id}`;
+        window.location.href = `/m/${slug}/order/${created.id}`;
       }, 1500);
     } catch (e) {
       toast.error(t('display.orderError'));
