@@ -630,14 +630,14 @@ const required = toNumber(rule.pointsRequired);
     // ── Grava com Admin SDK (regras do cliente nao se aplicam) ─────────────
     const uid = (req as express.Request & { auth?: { uid: string } }).auth?.uid || null;
     const orderRef = db.collection('orders').doc();
-    await orderRef.set({
+    const orderDoc: Record<string, unknown> = {
       restaurantId: restaurantIdClean,
-      userId: uid || undefined,
+      userId: uid,
       customerName,
       customerPhone: customerPhone || 'N/A',
       type,
-      address: type === 'delivery' ? sanitizeString(body.deliveryAddress, 200) : null,
-      neighborhood: type === 'delivery' ? sanitizeString(body.neighborhood, 80) : null,
+      address: type === 'delivery' ? (sanitizeString(body.deliveryAddress, 200) || null) : null,
+      neighborhood: type === 'delivery' ? (sanitizeString(body.neighborhood, 80) || null) : null,
       tableNumber: body.tableNumber != null ? String(body.tableNumber).slice(0, 20) : null,
       items,
       subtotal,
@@ -650,7 +650,6 @@ const required = toNumber(rule.pointsRequired);
       discountAmount: rewardDiscount + couponDiscount,
       appliedReward,
       appliedCoupon,
-      couponCode: appliedCoupon ? couponCode : undefined,
       total,
       status: 'received',
       paymentMethod,
@@ -658,7 +657,13 @@ const required = toNumber(rule.pointsRequired);
       observations: sanitizeString(body.observations, 300),
       createdAt: new Date().toISOString(),
       createdBy: 'api',
-    });
+    };
+    if (couponCode) orderDoc.couponCode = couponCode;
+    // O Admin SDK nao aceita undefined; null e o valor de "nao informado".
+    for (const k of Object.keys(orderDoc)) {
+      if (orderDoc[k] === undefined) orderDoc[k] = null;
+    }
+    await orderRef.set(orderDoc);
 
     // Incrementa uso do cupom (contador do servidor, nao do cliente).
     if (appliedCoupon) {

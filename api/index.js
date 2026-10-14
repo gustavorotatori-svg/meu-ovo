@@ -8,7 +8,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert, getApps } from "firebase-admin/app";
-import { initializeFirestore, FieldValue } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
 // src/lib/whatsappAI.ts
@@ -332,12 +332,8 @@ async function handleWebhook(ai2, db, body) {
 // server/api.ts
 dotenv.config();
 var FIRESTORE_DATABASE_ID = "ai-studio-83caa59a-5170-443b-82b8-5354c3a71e8b";
-var firestoreInstance = null;
 function adminDb() {
-  if (!firestoreInstance) {
-    firestoreInstance = initializeFirestore(getApps()[0], { databaseId: FIRESTORE_DATABASE_ID });
-  }
-  return firestoreInstance;
+  return getFirestore(getApps()[0], FIRESTORE_DATABASE_ID);
 }
 var firebaseAdminInitialized = false;
 var serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -833,14 +829,14 @@ app.post("/api/orders", async (req, res) => {
     const total = Math.max(0, subtotal - rewardDiscount - couponDiscount) + deliveryFee + tip + caixinha + donationAmount;
     const uid = req.auth?.uid || null;
     const orderRef = db.collection("orders").doc();
-    await orderRef.set({
+    const orderDoc = {
       restaurantId: restaurantIdClean,
-      userId: uid || void 0,
+      userId: uid,
       customerName,
       customerPhone: customerPhone || "N/A",
       type,
-      address: type === "delivery" ? sanitizeString(body.deliveryAddress, 200) : null,
-      neighborhood: type === "delivery" ? sanitizeString(body.neighborhood, 80) : null,
+      address: type === "delivery" ? sanitizeString(body.deliveryAddress, 200) || null : null,
+      neighborhood: type === "delivery" ? sanitizeString(body.neighborhood, 80) || null : null,
       tableNumber: body.tableNumber != null ? String(body.tableNumber).slice(0, 20) : null,
       items,
       subtotal,
@@ -853,7 +849,6 @@ app.post("/api/orders", async (req, res) => {
       discountAmount: rewardDiscount + couponDiscount,
       appliedReward,
       appliedCoupon,
-      couponCode: appliedCoupon ? couponCode : void 0,
       total,
       status: "received",
       paymentMethod,
@@ -861,7 +856,12 @@ app.post("/api/orders", async (req, res) => {
       observations: sanitizeString(body.observations, 300),
       createdAt: (/* @__PURE__ */ new Date()).toISOString(),
       createdBy: "api"
-    });
+    };
+    if (couponCode) orderDoc.couponCode = couponCode;
+    for (const k of Object.keys(orderDoc)) {
+      if (orderDoc[k] === void 0) orderDoc[k] = null;
+    }
+    await orderRef.set(orderDoc);
     if (appliedCoupon) {
       await db.collection("coupons").doc(appliedCoupon.id).set(
         { usageCount: FieldValue.increment(1) },
