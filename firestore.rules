@@ -269,11 +269,15 @@ service cloud.firestore {
         && incoming().pointsBalance is number
         && (isOwnerOrAdmin(incoming().restaurantId)
             || (isSignedIn() && incoming().customerId == request.auth.uid));
+      // O cliente pode atualizar o proprio nome, mas NAO o saldo: pontos sao
+      // creditados pelo dono quando o pedido e aceito (awardLoyaltyPoints) e
+      // debitados pelo servidor em /api/orders. Permitir pointsBalance aqui
+      // deixava o cliente se auto-atribuir pontos e resgatar recompensas que
+      // nunca ganhou.
       allow update: if isOwnerOrAdmin(existing().restaurantId)
         || (isSignedIn() && existing().customerId == request.auth.uid
             && incoming().diff(existing()).affectedKeys()
-                 .hasOnly(['pointsBalance', 'customerName', 'history']));
-      allow delete: if false;
+                 .hasOnly(['customerName']));
     }
 
     // ─── NEWSLETTER SUBSCRIBERS ──────────────────────────────────────────────
