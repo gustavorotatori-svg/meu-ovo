@@ -22,6 +22,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../lib/i18n';
 import { currencyLocale } from '../../lib/utils';
+import { createOrder } from '../../services/orderService';
 
 type TabType = 'tables' | 'new-order' | 'qr-codes';
 
@@ -148,39 +149,29 @@ export default function WaiterMode() {
     }
 
     try {
-      const subtotal = cart.reduce((acc, curr) => acc + (curr.product.price * curr.quantity), 0);
       const matchedTable = tables.find(t => t.number === selectedTable);
 
-      const orderData = {
-        restaurantId: restaurant?.id,
-        customerName: `Garçom (Mesa ${selectedTable})`,
+      // Preço calculado no servidor (Admin SDK), igual ao checkout do cliente.
+      // Gravar direto no Firestore permitiria forjar unitPrice/total.
+      const created = await createOrder({
+        restaurantId: restaurant!.id,
+        customerName: `${t('waiter.waiterLabel')} (${t('waiter.mesa', { number: selectedTable })})`,
         customerPhone: 'N/A',
         type: 'table',
         tableNumber: selectedTable,
-        tableId: matchedTable?.id || '',
-        items: cart.map(item => ({
+        items: cart.map((item) => ({
           productId: item.product.id,
-          productName: item.product.name,
           quantity: item.quantity,
-          unitPrice: item.product.price,
-          additionals: [],
-          observations: ''
         })),
-        total: subtotal,
-        status: 'received',
         paymentMethod: 'on-site',
-        paymentStatus: 'pending',
-        createdAt: new Date().toISOString()
-      };
+      });
 
-      const docRef = await addDoc(collection(db, 'orders'), orderData);
-      
       if (matchedTable) {
         await updateTable({
           ...matchedTable,
           active: false,
           status: 'occupied',
-          currentOrderId: docRef.id,
+          currentOrderId: created.id,
           lastCustomerCount: customerCount
         });
       }

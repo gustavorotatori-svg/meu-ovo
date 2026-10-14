@@ -2408,6 +2408,7 @@ const resources = {
         toastAdicioneItens: 'Adicione itens ao pedido',
         toastPedidoEnviado: 'Pedido enviado para a cozinha! 🍳',
         toastPedidoFail: 'Erro ao enviar pedido',
+        waiterLabel: 'Garçom',
       }
     }
   },
@@ -4816,6 +4817,7 @@ const resources = {
         toastAdicioneItens: 'Add items to the order',
         toastPedidoEnviado: 'Order sent to the kitchen! 🍳',
         toastPedidoFail: 'Error sending order',
+        waiterLabel: 'Waiter',
       }
     }
   },
@@ -7224,6 +7226,7 @@ const resources = {
         toastAdicioneItens: 'Agregue items al pedido',
         toastPedidoEnviado: 'Pedido enviado a la cocina! 🍳',
         toastPedidoFail: 'Error al enviar pedido',
+        waiterLabel: 'Mesero',
       }
     }
   }
