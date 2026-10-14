@@ -8,7 +8,7 @@ import cors from "cors";
 import helmet from "helmet";
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert, getApps } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { initializeFirestore, FieldValue } from "firebase-admin/firestore";
 import { getAuth } from "firebase-admin/auth";
 
 // src/lib/whatsappAI.ts
@@ -332,8 +332,12 @@ async function handleWebhook(ai2, db, body) {
 // server/api.ts
 dotenv.config();
 var FIRESTORE_DATABASE_ID = "ai-studio-83caa59a-5170-443b-82b8-5354c3a71e8b";
+var firestoreInstance = null;
 function adminDb() {
-  return getFirestore(getApps()[0], FIRESTORE_DATABASE_ID);
+  if (!firestoreInstance) {
+    firestoreInstance = initializeFirestore(getApps()[0], { databaseId: FIRESTORE_DATABASE_ID });
+  }
+  return firestoreInstance;
 }
 var firebaseAdminInitialized = false;
 var serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;

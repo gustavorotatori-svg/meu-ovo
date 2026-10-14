@@ -8,14 +8,21 @@ dotenv.config();
 
 import { GoogleGenAI, Type } from "@google/genai";
 import { initializeApp as initAdminApp, cert, getApps } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, initializeFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { handleWebhook } from '../src/lib/whatsappWebhook.ts';
 
-// Client connects to a custom Firestore database (see src/lib/firebase.ts)
+// O client usa o Firestore NAO-DEFAULT (ver src/lib/firebase.ts).
+// getFirestore(app, databaseId) IGNORA o segundo argumento no firebase-admin:
+// é preciso initializeFirestore(app, { databaseId }). Sem isso o servidor
+// lia e escrevia no banco "(default)" e os pedidos nao apareciam.
 const FIRESTORE_DATABASE_ID = 'ai-studio-83caa59a-5170-443b-82b8-5354c3a71e8b';
+let firestoreInstance: ReturnType<typeof getFirestore> | null = null;
 function adminDb() {
-  return getFirestore(getApps()[0]!, FIRESTORE_DATABASE_ID);
+  if (!firestoreInstance) {
+    firestoreInstance = initializeFirestore(getApps()[0]!, { databaseId: FIRESTORE_DATABASE_ID });
+  }
+  return firestoreInstance;
 }
 
 // Initialize Firebase Admin SDK
