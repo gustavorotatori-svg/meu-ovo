@@ -10,9 +10,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import OptimizedImage from '../components/OptimizedImage';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { db } from '../lib/firebase';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+
+const HeroScene = lazy(() => import('../components/three/HeroScene'));
 
 const faqData = [
   {
@@ -152,8 +154,11 @@ export default function LandingPage() {
           : 'bg-gradient-to-b from-gray-50 to-white'
       }`}>
 
+        <Suspense fallback={null}>
+          <HeroScene />
+        </Suspense>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           <ScrollReveal direction="up" delay={0} className="text-left">
             <div className="inline-block bg-[#FFC928] text-[#111] text-[10px] lg:text-xs font-black px-4 py-2 rounded-2xl mb-8 lg:mb-12 uppercase tracking-widest font-display">
               {t('landing.freeBadge')}
